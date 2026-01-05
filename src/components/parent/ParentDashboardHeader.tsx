@@ -1,17 +1,20 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import FamilyInviteCode from "@/components/family/FamilyInviteCode";
 
 type ParentDashboardHeaderProps = {
   familyName?: string | null;
   kidsCount: number;
   kidsNames: string;
+  inviteCode: string;
 };
 
 export default function ParentDashboardHeader({
   familyName,
   kidsCount,
   kidsNames,
+  inviteCode,
 }: ParentDashboardHeaderProps) {
   const t = useTranslations("parent");
 
@@ -33,6 +36,7 @@ export default function ParentDashboardHeader({
                 : `${kidsCount} ${kidsCount > 1 ? "kids" : "kid"}: ${kidsNames}`}
             </p>
           </div>
+          <FamilyInviteCode inviteCode={inviteCode} />
         </div>
       </div>
     </>

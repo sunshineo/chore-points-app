@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import FamilySetup from "@/components/family/FamilySetup";
-import FamilyInviteCode from "@/components/family/FamilyInviteCode";
 import ParentDashboardHeader from "@/components/parent/ParentDashboardHeader";
 import ParentDashboardCards from "@/components/parent/ParentDashboardCards";
 
@@ -52,10 +51,8 @@ export default async function DashboardPage() {
             familyName={family?.name}
             kidsCount={kids.length}
             kidsNames={kidsNames}
+            inviteCode={family?.inviteCode || ""}
           />
-          <div className="flex justify-end mt-4">
-            <FamilyInviteCode inviteCode={family?.inviteCode || ""} />
-          </div>
           <ParentDashboardCards />
         </div>
       </div>
