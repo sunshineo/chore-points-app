@@ -58,7 +58,7 @@ export async function GET(req: Request) {
       orderBy: { date: "desc" },
     });
 
-    // Calculate total points
+    // Calculate total points for kid
     const totalPoints = entries.reduce((sum: number, entry) => sum + entry.points, 0);
 
     return NextResponse.json({
