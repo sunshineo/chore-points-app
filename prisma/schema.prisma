@@ -73,6 +73,7 @@ model Chore {
   family        Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   title         String
+  icon          String?
   defaultPoints Int
   isActive      Boolean  @default(true)
 

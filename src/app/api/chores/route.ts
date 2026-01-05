@@ -36,7 +36,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const session = await requireParentInFamily();
-    const { title, defaultPoints } = await req.json();
+    const { title, defaultPoints, icon } = await req.json();
 
     if (!title || defaultPoints === undefined) {
       return NextResponse.json(
@@ -55,6 +55,7 @@ export async function POST(req: Request) {
     const chore = await prisma.chore.create({
       data: {
         title,
+        icon: icon || null,
         defaultPoints,
         familyId: session.user.familyId!,
         createdById: session.user.id,

@@ -10,7 +10,7 @@ export async function PUT(
   try {
     const session = await requireParentInFamily();
     const { id } = await params;
-    const { title, defaultPoints, isActive } = await req.json();
+    const { title, defaultPoints, isActive, icon } = await req.json();
 
     // Verify chore belongs to user's family
     const existingChore = await prisma.chore.findUnique({
@@ -33,6 +33,7 @@ export async function PUT(
     };
 
     if (title !== undefined) updateData.title = title;
+    if (icon !== undefined) updateData.icon = icon || null;
     if (defaultPoints !== undefined) {
       if (typeof defaultPoints !== 'number' || defaultPoints < 0) {
         return NextResponse.json(

@@ -6,6 +6,7 @@ import ChoreForm from "./ChoreForm";
 type Chore = {
   id: string;
   title: string;
+  icon: string | null;
   defaultPoints: number;
   isActive: boolean;
   createdAt: string;
@@ -181,8 +182,13 @@ export default function ChoresList() {
               {filteredChores.map((chore) => (
                 <tr key={chore.id}>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {chore.title}
+                    <div className="flex items-center gap-2">
+                      {chore.icon && (
+                        <span className="text-2xl">{chore.icon}</span>
+                      )}
+                      <div className="text-sm font-medium text-gray-900">
+                        {chore.title}
+                      </div>
                     </div>
                     <div className="text-xs text-gray-500">
                       Last updated by{" "}

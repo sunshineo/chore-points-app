@@ -5,27 +5,42 @@ import { useState, useEffect } from "react";
 type Chore = {
   id: string;
   title: string;
+  icon: string | null;
   defaultPoints: number;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: { name: string | null; email: string };
+  updatedBy: { name: string | null; email: string };
 };
 
 type ChoreFormProps = {
   chore?: Chore | null;
   onClose: () => void;
-  onSuccess: (chore: any) => void;
+  onSuccess: (chore: Chore) => void;
 };
+
+// Common emoji icons for chores
+const commonIcons = [
+  "🧹", "🍽️", "🛏️", "👕", "🗑️", "🐕", "🌱", "📚",
+  "🧺", "🚿", "🍳", "🧽", "🪣", "✨", "🧼", "🪥",
+  "🚗", "📦", "🤝", "⭐", "🎯", "💪", "🏆", "🎨",
+];
 
 export default function ChoreForm({ chore, onClose, onSuccess }: ChoreFormProps) {
   const [title, setTitle] = useState(chore?.title || "");
+  const [icon, setIcon] = useState(chore?.icon || "");
   const [defaultPoints, setDefaultPoints] = useState(
     chore?.defaultPoints?.toString() || ""
   );
+  const [showIconPicker, setShowIconPicker] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (chore) {
       setTitle(chore.title);
+      setIcon(chore.icon || "");
       setDefaultPoints(chore.defaultPoints.toString());
     }
   }, [chore]);
@@ -51,6 +66,7 @@ export default function ChoreForm({ chore, onClose, onSuccess }: ChoreFormProps)
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
+          icon: icon || null,
           defaultPoints: points,
         }),
       });
@@ -72,7 +88,7 @@ export default function ChoreForm({ chore, onClose, onSuccess }: ChoreFormProps)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">
             {chore ? "Edit Chore" : "Add Chore"}
@@ -120,6 +136,71 @@ export default function ChoreForm({ chore, onClose, onSuccess }: ChoreFormProps)
               placeholder="e.g., Wash dishes, Take out trash"
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Icon (for kids to recognize)
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowIconPicker(!showIconPicker)}
+                className="w-14 h-14 text-3xl border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center"
+              >
+                {icon || "➕"}
+              </button>
+              {icon && (
+                <button
+                  type="button"
+                  onClick={() => setIcon("")}
+                  className="text-sm text-gray-500 hover:text-red-500"
+                >
+                  Clear
+                </button>
+              )}
+              <span className="text-sm text-gray-500 ml-2">
+                {icon ? "Click to change" : "Click to pick an icon"}
+              </span>
+            </div>
+
+            {showIconPicker && (
+              <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-8 gap-2">
+                  {commonIcons.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        setIcon(emoji);
+                        setShowIconPicker(false);
+                      }}
+                      className={`text-2xl p-2 rounded hover:bg-blue-100 transition-colors ${
+                        icon === emoji ? "bg-blue-200" : ""
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Or type any emoji:
+                  </label>
+                  <input
+                    type="text"
+                    value={icon}
+                    onChange={(e) => setIcon(e.target.value)}
+                    placeholder="Type or paste an emoji"
+                    className="w-full px-2 py-1 text-lg border border-gray-300 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    maxLength={4}
+                  />
+                </div>
+              </div>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Icons help kids identify chores without reading
+            </p>
           </div>
 
           <div>
