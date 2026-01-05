@@ -1,0 +1,211 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PARENT
+  KID
+}
+
+enum RedemptionStatus {
+  PENDING
+  APPROVED
+  DENIED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?
+  role          Role      @default(PARENT)
+  familyId      String?
+  family        Family?   @relation(fields: [familyId], references: [id])
+
+  // Relations for audit trails
+  createdChores       Chore[]       @relation("ChoreCreatedBy")
+  updatedChores       Chore[]       @relation("ChoreUpdatedBy")
+  createdPointEntries PointEntry[]  @relation("PointEntryCreatedBy")
+  updatedPointEntries PointEntry[]  @relation("PointEntryUpdatedBy")
+  createdRewards      Reward[]      @relation("RewardCreatedBy")
+  updatedRewards      Reward[]      @relation("RewardUpdatedBy")
+  resolvedRedemptions Redemption[]  @relation("RedemptionResolvedBy")
+  requestedRedemptions Redemption[] @relation("RedemptionRequested")
+  pointEntries        PointEntry[]  @relation("KidPointEntries")
+
+  // NextAuth fields
+  accounts      Account[]
+  sessions      Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([familyId])
+}
+
+model Family {
+  id          String   @id @default(cuid())
+  name        String
+  inviteCode  String   @unique @default(cuid())
+
+  users       User[]
+  chores      Chore[]
+  pointEntries PointEntry[]
+  rewards     Reward[]
+  redemptions Redemption[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Chore {
+  id            String   @id @default(cuid())
+  familyId      String
+  family        Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  title         String
+  defaultPoints Int
+  isActive      Boolean  @default(true)
+
+  createdById   String
+  createdBy     User     @relation("ChoreCreatedBy", fields: [createdById], references: [id])
+  updatedById   String
+  updatedBy     User     @relation("ChoreUpdatedBy", fields: [updatedById], references: [id])
+
+  pointEntries  PointEntry[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([familyId, isActive])
+}
+
+model PointEntry {
+  id           String   @id @default(cuid())
+  familyId     String
+  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  kidId        String
+  kid          User     @relation("KidPointEntries", fields: [kidId], references: [id])
+
+  choreId      String?
+  chore        Chore?   @relation(fields: [choreId], references: [id], onDelete: SetNull)
+
+  points       Int
+  note         String?
+  date         DateTime @default(now())
+
+  redemptionId String?  @unique
+  redemption   Redemption? @relation(fields: [redemptionId], references: [id], onDelete: SetNull)
+
+  createdById  String
+  createdBy    User     @relation("PointEntryCreatedBy", fields: [createdById], references: [id])
+  updatedById  String
+  updatedBy    User     @relation("PointEntryUpdatedBy", fields: [updatedById], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([kidId])
+  @@index([familyId, kidId])
+}
+
+model Reward {
+  id          String   @id @default(cuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  title       String
+  costPoints  Int
+  imageUrl    String?
+
+  createdById String
+  createdBy   User     @relation("RewardCreatedBy", fields: [createdById], references: [id])
+  updatedById String
+  updatedBy   User     @relation("RewardUpdatedBy", fields: [updatedById], references: [id])
+
+  redemptions Redemption[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([familyId])
+}
+
+model Redemption {
+  id          String            @id @default(cuid())
+  familyId    String
+  family      Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  kidId       String
+  kid         User              @relation("RedemptionRequested", fields: [kidId], references: [id])
+
+  rewardId    String
+  reward      Reward            @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  status      RedemptionStatus  @default(PENDING)
+
+  requestedAt DateTime          @default(now())
+  resolvedAt  DateTime?
+  resolvedById String?
+  resolvedBy  User?             @relation("RedemptionResolvedBy", fields: [resolvedById], references: [id])
+
+  pointEntry  PointEntry?
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([familyId])
+  @@index([kidId])
+  @@index([familyId, status])
+}
+
+// NextAuth models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

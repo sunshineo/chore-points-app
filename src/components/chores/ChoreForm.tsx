@@ -1,0 +1,167 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+type Chore = {
+  id: string;
+  title: string;
+  defaultPoints: number;
+  isActive: boolean;
+};
+
+type ChoreFormProps = {
+  chore?: Chore | null;
+  onClose: () => void;
+  onSuccess: (chore: any) => void;
+};
+
+export default function ChoreForm({ chore, onClose, onSuccess }: ChoreFormProps) {
+  const [title, setTitle] = useState(chore?.title || "");
+  const [defaultPoints, setDefaultPoints] = useState(
+    chore?.defaultPoints?.toString() || ""
+  );
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (chore) {
+      setTitle(chore.title);
+      setDefaultPoints(chore.defaultPoints.toString());
+    }
+  }, [chore]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    const points = parseInt(defaultPoints);
+    if (isNaN(points) || points < 0) {
+      setError("Points must be a non-negative number");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const url = chore ? `/api/chores/${chore.id}` : "/api/chores";
+      const method = chore ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          defaultPoints: points,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Something went wrong");
+        setLoading(false);
+        return;
+      }
+
+      onSuccess(data.chore);
+    } catch (error) {
+      setError("Something went wrong");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900">
+            {chore ? "Edit Chore" : "Add Chore"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Chore Name
+            </label>
+            <input
+              id="title"
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Wash dishes, Take out trash"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="defaultPoints"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Default Points
+            </label>
+            <input
+              id="defaultPoints"
+              type="number"
+              required
+              min="0"
+              value={defaultPoints}
+              onChange={(e) => setDefaultPoints(e.target.value)}
+              placeholder="e.g., 10"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              Points awarded when this chore is completed
+            </p>
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Saving..." : chore ? "Update" : "Create"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
