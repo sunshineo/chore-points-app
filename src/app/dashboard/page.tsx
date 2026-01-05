@@ -38,7 +38,7 @@ export default async function DashboardPage() {
 
   // If user has a family, show appropriate dashboard based on role
   if (session.user.role === "PARENT") {
-    const kids = family?.users.filter((u) => u.role === "KID") || [];
+    const kids = family?.users.filter((u: { role: string }) => u.role === "KID") || [];
 
     return (
       <div className="min-h-screen bg-gray-50">
