@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth, requireParent } from "@/lib/permissions";
 
+// Generate a 6-character alphanumeric invite code
+function generateInviteCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed confusing chars: 0, O, 1, I
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 // GET /api/family - Get current user's family
 export async function GET() {
   try {
@@ -53,10 +63,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create family
+    // Generate unique invite code (retry if collision)
+    let inviteCode = generateInviteCode();
+    let attempts = 0;
+    while (attempts < 5) {
+      const existing = await prisma.family.findUnique({
+        where: { inviteCode },
+      });
+      if (!existing) break;
+      inviteCode = generateInviteCode();
+      attempts++;
+    }
+
+    // Create family with generated invite code
     const family = await prisma.family.create({
       data: {
         name,
+        inviteCode,
         users: {
           connect: { id: session.user.id },
         },

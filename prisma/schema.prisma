@@ -55,7 +55,7 @@ model User {
 model Family {
   id          String   @id @default(cuid())
   name        String
-  inviteCode  String   @unique @default(cuid())
+  inviteCode  String   @unique
 
   users       User[]
   chores      Chore[]

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name, inviteCode, registrationSecret } = await req.json();
+    const { email, password, name, inviteCode, registrationSecret, role: requestedRole } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -25,11 +25,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // If invite code provided, verify it and sign up as KID
+    // Determine role - use requested role or default to PARENT
+    const role: "PARENT" | "KID" = requestedRole === "KID" ? "KID" : "PARENT";
     let familyId: string | null = null;
-    let role: "PARENT" | "KID" = "PARENT";
 
     if (inviteCode) {
+      // Invite code provided - validate and join family
       const family = await prisma.family.findUnique({
         where: { inviteCode },
       });
@@ -42,9 +43,8 @@ export async function POST(req: Request) {
       }
 
       familyId = family.id;
-      role = "KID";
-    } else {
-      // Parent signup - validate registration secret
+    } else if (role === "PARENT") {
+      // Parent signup without invite code - validate registration secret
       const expectedSecret = process.env.REGISTRATION_SECRET;
       if (expectedSecret && registrationSecret !== expectedSecret) {
         return NextResponse.json(
@@ -52,6 +52,12 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+    } else {
+      // Kid signup requires invite code
+      return NextResponse.json(
+        { error: "Invite code is required for kid signup" },
+        { status: 400 }
+      );
     }
 
     // Hash password

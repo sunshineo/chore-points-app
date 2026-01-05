@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/permissions";
 export async function POST(req: Request) {
   try {
     const session = await requireAuth();
-    const { inviteCode, role } = await req.json();
+    const { inviteCode } = await req.json();
 
     if (!inviteCode) {
       return NextResponse.json(
@@ -35,12 +35,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Update user with family and role
+    // Update user with family (keep existing role)
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
         familyId: family.id,
-        role: role || "KID", // Default to KID when joining via invite code
+        // Keep user's existing role - they chose it during signup
       },
     });
 

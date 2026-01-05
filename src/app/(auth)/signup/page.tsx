@@ -36,8 +36,9 @@ export default function SignupPage() {
       return;
     }
 
-    if (mode === "parent" && !registrationSecret.trim()) {
-      setError("Registration code is required to sign up as a parent");
+    // Parent needs either invite code OR registration secret
+    if (mode === "parent" && !inviteCode.trim() && !registrationSecret.trim()) {
+      setError("Either an invite code or registration code is required");
       return;
     }
 
@@ -51,8 +52,9 @@ export default function SignupPage() {
           email,
           password,
           name,
-          inviteCode: mode === "kid" ? inviteCode.trim() : undefined,
-          registrationSecret: mode === "parent" ? registrationSecret.trim() : undefined,
+          role: mode === "kid" ? "KID" : "PARENT",
+          inviteCode: inviteCode.trim() || undefined,
+          registrationSecret: mode === "parent" && !inviteCode.trim() ? registrationSecret.trim() : undefined,
         }),
       });
 
@@ -211,7 +213,34 @@ export default function SignupPage() {
           )}
 
           <div className="space-y-4">
-            {mode === "parent" && (
+            {/* Invite code field - required for kids, optional for parents */}
+            <div>
+              <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700">
+                Family Invite Code {mode === "kid" && <span className="text-red-500">*</span>}
+                {mode === "parent" && <span className="text-gray-400 text-xs ml-1">(optional)</span>}
+              </label>
+              <input
+                id="inviteCode"
+                type="text"
+                required={mode === "kid"}
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder={mode === "kid" ? "Enter the code from your parent" : "Enter code to join existing family"}
+                className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none font-mono ${
+                  mode === "kid"
+                    ? "focus:ring-green-500 focus:border-green-500"
+                    : "focus:ring-blue-500 focus:border-blue-500"
+                }`}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                {mode === "kid"
+                  ? "Ask your parent for the invite code from their dashboard"
+                  : "Have an invite code? Enter it to join an existing family"}
+              </p>
+            </div>
+
+            {/* Registration code - only for parents without invite code */}
+            {mode === "parent" && !inviteCode.trim() && (
               <div>
                 <label htmlFor="registrationSecret" className="block text-sm font-medium text-gray-700">
                   Registration Code <span className="text-red-500">*</span>
@@ -226,27 +255,7 @@ export default function SignupPage() {
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Contact the administrator for the registration code
-                </p>
-              </div>
-            )}
-
-            {mode === "kid" && (
-              <div>
-                <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700">
-                  Invite Code <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="inviteCode"
-                  type="text"
-                  required
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  placeholder="Enter the code from your parent"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 font-mono"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Ask your parent for the invite code from their dashboard
+                  Required to create a new family. Contact the administrator for this code.
                 </p>
               </div>
             )}
