@@ -3,7 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/db";
 import { compare } from "bcryptjs";
-import type { Role } from "@prisma/client";
+
+type Role = "PARENT" | "KID";
 
 declare module "next-auth" {
   interface Session {
