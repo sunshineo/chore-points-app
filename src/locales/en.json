@@ -29,7 +29,8 @@
     "kid": "Kid",
     "language": "Language",
     "loading": "Loading...",
-    "milestones": "Milestones"
+    "milestones": "Milestones",
+    "gallery": "Gallery"
   },
   "points": {
     "myPoints": "My Points",
@@ -287,5 +288,19 @@
     "delete": "Delete",
     "confirmDelete": "Confirm Delete",
     "selectKid": "Please select a child"
+  },
+  "photos": {
+    "pageTitle": "Photo Gallery",
+    "pageDesc": "Browse photos from point awards and achievements",
+    "photo": "Photo",
+    "optional": "optional",
+    "addPhoto": "Add Photo",
+    "photoHelp": "Capture the moment! Max 5MB.",
+    "uploadFailed": "Failed to upload photo",
+    "noPhotosYet": "No photos yet",
+    "addPhotosWhenAwarding": "Add photos when awarding points to see them here",
+    "filterByKid": "Filter by kid",
+    "allKids": "All Kids",
+    "pointAward": "Point Award"
   }
 }

@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { kidId, choreId, points, note, date } = await req.json();
+    const { kidId, choreId, points, note, date, photoUrl } = await req.json();
 
     if (!kidId || points === undefined) {
       return NextResponse.json(
@@ -139,6 +139,7 @@ export async function POST(req: Request) {
         choreId: choreId || null,
         points,
         note: note || null,
+        photoUrl: photoUrl || null,
         date: date ? new Date(date) : new Date(),
         createdById: session.user.id,
         updatedById: session.user.id,

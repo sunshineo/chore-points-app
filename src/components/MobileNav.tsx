@@ -28,6 +28,7 @@ export default function MobileNav() {
     { href: "/ledger", label: t("pointsNav"), icon: "💎" },
     { href: "/rewards", label: t("rewards"), icon: "🎁" },
     { href: "/milestones", label: t("milestones"), icon: "🌟" },
+    { href: "/gallery", label: t("gallery"), icon: "📷" },
   ];
 
   const kidLinks = [

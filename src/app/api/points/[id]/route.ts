@@ -18,7 +18,7 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const { points, note, choreId, date } = await req.json();
+    const { points, note, choreId, date, photoUrl } = await req.json();
 
     // Verify point entry belongs to user's family
     const existingEntry = await prisma.pointEntry.findUnique({
@@ -64,6 +64,7 @@ export async function PUT(
     if (note !== undefined) updateData.note = note || null;
     if (choreId !== undefined) updateData.choreId = choreId || null;
     if (date !== undefined) updateData.date = new Date(date);
+    if (photoUrl !== undefined) updateData.photoUrl = photoUrl || null;
 
     const pointEntry = await prisma.pointEntry.update({
       where: { id },

@@ -133,6 +133,14 @@ export default function NavBar() {
                   >
                     {t("milestones")}
                   </Link>
+                  <Link
+                    href="/gallery"
+                    className={`hover:text-gray-300 transition ${
+                      pathname === "/gallery" ? "text-blue-400" : ""
+                    }`}
+                  >
+                    {t("gallery")}
+                  </Link>
                 </>
               ) : (
                 <>

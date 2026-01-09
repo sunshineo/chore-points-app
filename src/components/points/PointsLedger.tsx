@@ -14,11 +14,13 @@ type PointEntry = {
   id: string;
   points: number;
   note: string | null;
+  photoUrl: string | null;
   date: string;
   chore: { title: string } | null;
+  choreId?: string | null;
   createdBy: { name: string | null; email: string };
   updatedBy: { name: string | null; email: string };
-  redemption: any;
+  redemption: { reward: { title: string } } | null;
 };
 
 export default function PointsLedger() {
@@ -32,6 +34,8 @@ export default function PointsLedger() {
   const t = useTranslations("parent");
   const tCommon = useTranslations("common");
   const tHistory = useTranslations("history");
+  const tPhotos = useTranslations("photos");
+  const [viewingPhoto, setViewingPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     fetchKids();
@@ -182,6 +186,9 @@ export default function PointsLedger() {
                   {t("note")}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {tPhotos("photo")}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {t("addedBy")}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -219,6 +226,18 @@ export default function PointsLedger() {
                       entry.note || "-"
                     )}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {entry.photoUrl ? (
+                      <img
+                        src={entry.photoUrl}
+                        alt="Entry photo"
+                        className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setViewingPhoto(entry.photoUrl)}
+                      />
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {entry.createdBy.name || entry.createdBy.email}
                   </td>
@@ -254,6 +273,28 @@ export default function PointsLedger() {
           onClose={handleFormClose}
           onSuccess={handleFormSuccess}
         />
+      )}
+
+      {/* Photo viewing modal */}
+      {viewingPhoto && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setViewingPhoto(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img
+              src={viewingPhoto}
+              alt="Full size"
+              className="max-h-[90vh] w-auto rounded-lg"
+            />
+            <button
+              onClick={() => setViewingPhoto(null)}
+              className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

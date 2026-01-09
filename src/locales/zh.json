@@ -29,7 +29,8 @@
     "kid": "孩子",
     "language": "语言",
     "loading": "加载中...",
-    "milestones": "成长记录"
+    "milestones": "成长记录",
+    "gallery": "相册"
   },
   "points": {
     "myPoints": "我的积分",
@@ -287,5 +288,19 @@
     "delete": "删除",
     "confirmDelete": "确认删除",
     "selectKid": "请选择一个孩子"
+  },
+  "photos": {
+    "pageTitle": "照片相册",
+    "pageDesc": "浏览积分奖励和成就的照片",
+    "photo": "照片",
+    "optional": "可选",
+    "addPhoto": "添加照片",
+    "photoHelp": "记录这一刻！最大5MB。",
+    "uploadFailed": "上传照片失败",
+    "noPhotosYet": "还没有照片",
+    "addPhotosWhenAwarding": "奖励积分时添加照片，照片将显示在这里",
+    "filterByKid": "按孩子筛选",
+    "allKids": "所有孩子",
+    "pointAward": "积分奖励"
   }
 }

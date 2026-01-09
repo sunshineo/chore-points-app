@@ -107,6 +107,7 @@ model PointEntry {
 
   points       Int
   note         String?
+  photoUrl     String?
   date         DateTime @default(now())
 
   redemptionId String?  @unique

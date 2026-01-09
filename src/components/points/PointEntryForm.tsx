@@ -13,6 +13,7 @@ type PointEntry = {
   id: string;
   points: number;
   note: string | null;
+  photoUrl: string | null;
   date: string;
   chore: { title: string } | null;
   choreId?: string | null;
@@ -46,10 +47,15 @@ export default function PointEntryForm({
       ? new Date(entry.date).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0]
   );
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(entry?.photoUrl || null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(entry?.photoUrl || null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const t = useTranslations("parent");
   const tCommon = useTranslations("common");
+  const tPhotos = useTranslations("photos");
 
   useEffect(() => {
     fetchChores();
@@ -83,6 +89,24 @@ export default function PointEntryForm({
     setSelectedChore(chore || null);
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhoto(null);
+    setPhotoPreview(null);
+    setPhotoUrl(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -105,6 +129,35 @@ export default function PointEntryForm({
 
     setLoading(true);
 
+    let finalPhotoUrl = photoUrl;
+
+    // Upload photo if a new one was selected
+    if (photo) {
+      setUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", photo);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) {
+          setError(uploadData.error || tPhotos("uploadFailed"));
+          setLoading(false);
+          setUploading(false);
+          return;
+        }
+        finalPhotoUrl = uploadData.url;
+      } catch {
+        setError(tPhotos("uploadFailed"));
+        setLoading(false);
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
+
     try {
       const url = entry ? `/api/points/${entry.id}` : "/api/points";
       const method = entry ? "PUT" : "POST";
@@ -117,6 +170,7 @@ export default function PointEntryForm({
           choreId: mode === "chore" ? choreId : null,
           points: pointsValue,
           note: note || null,
+          photoUrl: finalPhotoUrl,
           date,
         }),
       });
@@ -130,7 +184,7 @@ export default function PointEntryForm({
       }
 
       onSuccess();
-    } catch (error) {
+    } catch {
       setError("Something went wrong");
       setLoading(false);
     }
@@ -390,6 +444,54 @@ export default function PointEntryForm({
             />
           </div>
 
+          {/* Photo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {tPhotos("photo")} <span className="text-gray-400">({tPhotos("optional")})</span>
+            </label>
+
+            {photoPreview ? (
+              <div className="relative inline-block">
+                <img
+                  src={photoPreview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg border"
+                />
+                <button
+                  type="button"
+                  onClick={removePhoto}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                >
+                  &times;
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                <svg
+                  className="w-8 h-8 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="mt-1 text-sm text-gray-500">{tPhotos("addPhoto")}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+            <p className="mt-1 text-xs text-gray-500">{tPhotos("photoHelp")}</p>
+          </div>
+
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
@@ -400,14 +502,16 @@ export default function PointEntryForm({
             </button>
             <button
               type="submit"
-              disabled={loading || (mode === "chore" && !selectedChore)}
+              disabled={loading || uploading || (mode === "chore" && !selectedChore)}
               className={`flex-1 px-4 py-2 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
                 mode === "chore"
                   ? "bg-blue-600 hover:bg-blue-700"
                   : "bg-green-600 hover:bg-green-700"
               }`}
             >
-              {loading
+              {uploading
+                ? "Uploading..."
+                : loading
                 ? tCommon("saving")
                 : entry
                 ? tCommon("update")
