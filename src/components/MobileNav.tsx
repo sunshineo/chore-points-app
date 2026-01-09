@@ -36,12 +36,14 @@ export default function MobileNav() {
   const kidModeLinks = [
     { href: "/view-as/points", label: t("myPoints"), icon: "💎" },
     { href: "/view-as/redeem", label: t("redeem"), icon: "🎁" },
+    { href: "/view-as/gallery", label: t("gallery"), icon: "📷" },
   ];
 
   const kidLinks = [
     { href: "/dashboard", label: t("dashboard"), icon: "🏠" },
     { href: "/points", label: t("myPoints"), icon: "💎" },
     { href: "/redeem", label: t("redeem"), icon: "🎁" },
+    { href: "/gallery", label: t("gallery"), icon: "📷" },
   ];
 
   // Determine which links to show

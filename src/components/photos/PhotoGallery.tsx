@@ -19,7 +19,12 @@ type PhotoEntry = {
   kid: Kid;
 };
 
-export default function PhotoGallery() {
+type PhotoGalleryProps = {
+  kidId?: string; // If provided, only fetch this kid's photos (for kid view)
+  showKidFilter?: boolean; // Whether to show the kid filter dropdown (default: true)
+};
+
+export default function PhotoGallery({ kidId, showKidFilter = true }: PhotoGalleryProps) {
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
   const [selectedKidId, setSelectedKidId] = useState<string>("");
@@ -27,12 +32,13 @@ export default function PhotoGallery() {
   const [viewingPhoto, setViewingPhoto] = useState<PhotoEntry | null>(null);
   const t = useTranslations("photos");
   const tCommon = useTranslations("common");
-  const tParent = useTranslations("parent");
 
   useEffect(() => {
-    fetchKids();
+    if (showKidFilter && !kidId) {
+      fetchKids();
+    }
     fetchPhotos();
-  }, []);
+  }, [kidId]);
 
   const fetchKids = async () => {
     try {
@@ -48,7 +54,8 @@ export default function PhotoGallery() {
 
   const fetchPhotos = async () => {
     try {
-      const response = await fetch("/api/photos");
+      const url = kidId ? `/api/photos?kidId=${kidId}` : "/api/photos";
+      const response = await fetch(url);
       const data = await response.json();
       if (response.ok) {
         setPhotos(data.photos);
@@ -94,28 +101,30 @@ export default function PhotoGallery() {
 
   return (
     <div>
-      {/* Filter by kid */}
-      <div className="mb-6 flex items-center space-x-4">
-        <label className="text-sm font-medium text-gray-700">
-          {t("filterByKid")}
-        </label>
-        <select
-          value={selectedKidId}
-          onChange={(e) => setSelectedKidId(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">{t("allKids")}</option>
-          {kids.map((kid) => (
-            <option key={kid.id} value={kid.id}>
-              {kid.name || kid.email}
-            </option>
-          ))}
-        </select>
-        <span className="text-sm text-gray-500">
-          {filteredPhotos.length} {t("photo")}
-          {filteredPhotos.length !== 1 ? "s" : ""}
-        </span>
-      </div>
+      {/* Filter by kid - only show for parents viewing all photos */}
+      {showKidFilter && !kidId && kids.length > 0 && (
+        <div className="mb-6 flex items-center space-x-4">
+          <label className="text-sm font-medium text-gray-700">
+            {t("filterByKid")}
+          </label>
+          <select
+            value={selectedKidId}
+            onChange={(e) => setSelectedKidId(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">{t("allKids")}</option>
+            {kids.map((kid) => (
+              <option key={kid.id} value={kid.id}>
+                {kid.name || kid.email}
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-gray-500">
+            {filteredPhotos.length} {t("photo")}
+            {filteredPhotos.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      )}
 
       {/* Photo grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

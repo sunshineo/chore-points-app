@@ -120,6 +120,14 @@ export default function NavBar() {
                   >
                     {t("redeem")}
                   </Link>
+                  <Link
+                    href="/view-as/gallery"
+                    className={`hover:text-gray-300 transition ${
+                      pathname === "/view-as/gallery" ? "text-blue-400" : ""
+                    }`}
+                  >
+                    {t("gallery")}
+                  </Link>
                 </>
               ) : isParent ? (
                 // Normal parent navigation
@@ -183,6 +191,14 @@ export default function NavBar() {
                     }`}
                   >
                     {t("redeem")}
+                  </Link>
+                  <Link
+                    href="/gallery"
+                    className={`hover:text-gray-300 transition ${
+                      pathname === "/gallery" ? "text-blue-400" : ""
+                    }`}
+                  >
+                    {t("gallery")}
                   </Link>
                 </>
               )}

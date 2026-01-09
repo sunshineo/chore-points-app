@@ -10,19 +10,19 @@ export default async function GalleryPage() {
     redirect("/login");
   }
 
-  if (session.user.role !== "PARENT") {
-    redirect("/dashboard");
-  }
-
   if (!session.user.familyId) {
     redirect("/dashboard");
   }
+
+  const isParent = session.user.role === "PARENT";
+  // Kids see their own photos only
+  const kidId = !isParent ? session.user.id : undefined;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <GalleryPageHeader />
-        <PhotoGallery />
+        <PhotoGallery kidId={kidId} showKidFilter={isParent} />
       </div>
     </div>
   );
