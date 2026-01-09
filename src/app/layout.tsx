@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import NavBar from "@/components/NavBar";
+import MobileNav from "@/components/MobileNav";
 import LocaleProvider from "@/components/LocaleProvider";
 
 const geistSans = Geist({
@@ -33,7 +34,8 @@ export default function RootLayout({
         <SessionProvider>
           <LocaleProvider>
             <NavBar />
-            {children}
+            <main className="pb-16 sm:pb-0">{children}</main>
+            <MobileNav />
           </LocaleProvider>
         </SessionProvider>
       </body>
