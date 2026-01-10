@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       where: { familyId: session.user.familyId },
     });
 
-    if (!settings?.isConnected || !settings.selectedCalendarId) {
+    if (!settings?.isConnected || !settings.selectedCalendarId || !settings.connectedByUserId) {
       return NextResponse.json(
         { error: "No calendar connected" },
         { status: 400 }
@@ -42,8 +42,9 @@ export async function GET(request: NextRequest) {
     const timeMax = searchParams.get("timeMax");
     const maxResults = parseInt(searchParams.get("maxResults") || "50");
 
-    // Get access token
-    const accessToken = await getValidAccessToken(session.user.id);
+    // Get access token from the user who connected the calendar (not current user)
+    // This allows other family parents to view the calendar without Google OAuth
+    const accessToken = await getValidAccessToken(settings.connectedByUserId);
 
     // Fetch events
     const events = await listEvents(accessToken, settings.selectedCalendarId, {
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
       where: { familyId: session.user.familyId },
     });
 
-    if (!settings?.isConnected || !settings.selectedCalendarId) {
+    if (!settings?.isConnected || !settings.selectedCalendarId || !settings.connectedByUserId) {
       return NextResponse.json(
         { error: "No calendar connected" },
         { status: 400 }
@@ -104,8 +105,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get access token
-    const accessToken = await getValidAccessToken(session.user.id);
+    // Get access token from the user who connected the calendar
+    const accessToken = await getValidAccessToken(settings.connectedByUserId);
 
     // Build event object - frontend sends start/end in Google Calendar format
     const eventData: {

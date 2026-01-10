@@ -34,14 +34,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
       where: { familyId: session.user.familyId },
     });
 
-    if (!settings?.isConnected || !settings.selectedCalendarId) {
+    if (!settings?.isConnected || !settings.selectedCalendarId || !settings.connectedByUserId) {
       return NextResponse.json(
         { error: "No calendar connected" },
         { status: 400 }
       );
     }
 
-    const accessToken = await getValidAccessToken(session.user.id);
+    const accessToken = await getValidAccessToken(settings.connectedByUserId);
     const event = await getEvent(
       accessToken,
       settings.selectedCalendarId,
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       where: { familyId: session.user.familyId },
     });
 
-    if (!settings?.isConnected || !settings.selectedCalendarId) {
+    if (!settings?.isConnected || !settings.selectedCalendarId || !settings.connectedByUserId) {
       return NextResponse.json(
         { error: "No calendar connected" },
         { status: 400 }
@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const body = await request.json();
     const { summary, description, startDate, endDate, allDay, location } = body;
 
-    const accessToken = await getValidAccessToken(session.user.id);
+    const accessToken = await getValidAccessToken(settings.connectedByUserId);
 
     const eventData = allDay
       ? {
@@ -152,14 +152,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       where: { familyId: session.user.familyId },
     });
 
-    if (!settings?.isConnected || !settings.selectedCalendarId) {
+    if (!settings?.isConnected || !settings.selectedCalendarId || !settings.connectedByUserId) {
       return NextResponse.json(
         { error: "No calendar connected" },
         { status: 400 }
       );
     }
 
-    const accessToken = await getValidAccessToken(session.user.id);
+    const accessToken = await getValidAccessToken(settings.connectedByUserId);
     await deleteEvent(accessToken, settings.selectedCalendarId, eventId);
 
     return NextResponse.json({ success: true });
