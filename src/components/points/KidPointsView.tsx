@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import ChoreFlashcards from "@/components/chores/ChoreFlashcards";
 import PointsCalendar from "@/components/points/PointsCalendar";
-import PointsProgression from "@/components/points/PointsProgression";
 
 type PointEntry = {
   id: string;
   points: number;
   date: string;
+  note?: string | null;
+  photoUrl?: string | null;
+  chore?: { title: string } | null;
 };
 
 type KidPointsViewProps = {
@@ -24,10 +26,6 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
   const [loading, setLoading] = useState(true);
   const t = useTranslations("points");
   const tCommon = useTranslations("common");
-
-  const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
 
   useEffect(() => {
     fetchPoints();
@@ -108,27 +106,12 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
         <ChoreFlashcards />
       </div>
 
-      {/* Calendar and Progression Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calendar View */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {t("myCalendar")}
-          </h2>
-          <PointsCalendar entries={entries} />
-        </div>
-
-        {/* Progression Chart */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {t("thisMonth")}
-          </h2>
-          <PointsProgression
-            entries={entries}
-            month={currentMonth}
-            year={currentYear}
-          />
-        </div>
+      {/* Calendar Section */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          {t("myCalendar")}
+        </h2>
+        <PointsCalendar entries={entries} />
       </div>
     </div>
   );
