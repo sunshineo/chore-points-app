@@ -63,7 +63,7 @@ export async function PUT(
 
     if (note !== undefined) updateData.note = note || null;
     if (choreId !== undefined) updateData.choreId = choreId || null;
-    if (date !== undefined) updateData.date = new Date(date);
+    if (date !== undefined) updateData.date = new Date(date + "T12:00:00");
     if (photoUrl !== undefined) updateData.photoUrl = photoUrl || null;
 
     const pointEntry = await prisma.pointEntry.update({

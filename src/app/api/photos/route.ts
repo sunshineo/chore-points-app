@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         kidId,
         photoUrl,
         caption: caption || null,
-        date: date ? new Date(date) : new Date(),
+        date: date ? new Date(date + "T12:00:00") : new Date(),
         createdById: session.user.id,
       },
       include: {

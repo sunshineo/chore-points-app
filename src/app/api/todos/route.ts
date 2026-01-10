@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         familyId: session.user.familyId,
         title: title.trim(),
         icon: icon || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
+        dueDate: dueDate ? new Date(dueDate + "T12:00:00") : null,
         assignedTo: assignedTo || null,
         createdById: session.user.id,
       },

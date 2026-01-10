@@ -53,7 +53,7 @@ export async function PUT(
     }
 
     if (date !== undefined) {
-      updateData.date = new Date(date);
+      updateData.date = new Date(date + "T12:00:00");
     }
 
     if (imageUrl !== undefined) {

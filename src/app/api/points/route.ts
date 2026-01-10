@@ -140,7 +140,7 @@ export async function POST(req: Request) {
         points,
         note: note || null,
         photoUrl: photoUrl || null,
-        date: date ? new Date(date) : new Date(),
+        date: date ? new Date(date + "T12:00:00") : new Date(),
         createdById: session.user.id,
         updatedById: session.user.id,
       },

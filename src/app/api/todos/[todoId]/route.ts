@@ -65,7 +65,7 @@ export async function PUT(
     }
 
     if (dueDate !== undefined) {
-      updateData.dueDate = dueDate ? new Date(dueDate) : null;
+      updateData.dueDate = dueDate ? new Date(dueDate + "T12:00:00") : null;
     }
 
     if (assignedTo !== undefined) {

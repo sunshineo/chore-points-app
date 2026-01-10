@@ -84,7 +84,7 @@ export async function POST(req: Request) {
         title,
         description: description || null,
         icon: icon || null,
-        date: date ? new Date(date) : new Date(),
+        date: date ? new Date(date + "T12:00:00") : new Date(),
         imageUrl: imageUrl || null,
         familyId: session.user.familyId!,
         kidId,
