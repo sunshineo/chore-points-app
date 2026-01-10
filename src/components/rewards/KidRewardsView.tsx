@@ -21,10 +21,9 @@ type Redemption = {
 
 type KidRewardsViewProps = {
   kidId: string;
-  readOnly?: boolean;
 };
 
-export default function KidRewardsView({ kidId, readOnly = false }: KidRewardsViewProps) {
+export default function KidRewardsView({ kidId }: KidRewardsViewProps) {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -77,8 +76,6 @@ export default function KidRewardsView({ kidId, readOnly = false }: KidRewardsVi
   };
 
   const handleRedeem = async (rewardId: string, rewardTitle: string) => {
-    if (readOnly) return;
-
     if (
       !confirm(
         `${t("confirmRedeem", { title: rewardTitle })} ${t("confirmRedeemDesc")}`
@@ -90,7 +87,7 @@ export default function KidRewardsView({ kidId, readOnly = false }: KidRewardsVi
       const response = await fetch("/api/redemptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rewardId }),
+        body: JSON.stringify({ rewardId, kidId }),
       });
 
       const data = await response.json();
@@ -196,16 +193,14 @@ export default function KidRewardsView({ kidId, readOnly = false }: KidRewardsVi
                     </div>
                     <button
                       onClick={() => handleRedeem(reward.id, reward.title)}
-                      disabled={!canAfford || readOnly}
+                      disabled={!canAfford}
                       className={`w-full px-4 py-2 rounded-md font-medium ${
-                        readOnly
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : canAfford
-                            ? "bg-purple-600 text-white hover:bg-purple-700"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        canAfford
+                          ? "bg-purple-600 text-white hover:bg-purple-700"
+                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
                       }`}
                     >
-                      {readOnly ? t("viewOnly") : canAfford ? t("redeemButton") : t("notEnoughPoints")}
+                      {canAfford ? t("redeemButton") : t("notEnoughPoints")}
                     </button>
                   </div>
                 </div>

@@ -26,7 +26,7 @@ export default function ViewAsRedeemClient() {
         <RedeemHeader />
 
         <div className="mt-8">
-          <KidRewardsView kidId={viewingAsKid.id} readOnly />
+          <KidRewardsView kidId={viewingAsKid.id} />
         </div>
       </div>
     </div>

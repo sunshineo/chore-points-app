@@ -57,7 +57,7 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/redemptions - Kid requests a redemption
+// POST /api/redemptions - Request a redemption (kid or parent on behalf of kid)
 export async function POST(req: Request) {
   try {
     const session = await requireFamily();
@@ -69,18 +69,40 @@ export async function POST(req: Request) {
       );
     }
 
-    if (session.user.role !== "KID") {
-      return NextResponse.json(
-        { error: "Only kids can request redemptions" },
-        { status: 403 }
-      );
-    }
-
-    const { rewardId } = await req.json();
+    const { rewardId, kidId } = await req.json();
 
     if (!rewardId) {
       return NextResponse.json(
         { error: "Reward ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // Determine the target kid
+    let targetKidId: string;
+
+    if (session.user.role === "KID") {
+      targetKidId = session.user.id;
+    } else if (session.user.role === "PARENT" && kidId) {
+      // Parent requesting on behalf of kid (view-as mode)
+      const kid = await prisma.user.findFirst({
+        where: {
+          id: kidId,
+          familyId: session.user.familyId,
+          role: "KID",
+        },
+      });
+
+      if (!kid) {
+        return NextResponse.json(
+          { error: "Kid not found in your family" },
+          { status: 404 }
+        );
+      }
+      targetKidId = kidId;
+    } else {
+      return NextResponse.json(
+        { error: "Invalid request" },
         { status: 400 }
       );
     }
@@ -107,7 +129,7 @@ export async function POST(req: Request) {
     // Calculate kid's current points
     const pointEntries = await prisma.pointEntry.findMany({
       where: {
-        kidId: session.user.id,
+        kidId: targetKidId,
         familyId: session.user.familyId,
       },
     });
@@ -124,8 +146,8 @@ export async function POST(req: Request) {
     // Create redemption request
     const redemption = await prisma.redemption.create({
       data: {
-        familyId: session.user.familyId,
-        kidId: session.user.id,
+        familyId: session.user.familyId!,
+        kidId: targetKidId,
         rewardId: reward.id,
         status: "PENDING",
       },
