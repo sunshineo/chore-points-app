@@ -2,7 +2,6 @@
 
 import { useKidMode } from "@/components/providers/KidModeProvider";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -29,20 +28,12 @@ export default function KidModeBanner() {
         <span className="font-medium text-sm sm:text-base">
           {t("viewingAs", { name: viewingAsKid?.name || viewingAsKid?.email || "" })}
         </span>
-        <span className="text-xs sm:text-sm opacity-80">({t("viewOnly")})</span>
         <button
           onClick={handleExitKidMode}
           className="ml-2 sm:ml-4 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs sm:text-sm font-medium transition-colors"
         >
           {t("exitKidMode")}
         </button>
-        <Link
-          href="/dashboard"
-          onClick={() => exitKidMode()}
-          className="px-3 py-1 bg-white text-green-600 rounded-full text-xs sm:text-sm font-medium hover:bg-gray-100 transition-colors"
-        >
-          {t("backToDashboard")}
-        </Link>
       </div>
     </div>
   );
