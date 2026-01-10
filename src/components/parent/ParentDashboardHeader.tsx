@@ -12,6 +12,12 @@ type Kid = {
   email: string;
 };
 
+type Weather = {
+  temperature: number;
+  description: string;
+  icon: string;
+};
+
 // Get time-based greeting key
 function getGreetingKey(): string {
   const hour = new Date().getHours();
@@ -30,6 +36,38 @@ function formatDate(locale: string): string {
   });
 }
 
+// Weather code to description and emoji
+function getWeatherInfo(code: number): { description: string; icon: string } {
+  // WMO Weather interpretation codes
+  const weatherMap: Record<number, { description: string; icon: string }> = {
+    0: { description: "Clear", icon: "☀️" },
+    1: { description: "Mainly clear", icon: "🌤️" },
+    2: { description: "Partly cloudy", icon: "⛅" },
+    3: { description: "Overcast", icon: "☁️" },
+    45: { description: "Foggy", icon: "🌫️" },
+    48: { description: "Foggy", icon: "🌫️" },
+    51: { description: "Light drizzle", icon: "🌧️" },
+    53: { description: "Drizzle", icon: "🌧️" },
+    55: { description: "Heavy drizzle", icon: "🌧️" },
+    61: { description: "Light rain", icon: "🌧️" },
+    63: { description: "Rain", icon: "🌧️" },
+    65: { description: "Heavy rain", icon: "🌧️" },
+    71: { description: "Light snow", icon: "🌨️" },
+    73: { description: "Snow", icon: "🌨️" },
+    75: { description: "Heavy snow", icon: "❄️" },
+    77: { description: "Snow grains", icon: "🌨️" },
+    80: { description: "Light showers", icon: "🌦️" },
+    81: { description: "Showers", icon: "🌦️" },
+    82: { description: "Heavy showers", icon: "⛈️" },
+    85: { description: "Light snow showers", icon: "🌨️" },
+    86: { description: "Snow showers", icon: "🌨️" },
+    95: { description: "Thunderstorm", icon: "⛈️" },
+    96: { description: "Thunderstorm with hail", icon: "⛈️" },
+    99: { description: "Thunderstorm with hail", icon: "⛈️" },
+  };
+  return weatherMap[code] || { description: "Unknown", icon: "🌡️" };
+}
+
 export default function ParentDashboardHeader() {
   const t = useTranslations("parent");
   const tKidMode = useTranslations("kidMode");
@@ -38,6 +76,7 @@ export default function ParentDashboardHeader() {
   const [showKidSelector, setShowKidSelector] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [dateString, setDateString] = useState("");
+  const [weather, setWeather] = useState<Weather | null>(null);
   const { setViewingAsKid } = useKidMode();
   const router = useRouter();
 
@@ -46,7 +85,62 @@ export default function ParentDashboardHeader() {
     // Set greeting and date on client side to avoid hydration mismatch
     setGreeting(getGreetingKey());
     setDateString(formatDate("en"));
+    fetchWeather();
   }, []);
+
+  const fetchWeather = async () => {
+    try {
+      // Get user's location
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            // Use Open-Meteo free API (no API key needed)
+            const response = await fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`
+            );
+            const data = await response.json();
+            if (data.current) {
+              const weatherInfo = getWeatherInfo(data.current.weather_code);
+              setWeather({
+                temperature: Math.round(data.current.temperature_2m),
+                description: weatherInfo.description,
+                icon: weatherInfo.icon,
+              });
+            }
+          },
+          () => {
+            // If location denied, use default location (Seattle)
+            fetchWeatherForLocation(47.6062, -122.3321);
+          }
+        );
+      } else {
+        // Fallback to default location
+        fetchWeatherForLocation(47.6062, -122.3321);
+      }
+    } catch (error) {
+      console.error("Failed to fetch weather:", error);
+    }
+  };
+
+  const fetchWeatherForLocation = async (lat: number, lon: number) => {
+    try {
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=fahrenheit`
+      );
+      const data = await response.json();
+      if (data.current) {
+        const weatherInfo = getWeatherInfo(data.current.weather_code);
+        setWeather({
+          temperature: Math.round(data.current.temperature_2m),
+          description: weatherInfo.description,
+          icon: weatherInfo.icon,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch weather:", error);
+    }
+  };
 
   const fetchKids = async () => {
     try {
@@ -75,9 +169,17 @@ export default function ParentDashboardHeader() {
         <h1 className="text-3xl font-bold text-gray-900">
           {greeting && userName ? `${t(greeting)}, ${userName}` : t("dashboard")}
         </h1>
-        {dateString && (
-          <p className="mt-1 text-gray-500">{dateString}</p>
-        )}
+        <div className="mt-1 flex items-center gap-3 text-gray-500">
+          {dateString && <span>{dateString}</span>}
+          {weather && (
+            <span className="flex items-center gap-1 text-gray-600">
+              <span className="text-lg">{weather.icon}</span>
+              <span>{weather.temperature}°F</span>
+              <span className="text-gray-400">·</span>
+              <span className="text-sm">{weather.description}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {kids.length > 0 && (
