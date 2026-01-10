@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import CalendarConnectionCard from "./CalendarConnectionCard";
 import CalendarMonthView from "./CalendarMonthView";
-import CalendarEventsList from "./CalendarEventsList";
 import CalendarEventForm from "./CalendarEventForm";
 
 interface CalendarSettings {
@@ -191,15 +190,8 @@ export default function CalendarView() {
         onDateChange={setSelectedDate}
         events={events}
         loading={eventsLoading}
-      />
-
-      {/* Events list */}
-      <CalendarEventsList
-        events={events}
-        selectedDate={selectedDate}
-        onEdit={handleEditEvent}
-        onDelete={handleDeleteEvent}
-        loading={eventsLoading}
+        onEventClick={handleEditEvent}
+        onEventDelete={handleDeleteEvent}
       />
 
       {/* Event form modal */}

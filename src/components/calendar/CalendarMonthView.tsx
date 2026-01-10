@@ -1,13 +1,35 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
 interface CalendarEvent {
   id: string;
   summary: string;
+  description?: string;
+  location?: string;
   start: { dateTime?: string; date?: string };
   end: { dateTime?: string; date?: string };
+  htmlLink?: string;
+}
+
+// Family member color mapping
+const FAMILY_MEMBERS = [
+  { name: "Jasper", color: "bg-purple-100 text-purple-800", dotColor: "bg-purple-500" },
+  { name: "Mingfei", color: "bg-green-100 text-green-800", dotColor: "bg-green-500" },
+  { name: "Yue", color: "bg-pink-100 text-pink-800", dotColor: "bg-pink-500" },
+];
+
+const DEFAULT_COLOR = { color: "bg-blue-100 text-blue-800", dotColor: "bg-blue-500" };
+
+function getEventColor(summary: string): { color: string; dotColor: string; member: string | null } {
+  const lowerSummary = summary.toLowerCase();
+  for (const member of FAMILY_MEMBERS) {
+    if (lowerSummary.includes(member.name.toLowerCase())) {
+      return { ...member, member: member.name };
+    }
+  }
+  return { ...DEFAULT_COLOR, member: null };
 }
 
 interface Props {
@@ -15,6 +37,8 @@ interface Props {
   onDateChange: (date: Date) => void;
   events: CalendarEvent[];
   loading: boolean;
+  onEventClick?: (event: CalendarEvent) => void;
+  onEventDelete?: (eventId: string) => void;
 }
 
 export default function CalendarMonthView({
@@ -22,8 +46,12 @@ export default function CalendarMonthView({
   onDateChange,
   events,
   loading,
+  onEventClick,
+  onEventDelete,
 }: Props) {
   const t = useTranslations("calendar");
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { days, firstDayOfWeek } = useMemo(() => {
     const year = selectedDate.getFullYear();
@@ -85,6 +113,60 @@ export default function CalendarMonthView({
       selectedDate.getMonth() + 1
     ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return eventsByDate[dateStr] || [];
+  };
+
+  const formatEventDateTime = (event: CalendarEvent) => {
+    if (event.start.date) {
+      const startDate = new Date(event.start.date + "T00:00:00");
+      const endDate = event.end.date ? new Date(event.end.date + "T00:00:00") : startDate;
+      endDate.setDate(endDate.getDate() - 1);
+
+      if (startDate.getTime() === endDate.getTime()) {
+        return startDate.toLocaleDateString(undefined, {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric"
+        });
+      }
+      return `${startDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })} - ${endDate.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
+    }
+
+    if (event.start.dateTime) {
+      const startTime = new Date(event.start.dateTime);
+      const endTime = event.end.dateTime ? new Date(event.end.dateTime) : startTime;
+
+      const dateStr = startTime.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric"
+      });
+      const startTimeStr = startTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      const endTimeStr = endTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+      return `${dateStr}, ${startTimeStr} - ${endTimeStr}`;
+    }
+    return "";
+  };
+
+  const handleEventClick = (event: CalendarEvent, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedEvent(event);
+  };
+
+  const handleEdit = () => {
+    if (selectedEvent && onEventClick) {
+      onEventClick(selectedEvent);
+      setSelectedEvent(null);
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedEvent && onEventDelete) {
+      onEventDelete(selectedEvent.id);
+      setSelectedEvent(null);
+      setIsDeleting(false);
+    }
   };
 
   const weekDays = [
@@ -170,6 +252,20 @@ export default function CalendarMonthView({
         </button>
       </div>
 
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 px-4 py-2 bg-gray-50 border-b text-xs">
+        {FAMILY_MEMBERS.map((member) => (
+          <div key={member.name} className="flex items-center gap-1.5">
+            <span className={`w-2.5 h-2.5 rounded-full ${member.dotColor}`}></span>
+            <span className="text-gray-600">{member.name}</span>
+          </div>
+        ))}
+        <div className="flex items-center gap-1.5">
+          <span className={`w-2.5 h-2.5 rounded-full ${DEFAULT_COLOR.dotColor}`}></span>
+          <span className="text-gray-600">{t("other") || "Other"}</span>
+        </div>
+      </div>
+
       {/* Week days header */}
       <div className="grid grid-cols-7 border-b bg-gray-50">
         {weekDays.map((day) => (
@@ -215,15 +311,19 @@ export default function CalendarMonthView({
               </div>
               {hasEvents && (
                 <div className="space-y-0.5">
-                  {dayEvents.slice(0, 3).map((event) => (
-                    <div
-                      key={event.id}
-                      className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded truncate"
-                      title={event.summary}
-                    >
-                      {event.summary}
-                    </div>
-                  ))}
+                  {dayEvents.slice(0, 3).map((event) => {
+                    const eventColor = getEventColor(event.summary);
+                    return (
+                      <button
+                        key={event.id}
+                        onClick={(e) => handleEventClick(event, e)}
+                        className={`w-full text-left text-xs ${eventColor.color} px-1 py-0.5 rounded truncate hover:opacity-80 transition cursor-pointer`}
+                        title={event.summary}
+                      >
+                        {event.summary}
+                      </button>
+                    );
+                  })}
                   {dayEvents.length > 3 && (
                     <div className="text-xs text-gray-500">
                       +{dayEvents.length - 3} {t("more")}
@@ -235,6 +335,131 @@ export default function CalendarMonthView({
           );
         })}
       </div>
+
+      {/* Event Details Modal */}
+      {selectedEvent && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => { setSelectedEvent(null); setIsDeleting(false); }}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between p-4 border-b">
+              <div className="flex items-center gap-3">
+                <span className={`w-3 h-3 rounded-full ${getEventColor(selectedEvent.summary).dotColor}`}></span>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedEvent.summary}</h3>
+              </div>
+              <button
+                onClick={() => { setSelectedEvent(null); setIsDeleting(false); }}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Delete Confirmation */}
+            {isDeleting ? (
+              <div className="p-4">
+                <p className="text-sm text-gray-700 mb-4">{t("confirmDelete") || "Are you sure you want to delete this event?"}</p>
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setIsDeleting(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition"
+                  >
+                    {t("cancel") || "Cancel"}
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition"
+                  >
+                    {t("delete") || "Delete"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Modal Body */}
+                <div className="p-4 space-y-4">
+                  {/* Date/Time */}
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm text-gray-900">{formatEventDateTime(selectedEvent)}</p>
+                      {selectedEvent.start.date && (
+                        <p className="text-xs text-gray-500 mt-0.5">{t("allDay")}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  {selectedEvent.location && (
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <p className="text-sm text-gray-900">{selectedEvent.location}</p>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  {selectedEvent.description && (
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                      </svg>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedEvent.description}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-between p-4 border-t bg-gray-50">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleEdit}
+                      className="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    >
+                      {t("edit") || "Edit"}
+                    </button>
+                    <button
+                      onClick={() => setIsDeleting(true)}
+                      className="px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                    >
+                      {t("delete") || "Delete"}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedEvent.htmlLink && (
+                      <a
+                        href={selectedEvent.htmlLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 transition"
+                      >
+                        {t("openInGoogle") || "Open in Google Calendar"}
+                      </a>
+                    )}
+                    <button
+                      onClick={() => setSelectedEvent(null)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition"
+                    >
+                      {t("close") || "Close"}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
