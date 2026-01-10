@@ -1,6 +1,8 @@
 import NextAuth from "next-auth";
+import type { Adapter } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db";
 import { compare } from "bcryptjs";
 
@@ -32,6 +34,7 @@ declare module "@auth/core/jwt" {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -106,33 +109,56 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
-        // For OAuth providers, create user if doesn't exist
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
+          include: { accounts: true },
         });
 
-        if (!existingUser) {
-          // Create new user for Google sign-in
-          const newUser = await prisma.user.create({
-            data: {
-              email: user.email!,
-              name: user.name,
-              image: user.image,
-              emailVerified: new Date(),
-              role: "PARENT", // Default to PARENT for OAuth sign-ins
-            },
-          });
-          // Update the user object with database info
-          user.id = newUser.id;
-          user.role = newUser.role;
-          user.familyId = newUser.familyId;
-        } else {
+        if (existingUser) {
+          // Check if Google account is already linked
+          const googleAccount = existingUser.accounts.find(
+            (acc) => acc.provider === "google"
+          );
+
+          if (!googleAccount) {
+            // Link Google account to existing user
+            await prisma.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                refresh_token: account.refresh_token,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+              },
+            });
+          } else {
+            // Update existing Google account with new tokens
+            await prisma.account.update({
+              where: { id: googleAccount.id },
+              data: {
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                refresh_token: account.refresh_token || googleAccount.refresh_token,
+                scope: account.scope,
+                id_token: account.id_token,
+              },
+            });
+          }
+
           // Update user object with existing database info
           user.id = existingUser.id;
           user.role = existingUser.role;
           user.familyId = existingUser.familyId;
+        } else {
+          // New user - let the adapter create them
+          user.role = "PARENT" as const;
         }
       }
       return true;

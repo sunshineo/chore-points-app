@@ -29,8 +29,7 @@ export default function MobileNav() {
     { href: "/chores", label: t("chores"), icon: "✅" },
     { href: "/ledger", label: t("pointsNav"), icon: "💎" },
     { href: "/rewards", label: t("rewards"), icon: "🎁" },
-    { href: "/milestones", label: t("milestones"), icon: "🌟" },
-    { href: "/gallery", label: t("gallery"), icon: "📷" },
+    { href: "/settings", label: t("settings"), icon: "⚙️" },
   ];
 
   const kidModeLinks = [

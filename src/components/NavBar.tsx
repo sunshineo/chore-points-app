@@ -172,6 +172,22 @@ export default function NavBar() {
                   >
                     {t("gallery")}
                   </Link>
+                  <Link
+                    href="/calendar"
+                    className={`hover:text-gray-300 transition ${
+                      pathname === "/calendar" ? "text-blue-400" : ""
+                    }`}
+                  >
+                    {t("calendar")}
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className={`hover:text-gray-300 transition ${
+                      pathname === "/settings" ? "text-blue-400" : ""
+                    }`}
+                  >
+                    {t("settings")}
+                  </Link>
                 </>
               ) : (
                 // Kid navigation

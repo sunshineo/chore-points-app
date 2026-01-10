@@ -1,44 +1,147 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import FamilyInviteCode from "@/components/family/FamilyInviteCode";
+import { useKidMode } from "@/components/providers/KidModeProvider";
 
-type ParentDashboardHeaderProps = {
-  familyName?: string | null;
-  kidsCount: number;
-  kidsNames: string;
-  inviteCode: string;
+type Kid = {
+  id: string;
+  name: string | null;
+  email: string;
 };
 
-export default function ParentDashboardHeader({
-  familyName,
-  kidsCount,
-  kidsNames,
-  inviteCode,
-}: ParentDashboardHeaderProps) {
+export default function ParentDashboardHeader() {
   const t = useTranslations("parent");
+  const tKidMode = useTranslations("kidMode");
+  const [kids, setKids] = useState<Kid[]>([]);
+  const [showKidSelector, setShowKidSelector] = useState(false);
+  const { setViewingAsKid } = useKidMode();
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchKids();
+  }, []);
+
+  const fetchKids = async () => {
+    try {
+      const response = await fetch("/api/family/kids");
+      const data = await response.json();
+      if (response.ok) {
+        setKids(data.kids);
+      }
+    } catch (error) {
+      console.error("Failed to fetch kids:", error);
+    }
+  };
+
+  const handleViewAsKid = (kid: Kid) => {
+    setViewingAsKid(kid);
+    setShowKidSelector(false);
+    router.push("/view-as/points");
+  };
 
   return (
-    <>
-      <h1 className="text-3xl font-bold text-gray-900">{t("dashboard")}</h1>
-      <p className="mt-2 text-gray-600">{t("dashboardDesc")}</p>
-
-      {/* Family Info Card Header */}
-      <div className="mt-6 bg-white shadow rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              {familyName || t("yourFamily")}
-            </h2>
-            <p className="text-sm text-gray-500">
-              {kidsCount === 0
-                ? t("noKidsYet")
-                : `${kidsCount} ${kidsCount > 1 ? "kids" : "kid"}: ${kidsNames}`}
-            </p>
-          </div>
-          <FamilyInviteCode inviteCode={inviteCode} />
-        </div>
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">{t("dashboard")}</h1>
+        <p className="mt-1 text-gray-600">{t("dashboardDesc")}</p>
       </div>
-    </>
+
+      {kids.length > 0 && (
+        <div className="relative">
+          {/* Single kid: direct navigation, no dropdown */}
+          {kids.length === 1 ? (
+            <button
+              onClick={() => handleViewAsKid(kids[0])}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all shadow-sm"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              {tKidMode("viewAsKid")}
+            </button>
+          ) : (
+            /* Multiple kids: show dropdown */
+            <>
+              <button
+                onClick={() => setShowKidSelector(!showKidSelector)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all shadow-sm"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                {tKidMode("viewAsKid")}
+                <svg
+                  className={`w-4 h-4 transition-transform ${showKidSelector ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {showKidSelector && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="px-3 py-2 text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                    {tKidMode("viewAsKidDesc")}
+                  </div>
+                  {kids.map((kid) => (
+                    <button
+                      key={kid.id}
+                      onClick={() => handleViewAsKid(kid)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition text-left"
+                    >
+                      <span className="text-xl">👤</span>
+                      <span className="font-medium text-gray-900">
+                        {kid.name || kid.email}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
