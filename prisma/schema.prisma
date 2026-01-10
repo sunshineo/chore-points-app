@@ -28,6 +28,7 @@ model User {
   image         String?
   password      String?
   role          Role      @default(PARENT)
+  lastViewedPoints  Int   @default(0)
   familyId      String?
   family        Family?   @relation(fields: [familyId], references: [id])
 

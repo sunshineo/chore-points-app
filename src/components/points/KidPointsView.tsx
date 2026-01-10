@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import ChoreFlashcards from "@/components/chores/ChoreFlashcards";
 import PointsCalendar from "@/components/points/PointsCalendar";
+import PointsCelebrationWrapper from "@/components/points/PointsCelebrationWrapper";
 
 type PointEntry = {
   id: string;
@@ -51,6 +52,7 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
   }
 
   return (
+    <PointsCelebrationWrapper kidId={kidId} currentPoints={totalPoints}>
     <div>
       {/* Custom animation for slow spin */}
       <style jsx>{`
@@ -114,5 +116,6 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
         <PointsCalendar entries={entries} />
       </div>
     </div>
+    </PointsCelebrationWrapper>
   );
 }
