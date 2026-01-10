@@ -92,10 +92,13 @@ export default function PhotoUploadForm({
       const uploadData = await uploadRes.json();
 
       if (!uploadRes.ok) {
+        console.error("File upload error:", uploadData);
         setError(uploadData.error || t("uploadFailed"));
         setUploading(false);
         return;
       }
+
+      console.log("File uploaded successfully:", uploadData.url);
 
       // Create point entry with 0 points (activity photo)
       const response = await fetch("/api/points", {
@@ -110,15 +113,17 @@ export default function PhotoUploadForm({
         }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const data = await response.json();
+        console.error("Photo upload error:", data);
         setError(data.error || tCommon("somethingWentWrong"));
         setUploading(false);
         return;
       }
 
       onSuccess();
-    } catch {
+    } catch (err) {
+      console.error("Photo upload exception:", err);
       setError(tCommon("somethingWentWrong"));
       setUploading(false);
     }
