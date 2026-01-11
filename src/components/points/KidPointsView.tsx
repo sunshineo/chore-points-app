@@ -70,7 +70,6 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
       <div className="mb-8">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl shadow-lg p-8 text-white">
           <div className="text-center">
-            <p className="text-lg font-medium opacity-90">{t("myPoints")}</p>
             {/* Mario-style Coin Counter */}
             <div className="flex items-center justify-center gap-4 mt-4">
               <div className="relative w-16 h-16 animate-spin-slow">
@@ -90,12 +89,20 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
             <p className="text-sm mt-4 opacity-75">
               {t("keepUpGreatWork")}
             </p>
-            <Link
-              href={readOnly ? "/view-as/points/history" : "/points/history"}
-              className="inline-block mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium transition-colors"
-            >
-              {t("viewHistory")}
-            </Link>
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <Link
+                href={readOnly ? "/view-as/points/history" : "/points/history"}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-medium transition-colors"
+              >
+                {t("viewHistory")}
+              </Link>
+              <Link
+                href={readOnly ? "/view-as/redeem" : "/redeem"}
+                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-full text-sm font-medium transition-colors"
+              >
+                {t("redeemRewards")}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
