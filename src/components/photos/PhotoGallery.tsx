@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import PhotoUploadForm from "./PhotoUploadForm";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 
 type Kid = {
   id: string;
@@ -201,10 +202,11 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
             onClick={() => setViewingPhoto(photo)}
           >
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              <img
+              <OptimizedImage
                 src={photo.photoUrl}
                 alt={photo.chore?.title || t("pointAward")}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                variant="thumbnail"
+                className="w-full h-full group-hover:scale-105 transition-transform duration-200"
               />
             </div>
             {/* Overlay with info on hover */}

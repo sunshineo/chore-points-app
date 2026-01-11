@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 
 type PhotoEntry = {
   id: string;
@@ -130,10 +131,12 @@ export default function PhotoCarousel() {
         onMouseLeave={() => setIsPaused(false)}
       >
         {/* Photo */}
-        <img
+        <OptimizedImage
           src={currentPhoto.photoUrl}
           alt={currentPhoto.chore?.title || currentPhoto.note || t("pointAward")}
-          className="w-full h-full object-contain"
+          variant="carousel"
+          className="w-full h-full"
+          priority={currentIndex === 0}
         />
 
         {/* Overlay with info */}
