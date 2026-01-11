@@ -113,18 +113,44 @@ export default function WeeklyCalendarView() {
   const firstWeekDays = twoWeeksDays.slice(0, 7);
   const secondWeekDays = twoWeeksDays.slice(7, 14);
 
-  // Mobile view: 6 days starting from today
-  const mobileDays = useMemo(() => {
+  // Mobile view: 6 days starting from mobileStartDate
+  const [mobileStartDate, setMobileStartDate] = useState(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    return today;
+  });
+
+  const mobileDays = useMemo(() => {
     const days = [];
     for (let i = 0; i < 6; i++) {
-      const day = new Date(today);
-      day.setDate(today.getDate() + i);
+      const day = new Date(mobileStartDate);
+      day.setDate(mobileStartDate.getDate() + i);
       days.push(day);
     }
     return days;
-  }, []);
+  }, [mobileStartDate]);
+
+  const goToPreviousMobileWeek = () => {
+    setMobileStartDate((prev) => {
+      const newStart = new Date(prev);
+      newStart.setDate(prev.getDate() - 6);
+      return newStart;
+    });
+  };
+
+  const goToNextMobileWeek = () => {
+    setMobileStartDate((prev) => {
+      const newStart = new Date(prev);
+      newStart.setDate(prev.getDate() + 6);
+      return newStart;
+    });
+  };
+
+  const goToMobileToday = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    setMobileStartDate(today);
+  };
 
   const loadSettings = useCallback(async () => {
     try {
@@ -514,11 +540,61 @@ export default function WeeklyCalendarView() {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
-        {/* Mobile: Simple title */}
-        <div className="md:hidden">
+        {/* Mobile: Navigation and date range */}
+        <div className="md:hidden flex items-center gap-1">
+          <button
+            onClick={goToPreviousMobileWeek}
+            className="p-2 min-h-[44px] min-w-[44px] hover:bg-gray-200 rounded transition flex items-center justify-center"
+          >
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={goToNextMobileWeek}
+            className="p-2 min-h-[44px] min-w-[44px] hover:bg-gray-200 rounded transition flex items-center justify-center"
+          >
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
           <span className="font-medium text-gray-900 text-sm">
-            {t("next6Days") || "Next 6 Days"}
+            {mobileDays[0].toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}{" "}
+            -{" "}
+            {mobileDays[5].toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+            })}
           </span>
+          <button
+            onClick={goToMobileToday}
+            className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 min-h-[44px] flex items-center"
+          >
+            {t("today")}
+          </button>
         </div>
 
         {/* Desktop: Navigation and date range */}
