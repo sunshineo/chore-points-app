@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/permissions";
+import { sensitiveRateLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 // POST /api/family/join - Join a family using invite code
 export async function POST(req: Request) {
+  // Rate limit: 10 attempts per minute per IP (prevents invite code brute-force)
+  const rateLimitResponse = checkRateLimit(req, sensitiveRateLimiter);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const session = await requireAuth();
     const { inviteCode } = await req.json();

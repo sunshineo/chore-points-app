@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { authRateLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  // Rate limit: 5 attempts per minute per IP
+  const rateLimitResponse = checkRateLimit(req, authRateLimiter);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const { email, password, name, inviteCode, registrationSecret, role: requestedRole } = await req.json();
 
