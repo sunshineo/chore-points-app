@@ -185,12 +185,12 @@ export default function ParentDashboardHeader() {
   const userName = session?.user?.name?.split(" ")[0] || "";
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           {greeting && userName ? `${t(greeting)}, ${userName}` : t("dashboard")}
         </h1>
-        <div className="mt-1 flex items-center gap-3 text-gray-500">
+        <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3 text-sm sm:text-base text-gray-500">
           {dateString && <span>{dateString}</span>}
           {weather && (
             <span className="flex items-center gap-1 text-gray-600">
@@ -215,7 +215,7 @@ export default function ParentDashboardHeader() {
           {kids.length === 1 ? (
             <button
               onClick={() => handleViewAsKid(kids[0])}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all shadow-sm"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all shadow-sm"
             >
               <svg
                 className="w-5 h-5"
@@ -243,7 +243,7 @@ export default function ParentDashboardHeader() {
             <>
               <button
                 onClick={() => setShowKidSelector(!showKidSelector)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all shadow-sm"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg hover:from-green-600 hover:to-teal-600 transition-all shadow-sm"
               >
                 <svg
                   className="w-5 h-5"
