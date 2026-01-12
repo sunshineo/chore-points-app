@@ -26,6 +26,14 @@ type PointEntryFormProps = {
   onSuccess: () => void;
 };
 
+// Helper to format date in local timezone as YYYY-MM-DD
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function PointEntryForm({
   kidId,
   entry,
@@ -44,8 +52,8 @@ export default function PointEntryForm({
   const [note, setNote] = useState(entry?.note || "");
   const [date, setDate] = useState(
     entry?.date
-      ? new Date(entry.date).toISOString().split("T")[0]
-      : new Date().toISOString().split("T")[0]
+      ? toLocalDateString(new Date(entry.date))
+      : toLocalDateString(new Date())
   );
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(entry?.photoUrl || null);

@@ -19,6 +19,14 @@ interface Props {
   onSave: () => void;
 }
 
+// Helper to format date in local timezone as YYYY-MM-DD
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Family members for event assignment
 const FAMILY_MEMBERS = ["Jasper", "Mingfei", "Yue"];
 
@@ -91,18 +99,18 @@ export default function CalendarEventForm({
       } else if (event.start.dateTime) {
         setAllDay(false);
         const start = new Date(event.start.dateTime);
-        setStartDate(start.toISOString().split("T")[0]);
+        setStartDate(toLocalDateString(start));
         setStartTime(start.toTimeString().slice(0, 5));
 
         if (event.end.dateTime) {
           const end = new Date(event.end.dateTime);
-          setEndDate(end.toISOString().split("T")[0]);
+          setEndDate(toLocalDateString(end));
           setEndTime(end.toTimeString().slice(0, 5));
         }
       }
     } else {
       // Default to selected date
-      const dateStr = selectedDate.toISOString().split("T")[0];
+      const dateStr = toLocalDateString(selectedDate);
       setStartDate(dateStr);
       setEndDate(dateStr);
       setStartTime("09:00");

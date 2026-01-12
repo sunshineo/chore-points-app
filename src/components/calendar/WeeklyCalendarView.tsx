@@ -19,6 +19,14 @@ interface CalendarSettings {
   selectedCalendarName: string | null;
 }
 
+// Helper to format date in local timezone as YYYY-MM-DD
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Family member color mapping
 const FAMILY_MEMBERS = [
   { name: "Jasper", color: "bg-purple-100 text-purple-800", dotColor: "bg-purple-500" },
@@ -233,7 +241,7 @@ export default function WeeklyCalendarView() {
   };
 
   const getEventsForDay = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = toLocalDateString(date);
     return events.filter((event) => {
       const eventDate = event.start.date || event.start.dateTime?.split("T")[0];
       return eventDate === dateStr;
@@ -251,7 +259,7 @@ export default function WeeklyCalendarView() {
 
   const startCreateMode = () => {
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const todayStr = toLocalDateString(today);
     const currentTime = today.toTimeString().slice(0, 5);
     // Default to 1 hour duration
     const endTime = new Date(today);
@@ -298,7 +306,7 @@ export default function WeeklyCalendarView() {
         // Add 1 day to end for Google Calendar all-day events
         const endDate = new Date(editForm.endDate + "T00:00:00");
         endDate.setDate(endDate.getDate() + 1);
-        eventData.end = { date: endDate.toISOString().split("T")[0] };
+        eventData.end = { date: toLocalDateString(endDate) };
       } else {
         eventData.start = { dateTime: new Date(`${editForm.startDate}T${editForm.startTime}`).toISOString() };
         eventData.end = { dateTime: new Date(`${editForm.endDate}T${editForm.endTime}`).toISOString() };
@@ -337,15 +345,15 @@ export default function WeeklyCalendarView() {
       if (endDate) {
         const end = new Date(endDate + "T00:00:00");
         end.setDate(end.getDate() - 1);
-        endDate = end.toISOString().split("T")[0];
+        endDate = toLocalDateString(end);
       }
     } else if (event.start.dateTime) {
       const start = new Date(event.start.dateTime);
-      startDate = start.toISOString().split("T")[0];
+      startDate = toLocalDateString(start);
       startTime = start.toTimeString().slice(0, 5);
       if (event.end.dateTime) {
         const end = new Date(event.end.dateTime);
-        endDate = end.toISOString().split("T")[0];
+        endDate = toLocalDateString(end);
         endTime = end.toTimeString().slice(0, 5);
       }
     }
@@ -394,7 +402,7 @@ export default function WeeklyCalendarView() {
         // Add 1 day to end for Google Calendar all-day events
         const endDate = new Date(editForm.endDate + "T00:00:00");
         endDate.setDate(endDate.getDate() + 1);
-        eventData.end = { date: endDate.toISOString().split("T")[0] };
+        eventData.end = { date: toLocalDateString(endDate) };
       } else {
         eventData.start = { dateTime: new Date(`${editForm.startDate}T${editForm.startTime}`).toISOString() };
         eventData.end = { dateTime: new Date(`${editForm.endDate}T${editForm.endTime}`).toISOString() };
