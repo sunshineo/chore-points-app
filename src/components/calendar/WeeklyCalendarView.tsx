@@ -243,8 +243,22 @@ export default function WeeklyCalendarView() {
   const getEventsForDay = (date: Date) => {
     const dateStr = toLocalDateString(date);
     return events.filter((event) => {
-      const eventDate = event.start.date || event.start.dateTime?.split("T")[0];
-      return eventDate === dateStr;
+      // Use local timezone for dateTime events to avoid UTC date shift
+      const startStr = event.start.date || (event.start.dateTime ? toLocalDateString(new Date(event.start.dateTime)) : undefined);
+      const endStr = event.end.date || (event.end.dateTime ? toLocalDateString(new Date(event.end.dateTime)) : undefined);
+
+      if (!startStr) return false;
+
+      // For all-day events, Google Calendar end date is exclusive (day after last day)
+      let adjustedEndStr = endStr || startStr;
+      if (event.start.date && event.end.date && endStr) {
+        const endDate = new Date(endStr + "T00:00:00");
+        endDate.setDate(endDate.getDate() - 1);
+        adjustedEndStr = toLocalDateString(endDate);
+      }
+
+      // Check if the date falls within the event's range
+      return dateStr >= startStr && dateStr <= adjustedEndStr;
     });
   };
 
@@ -255,6 +269,20 @@ export default function WeeklyCalendarView() {
       return time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     }
     return "";
+  };
+
+  const formatEventTime = (event: CalendarEvent, currentDate: Date): string | null => {
+    if (event.start.date) return null; // All-day event, no time to display
+    if (event.start.dateTime) {
+      const startTime = new Date(event.start.dateTime);
+      // Only show time on the first day of multi-day events
+      const eventStartDate = toLocalDateString(startTime);
+      const currentDateStr = toLocalDateString(currentDate);
+      if (eventStartDate !== currentDateStr) return null;
+
+      return startTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    }
+    return null;
   };
 
   const startCreateMode = () => {
@@ -731,14 +759,18 @@ export default function WeeklyCalendarView() {
                 <div className="px-1 py-1 space-y-0.5">
                   {dayEvents.slice(0, 2).map((event) => {
                     const eventColor = getEventColor(event.summary);
+                    const eventTime = formatEventTime(event, day);
                     return (
                       <button
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
-                        className={`w-full text-left text-xs ${eventColor.color} px-1.5 py-1 min-h-[28px] rounded truncate hover:opacity-80 transition cursor-pointer`}
+                        className={`w-full text-xs ${eventColor.color} px-1.5 py-1 rounded hover:opacity-80 transition cursor-pointer`}
                         title={`${formatTime(event)} - ${event.summary}`}
                       >
-                        {event.summary}
+                        <div className="truncate text-left">{event.summary}</div>
+                        {eventTime && (
+                          <div className="text-[10px] opacity-75 mt-0.5 text-left">{eventTime}</div>
+                        )}
                       </button>
                     );
                   })}
@@ -781,14 +813,18 @@ export default function WeeklyCalendarView() {
                 <div className="px-1 py-1 space-y-0.5">
                   {dayEvents.slice(0, 2).map((event) => {
                     const eventColor = getEventColor(event.summary);
+                    const eventTime = formatEventTime(event, day);
                     return (
                       <button
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
-                        className={`w-full text-left text-xs ${eventColor.color} px-1.5 py-1 min-h-[28px] rounded truncate hover:opacity-80 transition cursor-pointer`}
+                        className={`w-full text-xs ${eventColor.color} px-1.5 py-1 rounded hover:opacity-80 transition cursor-pointer`}
                         title={`${formatTime(event)} - ${event.summary}`}
                       >
-                        {event.summary}
+                        <div className="truncate text-left">{event.summary}</div>
+                        {eventTime && (
+                          <div className="text-[10px] opacity-75 mt-0.5 text-left">{eventTime}</div>
+                        )}
                       </button>
                     );
                   })}
@@ -843,14 +879,18 @@ export default function WeeklyCalendarView() {
                 <div className="px-1 pb-1 space-y-0.5">
                   {dayEvents.slice(0, 2).map((event) => {
                     const eventColor = getEventColor(event.summary);
+                    const eventTime = formatEventTime(event, day);
                     return (
                       <button
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
-                        className={`w-full text-left text-xs ${eventColor.color} px-1.5 py-1 min-h-[28px] rounded truncate hover:opacity-80 transition cursor-pointer`}
+                        className={`w-full text-xs ${eventColor.color} px-1.5 py-1 rounded hover:opacity-80 transition cursor-pointer`}
                         title={`${formatTime(event)} - ${event.summary}`}
                       >
-                        {event.summary}
+                        <div className="truncate text-left">{event.summary}</div>
+                        {eventTime && (
+                          <div className="text-[10px] opacity-75 mt-0.5 text-left">{eventTime}</div>
+                        )}
                       </button>
                     );
                   })}
@@ -896,14 +936,18 @@ export default function WeeklyCalendarView() {
                 <div className="px-1 pb-1 space-y-0.5">
                   {dayEvents.slice(0, 2).map((event) => {
                     const eventColor = getEventColor(event.summary);
+                    const eventTime = formatEventTime(event, day);
                     return (
                       <button
                         key={event.id}
                         onClick={() => setSelectedEvent(event)}
-                        className={`w-full text-left text-xs ${eventColor.color} px-1.5 py-1 min-h-[28px] rounded truncate hover:opacity-80 transition cursor-pointer`}
+                        className={`w-full text-xs ${eventColor.color} px-1.5 py-1 rounded hover:opacity-80 transition cursor-pointer`}
                         title={`${formatTime(event)} - ${event.summary}`}
                       >
-                        {event.summary}
+                        <div className="truncate text-left">{event.summary}</div>
+                        {eventTime && (
+                          <div className="text-[10px] opacity-75 mt-0.5 text-left">{eventTime}</div>
+                        )}
                       </button>
                     );
                   })}

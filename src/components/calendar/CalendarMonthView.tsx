@@ -13,6 +13,14 @@ interface CalendarEvent {
   htmlLink?: string;
 }
 
+// Helper to format date in local timezone as YYYY-MM-DD
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Family member color mapping
 const FAMILY_MEMBERS = [
   { name: "Jasper", color: "bg-purple-100 text-purple-800", dotColor: "bg-purple-500" },
@@ -21,6 +29,19 @@ const FAMILY_MEMBERS = [
 ];
 
 const DEFAULT_COLOR = { color: "bg-blue-100 text-blue-800", dotColor: "bg-blue-500" };
+
+function formatEventTime(event: CalendarEvent, currentDateStr: string): string | null {
+  if (event.start.date) return null; // All-day event, no time
+  if (event.start.dateTime) {
+    const startTime = new Date(event.start.dateTime);
+    // Only show time on the first day of multi-day events
+    const eventStartDate = toLocalDateString(startTime);
+    if (eventStartDate !== currentDateStr) return null;
+
+    return startTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  return null;
+}
 
 function getEventColor(summary: string): { color: string; dotColor: string; member: string | null } {
   const lowerSummary = summary.toLowerCase();
@@ -70,14 +91,53 @@ export default function CalendarMonthView({
     return { days, firstDayOfWeek };
   }, [selectedDate]);
 
-  // Group events by date
+  // Helper to generate all dates between start and end (inclusive)
+  const getDatesBetween = (startStr: string, endStr: string): string[] => {
+    const dates: string[] = [];
+    const start = new Date(startStr + "T00:00:00");
+    const end = new Date(endStr + "T00:00:00");
+
+    const current = new Date(start);
+    while (current <= end) {
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, "0");
+      const day = String(current.getDate()).padStart(2, "0");
+      dates.push(`${year}-${month}-${day}`);
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
+  // Group events by date (including multi-day events on all their dates)
   const eventsByDate = useMemo(() => {
     const map: Record<string, CalendarEvent[]> = {};
     events.forEach((event) => {
-      const dateStr = event.start.date || event.start.dateTime?.split("T")[0];
-      if (dateStr) {
-        if (!map[dateStr]) map[dateStr] = [];
-        map[dateStr].push(event);
+      // Use local timezone for dateTime events to avoid UTC date shift
+      const startStr = event.start.date || (event.start.dateTime ? toLocalDateString(new Date(event.start.dateTime)) : undefined);
+      const endStr = event.end.date || (event.end.dateTime ? toLocalDateString(new Date(event.end.dateTime)) : undefined);
+
+      if (startStr && endStr) {
+        // For all-day events, Google Calendar end date is exclusive (day after last day)
+        // So we need to subtract 1 day from the end date
+        let adjustedEndStr = endStr;
+        if (event.start.date && event.end.date) {
+          const endDate = new Date(endStr + "T00:00:00");
+          endDate.setDate(endDate.getDate() - 1);
+          const year = endDate.getFullYear();
+          const month = String(endDate.getMonth() + 1).padStart(2, "0");
+          const day = String(endDate.getDate()).padStart(2, "0");
+          adjustedEndStr = `${year}-${month}-${day}`;
+        }
+
+        const dates = getDatesBetween(startStr, adjustedEndStr);
+        dates.forEach((dateStr) => {
+          if (!map[dateStr]) map[dateStr] = [];
+          map[dateStr].push(event);
+        });
+      } else if (startStr) {
+        // Fallback for events with only start date
+        if (!map[startStr]) map[startStr] = [];
+        map[startStr].push(event);
       }
     });
     return map;
@@ -292,6 +352,9 @@ export default function CalendarMonthView({
         {days.map((day) => {
           const dayEvents = getEventsForDay(day);
           const hasEvents = dayEvents.length > 0;
+          const dateStr = `${selectedDate.getFullYear()}-${String(
+            selectedDate.getMonth() + 1
+          ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
           return (
             <div
@@ -313,14 +376,18 @@ export default function CalendarMonthView({
                 <div className="space-y-0.5">
                   {dayEvents.slice(0, 3).map((event) => {
                     const eventColor = getEventColor(event.summary);
+                    const eventTime = formatEventTime(event, dateStr);
                     return (
                       <button
                         key={event.id}
                         onClick={(e) => handleEventClick(event, e)}
-                        className={`w-full text-left text-xs ${eventColor.color} px-1 py-0.5 rounded truncate hover:opacity-80 transition cursor-pointer`}
+                        className={`w-full text-xs ${eventColor.color} px-1 py-0.5 rounded hover:opacity-80 transition cursor-pointer`}
                         title={event.summary}
                       >
-                        {event.summary}
+                        <div className="truncate text-left">{event.summary}</div>
+                        {eventTime && (
+                          <div className="text-[10px] opacity-75 mt-0.5 text-left">{eventTime}</div>
+                        )}
                       </button>
                     );
                   })}
