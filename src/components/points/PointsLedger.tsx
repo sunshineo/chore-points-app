@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import PointEntryForm from "./PointEntryForm";
+import BadgeLevelUpToast from "@/components/badges/BadgeLevelUpToast";
+import AchievementBadgeToast from "@/components/badges/AchievementBadgeToast";
 
 type Kid = {
   id: string;
@@ -23,6 +25,25 @@ type PointEntry = {
   redemption: { reward: { title: string } } | null;
 };
 
+type BadgeLevelUpInfo = {
+  choreTitle: string;
+  choreIcon: string | null;
+  newLevel: number;
+  levelName: string | null;
+  levelIcon: string | null;
+  count: number;
+  isFirstTime: boolean;
+};
+
+type AchievementBadgeInfo = {
+  badgeId: string;
+  name: string;
+  nameZh: string;
+  description: string;
+  descriptionZh: string;
+  icon: string;
+};
+
 export default function PointsLedger() {
   const [kids, setKids] = useState<Kid[]>([]);
   const [selectedKid, setSelectedKid] = useState<Kid | null>(null);
@@ -31,6 +52,8 @@ export default function PointsLedger() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PointEntry | null>(null);
+  const [badgeLevelUp, setBadgeLevelUp] = useState<BadgeLevelUpInfo | null>(null);
+  const [achievementBadges, setAchievementBadges] = useState<AchievementBadgeInfo[]>([]);
   const t = useTranslations("parent");
   const tCommon = useTranslations("common");
   const tHistory = useTranslations("history");
@@ -101,11 +124,17 @@ export default function PointsLedger() {
     setEditingEntry(null);
   };
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (levelUpInfo?: BadgeLevelUpInfo | null, newAchievementBadges?: AchievementBadgeInfo[] | null) => {
     if (selectedKid) {
       fetchPoints(selectedKid.id);
     }
     handleFormClose();
+    if (levelUpInfo) {
+      setBadgeLevelUp(levelUpInfo);
+    }
+    if (newAchievementBadges && newAchievementBadges.length > 0) {
+      setAchievementBadges(newAchievementBadges);
+    }
   };
 
   if (loading) {
@@ -278,6 +307,22 @@ export default function PointsLedger() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Badge level-up notification */}
+      {badgeLevelUp && (
+        <BadgeLevelUpToast
+          levelUpInfo={badgeLevelUp}
+          onClose={() => setBadgeLevelUp(null)}
+        />
+      )}
+
+      {/* Achievement badge notification */}
+      {achievementBadges.length > 0 && (
+        <AchievementBadgeToast
+          badges={achievementBadges}
+          onClose={() => setAchievementBadges([])}
+        />
       )}
     </div>
   );

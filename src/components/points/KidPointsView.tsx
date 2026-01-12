@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import ChoreFlashcards from "@/components/chores/ChoreFlashcards";
 import PointsCalendar from "@/components/points/PointsCalendar";
 import PointsCelebrationWrapper from "@/components/points/PointsCelebrationWrapper";
+import BadgeShowcase from "@/components/badges/BadgeShowcase";
 
 type PointEntry = {
   id: string;
@@ -27,6 +28,7 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
   const [loading, setLoading] = useState(true);
   const t = useTranslations("points");
   const tCommon = useTranslations("common");
+  const tBadges = useTranslations("badges");
 
   useEffect(() => {
     fetchPoints();
@@ -122,6 +124,14 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
           {t("myCalendar")}
         </h2>
         <PointsCalendar entries={entries} />
+      </div>
+
+      {/* Badges Section */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          {tBadges("myBadges")}
+        </h2>
+        <BadgeShowcase kidId={kidId} />
       </div>
 
       {/* Chore Flashcards Section */}

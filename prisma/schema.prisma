@@ -47,6 +47,8 @@ model User {
   createdTodos        FamilyTodo[]  @relation("TodoCreatedBy")
   photos              Photo[]       @relation("KidPhotos")
   createdPhotos       Photo[]       @relation("PhotoCreatedBy")
+  badges              Badge[]       @relation("KidBadges")
+  achievementBadges   AchievementBadge[] @relation("KidAchievementBadges")
 
   // NextAuth fields
   accounts      Account[]
@@ -72,6 +74,8 @@ model Family {
   calendarSettings CalendarSettings?
   todos       FamilyTodo[]
   photos      Photo[]
+  badges      Badge[]
+  achievementBadges AchievementBadge[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -93,6 +97,7 @@ model Chore {
   updatedBy     User     @relation("ChoreUpdatedBy", fields: [updatedById], references: [id])
 
   pointEntries  PointEntry[]
+  badges        Badge[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -301,6 +306,53 @@ model Photo {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([familyId])
+  @@index([kidId])
+  @@index([familyId, kidId])
+}
+
+model Badge {
+  id          String   @id @default(cuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  kidId       String
+  kid         User     @relation("KidBadges", fields: [kidId], references: [id], onDelete: Cascade)
+
+  choreId     String
+  chore       Chore    @relation(fields: [choreId], references: [id], onDelete: Cascade)
+
+  count       Int      @default(0)
+  level       Int      @default(0)
+
+  firstEarnedAt  DateTime?
+  lastLevelUpAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([kidId, choreId])
+  @@index([familyId])
+  @@index([kidId])
+  @@index([familyId, kidId])
+}
+
+model AchievementBadge {
+  id              String   @id @default(cuid())
+  familyId        String
+  family          Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  kidId           String
+  kid             User     @relation("KidAchievementBadges", fields: [kidId], references: [id], onDelete: Cascade)
+
+  badgeId         String   // Maps to badge definition ID in code
+  earnedAt        DateTime @default(now())
+  metadata        Json?    // Store relevant data (e.g., streak dates, milestone value)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([kidId, badgeId]) // Each kid can only earn each badge once
   @@index([familyId])
   @@index([kidId])
   @@index([familyId, kidId])

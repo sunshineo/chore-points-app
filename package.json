@@ -49,6 +49,7 @@
     "jsdom": "^27.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vercel": "^50.1.6",
     "vitest": "^4.0.16"
   }
 }

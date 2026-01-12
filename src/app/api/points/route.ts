@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireFamily } from "@/lib/permissions";
+import { calculateLevel, getLevelInfo } from "@/lib/badges";
+import { evaluateAndAwardBadges } from "@/lib/badge-evaluator";
 
 // GET /api/points - Get kid's total points and ledger history
 export async function GET(req: Request) {
@@ -146,7 +148,7 @@ export async function POST(req: Request) {
       },
       include: {
         chore: {
-          select: { title: true },
+          select: { title: true, icon: true },
         },
         createdBy: {
           select: { name: true, email: true },
@@ -157,7 +159,79 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ pointEntry }, { status: 201 });
+    // Update badge if this is a chore completion (positive points with choreId)
+    let badgeLevelUp = null;
+    if (choreId && points > 0) {
+      // Get or create badge
+      const existingBadge = await prisma.badge.findUnique({
+        where: {
+          kidId_choreId: { kidId, choreId },
+        },
+      });
+
+      const now = new Date();
+      const newCount = (existingBadge?.count || 0) + 1;
+      const newLevel = calculateLevel(newCount);
+      const oldLevel = existingBadge?.level || 0;
+      const leveledUp = newLevel > oldLevel;
+
+      const badge = await prisma.badge.upsert({
+        where: {
+          kidId_choreId: { kidId, choreId },
+        },
+        create: {
+          familyId: session.user.familyId!,
+          kidId,
+          choreId,
+          count: 1,
+          level: newLevel,
+          firstEarnedAt: now,
+          lastLevelUpAt: now,
+        },
+        update: {
+          count: newCount,
+          level: newLevel,
+          ...(leveledUp ? { lastLevelUpAt: now } : {}),
+        },
+        include: {
+          chore: {
+            select: { title: true, icon: true },
+          },
+        },
+      });
+
+      // Return level-up info if badge leveled up
+      if (leveledUp) {
+        const levelInfo = getLevelInfo(newLevel);
+        badgeLevelUp = {
+          choreTitle: badge.chore.title,
+          choreIcon: badge.chore.icon,
+          newLevel,
+          levelName: levelInfo?.name || null,
+          levelIcon: levelInfo?.icon || null,
+          count: newCount,
+          isFirstTime: oldLevel === 0,
+        };
+      }
+    }
+
+    // Evaluate achievement badges (runs async to check all badge rules)
+    const achievementBadges = await evaluateAndAwardBadges(
+      prisma,
+      kidId,
+      session.user.familyId!,
+      {
+        points,
+        choreId: choreId || null,
+        date: pointEntry.date,
+      }
+    );
+
+    return NextResponse.json({
+      pointEntry,
+      badgeLevelUp,
+      achievementBadges: achievementBadges.length > 0 ? achievementBadges : null,
+    }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Something went wrong" },

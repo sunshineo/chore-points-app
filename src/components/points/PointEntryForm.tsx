@@ -19,11 +19,30 @@ type PointEntry = {
   choreId?: string | null;
 };
 
+type BadgeLevelUpInfo = {
+  choreTitle: string;
+  choreIcon: string | null;
+  newLevel: number;
+  levelName: string | null;
+  levelIcon: string | null;
+  count: number;
+  isFirstTime: boolean;
+};
+
+type AchievementBadgeInfo = {
+  badgeId: string;
+  name: string;
+  nameZh: string;
+  description: string;
+  descriptionZh: string;
+  icon: string;
+};
+
 type PointEntryFormProps = {
   kidId: string;
   entry?: PointEntry | null;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (badgeLevelUp?: BadgeLevelUpInfo | null, achievementBadges?: AchievementBadgeInfo[] | null) => void;
 };
 
 // Helper to format date in local timezone as YYYY-MM-DD
@@ -191,7 +210,7 @@ export default function PointEntryForm({
         return;
       }
 
-      onSuccess();
+      onSuccess(data.badgeLevelUp || null, data.achievementBadges || null);
     } catch {
       setError("Something went wrong");
       setLoading(false);

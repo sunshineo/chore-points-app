@@ -455,5 +455,30 @@
     "delete": "删除",
     "deleting": "删除中...",
     "confirmDelete": "删除此项？"
+  },
+  "badges": {
+    "title": "徽章",
+    "myBadges": "我的徽章",
+    "noBadgesYet": "还没有徽章",
+    "startEarning": "完成家务开始收集徽章！",
+    "level": "等级",
+    "times": "次",
+    "timesCompleted": "已完成 {count} 次",
+    "progress": "进度",
+    "nextLevel": "下一级需要 {count} 次",
+    "maxLevel": "已达最高等级！",
+    "firstTime": "第一次！",
+    "levelUp": "升级了！",
+    "newBadge": "新徽章！",
+    "levelNames": {
+      "starter": "新手",
+      "bronze": "青铜",
+      "silver": "白银",
+      "gold": "黄金",
+      "platinum": "白金",
+      "super": "超级"
+    },
+    "earnedBadge": "你获得了一个徽章！",
+    "reachedLevel": "你达到了{level}等级！"
   }
 }

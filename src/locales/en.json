@@ -455,5 +455,30 @@
     "delete": "Delete",
     "deleting": "Deleting...",
     "confirmDelete": "Delete this item?"
+  },
+  "badges": {
+    "title": "Badges",
+    "myBadges": "My Badges",
+    "noBadgesYet": "No badges yet",
+    "startEarning": "Complete chores to start earning badges!",
+    "level": "Level",
+    "times": "times",
+    "timesCompleted": "{count} times completed",
+    "progress": "Progress",
+    "nextLevel": "Next level at {count}",
+    "maxLevel": "Max level reached!",
+    "firstTime": "First time!",
+    "levelUp": "Level Up!",
+    "newBadge": "New Badge!",
+    "levelNames": {
+      "starter": "Starter",
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "platinum": "Platinum",
+      "super": "Super"
+    },
+    "earnedBadge": "You earned a badge!",
+    "reachedLevel": "You reached {level} level!"
   }
 }
