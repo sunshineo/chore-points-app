@@ -147,7 +147,8 @@
     "pointsColumn": "积分",
     "note": "备注",
     "noEntries": "还没有积分记录。完成家务开始赚取积分！",
-    "redeemed": "兑换了："
+    "redeemed": "兑换了：",
+    "custom": "自定义"
   },
   "rewards": {
     "redeemRewards": "兑换奖励",

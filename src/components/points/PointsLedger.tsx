@@ -152,7 +152,7 @@ export default function PointsLedger() {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -186,7 +186,7 @@ export default function PointsLedger() {
                     {new Date(entry.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {entry.chore?.title || "-"}
+                    {entry.chore?.title || (entry.points > 0 ? tHistory("custom") : "-")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span

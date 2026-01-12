@@ -138,7 +138,8 @@
     "pointsColumn": "Points",
     "note": "Note",
     "noEntries": "No point entries yet. Complete chores to start earning points!",
-    "redeemed": "Redeemed:"
+    "redeemed": "Redeemed:",
+    "custom": "Custom"
   },
   "rewards": {
     "redeemRewards": "Redeem Rewards",

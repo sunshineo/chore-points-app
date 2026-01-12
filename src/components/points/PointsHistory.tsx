@@ -56,7 +56,7 @@ export default function PointsHistory({ kidId }: PointsHistoryProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -81,7 +81,7 @@ export default function PointsHistory({ kidId }: PointsHistoryProps) {
                 {new Date(entry.date).toLocaleDateString()}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {entry.chore?.title || "-"}
+                {entry.chore?.title || (entry.points > 0 ? t("custom") : "-")}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span
