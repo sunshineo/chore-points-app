@@ -8,6 +8,37 @@ import {
   deleteEvent,
 } from "@/lib/google-calendar";
 
+// Convert a local datetime string (e.g., "2025-01-15T09:00:00") to ISO format with offset
+function toISOWithOffset(localDateTimeStr: string, timeZone: string): string {
+  // Parse the local datetime components
+  const [datePart, timePart] = localDateTimeStr.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute, second = 0] = timePart.split(":").map(Number);
+
+  // Create a date in the specified timezone and get the offset
+  const date = new Date(year, month - 1, day, hour, minute, second);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    timeZoneName: "shortOffset",
+  });
+  const parts = formatter.formatToParts(date);
+  const offsetPart = parts.find((p) => p.type === "timeZoneName");
+
+  // Parse offset like "GMT-8" or "GMT+5:30" to "-08:00" or "+05:30"
+  let offset = "+00:00";
+  if (offsetPart?.value) {
+    const match = offsetPart.value.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+    if (match) {
+      const sign = match[1];
+      const hours = match[2].padStart(2, "0");
+      const minutes = match[3] || "00";
+      offset = `${sign}${hours}:${minutes}`;
+    }
+  }
+
+  return `${localDateTimeStr}${offset}`;
+}
+
 interface RouteContext {
   params: Promise<{ eventId: string }>;
 }
@@ -86,32 +117,50 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     const body = await request.json();
-    const { summary, description, startDate, endDate, allDay, location, timeZone } = body;
+    const { summary, description, startDate, endDate, allDay, location, timeZone, start, end } = body;
 
     const accessToken = await getValidAccessToken(settings.connectedByUserId);
 
     // Use client-provided timezone, or fall back to server timezone
     const eventTimeZone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    const eventData = allDay
-      ? {
-          summary,
-          description,
-          location,
-          start: startDate ? { date: startDate.split("T")[0] } : undefined,
-          end: endDate ? { date: endDate.split("T")[0] } : undefined,
-        }
-      : {
-          summary,
-          description,
-          location,
-          start: startDate
-            ? { dateTime: startDate, timeZone: eventTimeZone }
-            : undefined,
-          end: endDate
-            ? { dateTime: endDate, timeZone: eventTimeZone }
-            : undefined,
-        };
+    let eventData: Record<string, unknown>;
+
+    // Handle two different payload formats:
+    // 1. CalendarEventForm sends: { startDate, endDate, allDay, timeZone }
+    // 2. WeeklyCalendarView sends: { start: {dateTime/date}, end: {dateTime/date} }
+    if (start || end) {
+      // WeeklyCalendarView format - pass through start/end objects directly
+      eventData = {
+        summary,
+        description,
+        location,
+        start,
+        end,
+      };
+    } else if (allDay) {
+      // CalendarEventForm all-day format
+      eventData = {
+        summary,
+        description,
+        location,
+        start: startDate ? { date: startDate.split("T")[0] } : undefined,
+        end: endDate ? { date: endDate.split("T")[0] } : undefined,
+      };
+    } else {
+      // CalendarEventForm timed event format
+      eventData = {
+        summary,
+        description,
+        location,
+        start: startDate
+          ? { dateTime: toISOWithOffset(startDate, eventTimeZone), timeZone: eventTimeZone }
+          : undefined,
+        end: endDate
+          ? { dateTime: toISOWithOffset(endDate, eventTimeZone), timeZone: eventTimeZone }
+          : undefined,
+      };
+    }
 
     // Remove undefined values
     const cleanEventData = Object.fromEntries(

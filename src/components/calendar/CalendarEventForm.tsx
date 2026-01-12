@@ -61,6 +61,56 @@ function formatTitleWithMember(title: string, member: string): string {
   return `${member} - ${title}`;
 }
 
+// Generate time options in 5-minute increments
+function generateTimeOptions(): string[] {
+  const options: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 5) {
+      const hour = String(h).padStart(2, '0');
+      const minute = String(m).padStart(2, '0');
+      options.push(`${hour}:${minute}`);
+    }
+  }
+  return options;
+}
+
+// Round time to next half hour
+function roundToNextHalfHour(date: Date): string {
+  const minutes = date.getMinutes();
+  const hours = date.getHours();
+
+  let newMinutes: number;
+  let newHours = hours;
+
+  if (minutes === 0) {
+    newMinutes = 0;
+  } else if (minutes <= 30) {
+    newMinutes = 30;
+  } else {
+    newMinutes = 0;
+    newHours = (hours + 1) % 24;
+  }
+
+  return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
+}
+
+// Convert time string to minutes for duration calculation
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+// Convert minutes to time string
+function minutesToTime(totalMinutes: number): string {
+  // Handle day overflow
+  const normalizedMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalizedMinutes / 60);
+  const minutes = normalizedMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+const TIME_OPTIONS = generateTimeOptions();
+
 export default function CalendarEventForm({
   event,
   selectedDate,
@@ -77,6 +127,7 @@ export default function CalendarEventForm({
   const [startTime, setStartTime] = useState("");
   const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [duration, setDuration] = useState(60); // Duration in minutes
   const [allDay, setAllDay] = useState(false);
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -84,6 +135,16 @@ export default function CalendarEventForm({
 
   // Get the user's timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  // Round time to nearest 5 minutes
+  const roundToNearest5 = (time: string): string => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const roundedMinutes = Math.round(minutes / 5) * 5;
+    if (roundedMinutes === 60) {
+      return `${String((hours + 1) % 24).padStart(2, '0')}:00`;
+    }
+    return `${String(hours).padStart(2, '0')}:${String(roundedMinutes).padStart(2, '0')}`;
+  };
 
   // Initialize form with event data or defaults
   useEffect(() => {
@@ -102,25 +163,92 @@ export default function CalendarEventForm({
       } else if (event.start.dateTime) {
         setAllDay(false);
         const start = new Date(event.start.dateTime);
+        const startTimeRaw = start.toTimeString().slice(0, 5);
+        const startTimeRounded = roundToNearest5(startTimeRaw);
         setStartDate(toLocalDateString(start));
-        setStartTime(start.toTimeString().slice(0, 5));
+        setStartTime(startTimeRounded);
 
         if (event.end.dateTime) {
           const end = new Date(event.end.dateTime);
+          const endTimeRaw = end.toTimeString().slice(0, 5);
+          const endTimeRounded = roundToNearest5(endTimeRaw);
           setEndDate(toLocalDateString(end));
-          setEndTime(end.toTimeString().slice(0, 5));
+          setEndTime(endTimeRounded);
+          // Calculate duration
+          const startMinutes = timeToMinutes(startTimeRounded);
+          const endMinutes = timeToMinutes(endTimeRounded);
+          const calcDuration = endMinutes - startMinutes + (toLocalDateString(end) !== toLocalDateString(start) ? 1440 : 0);
+          setDuration(calcDuration > 0 ? calcDuration : 60);
         }
       }
     } else {
-      // Default to selected date
+      // Default to selected date with start time rounded to next half hour
       const dateStr = toLocalDateString(selectedDate);
+      const now = new Date();
+      const defaultStartTime = roundToNextHalfHour(now);
+      const defaultEndTime = minutesToTime(timeToMinutes(defaultStartTime) + 60);
+
       setStartDate(dateStr);
       setEndDate(dateStr);
-      setStartTime("09:00");
-      setEndTime("10:00");
+      setStartTime(defaultStartTime);
+      setEndTime(defaultEndTime);
+      setDuration(60);
       setSelectedMember("");
     }
   }, [event, selectedDate]);
+
+  // Handle start date change - update end date to maintain the same day gap
+  const handleStartDateChange = (newStartDate: string) => {
+    // Guard against empty dates
+    if (!startDate || !endDate) {
+      setStartDate(newStartDate);
+      setEndDate(newStartDate);
+      return;
+    }
+
+    // Calculate the day gap between current start and end dates
+    // Use T12:00:00 to avoid timezone edge cases
+    const currentStart = new Date(startDate + "T12:00:00");
+    const currentEnd = new Date(endDate + "T12:00:00");
+    const dayGap = Math.round((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Apply the same day gap to the new start date
+    const newStart = new Date(newStartDate + "T12:00:00");
+    const newEnd = new Date(newStart);
+    newEnd.setDate(newEnd.getDate() + dayGap);
+
+    setStartDate(newStartDate);
+    setEndDate(toLocalDateString(newEnd));
+  };
+
+  // Handle start time change - update end time to maintain duration
+  const handleStartTimeChange = (newStartTime: string) => {
+    setStartTime(newStartTime);
+    const newEndMinutes = timeToMinutes(newStartTime) + duration;
+    const newEndTime = minutesToTime(newEndMinutes);
+    setEndTime(newEndTime);
+    // If end time wraps to next day, update end date
+    if (newEndMinutes >= 1440) {
+      const nextDay = new Date(startDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setEndDate(toLocalDateString(nextDay));
+    } else {
+      setEndDate(startDate);
+    }
+  };
+
+  // Handle end time change - update duration
+  const handleEndTimeChange = (newEndTime: string) => {
+    setEndTime(newEndTime);
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(newEndTime);
+    let newDuration = endMinutes - startMinutes;
+    // Handle if end time is on next day
+    if (endDate > startDate || newDuration < 0) {
+      newDuration += 1440;
+    }
+    setDuration(newDuration > 0 ? newDuration : 60);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,8 +256,9 @@ export default function CalendarEventForm({
     setLoading(true);
 
     try {
-      // Format the title with family member if selected
-      const finalSummary = formatTitleWithMember(summary, selectedMember);
+      // Format the title with family member if selected, default to "Untitled" if empty
+      const titleToUse = summary.trim() || "Untitled";
+      const finalSummary = formatTitleWithMember(titleToUse, selectedMember);
 
       const eventData = {
         summary: finalSummary,
@@ -171,8 +300,8 @@ export default function CalendarEventForm({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0">
           <h3 className="text-lg font-semibold text-gray-900">
             {event ? t("editEvent") : t("addEvent")}
           </h3>
@@ -196,7 +325,8 @@ export default function CalendarEventForm({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="p-4 space-y-4 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
@@ -244,15 +374,14 @@ export default function CalendarEventForm({
           {/* Event Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t("eventTitle")} *
+              {t("eventTitle")}
             </label>
             <input
               type="text"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              required
+              placeholder="Untitled"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              placeholder={t("eventTitlePlaceholder")}
             />
           </div>
 
@@ -289,7 +418,7 @@ export default function CalendarEventForm({
               <input
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => handleStartDateChange(e.target.value)}
                 required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
               />
@@ -299,13 +428,18 @@ export default function CalendarEventForm({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t("startTime")} *
                 </label>
-                <input
-                  type="time"
+                <select
                   value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                />
+                >
+                  {TIME_OPTIONS.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
@@ -329,13 +463,18 @@ export default function CalendarEventForm({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t("endTime")} *
                 </label>
-                <input
-                  type="time"
+                <select
                   value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
+                  onChange={(e) => handleEndTimeChange(e.target.value)}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                />
+                >
+                  {TIME_OPTIONS.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
@@ -367,9 +506,10 @@ export default function CalendarEventForm({
               placeholder={t("descriptionPlaceholder")}
             />
           </div>
+          </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          {/* Buttons - Fixed at bottom */}
+          <div className="flex justify-end gap-3 p-4 bg-gray-50 flex-shrink-0 rounded-b-lg">
             <button
               type="button"
               onClick={onClose}
@@ -379,7 +519,7 @@ export default function CalendarEventForm({
             </button>
             <button
               type="submit"
-              disabled={loading || !summary || !startDate}
+              disabled={loading || !startDate}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading

@@ -114,8 +114,6 @@ export default function CalendarView() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm(t("confirmDelete"))) return;
-
     try {
       const res = await fetch(`/api/calendar/events/${eventId}`, {
         method: "DELETE",
@@ -144,32 +142,44 @@ export default function CalendarView() {
   // Show connection card if not connected
   if (!settings?.isConnected) {
     return (
-      <CalendarConnectionCard
-        onConnect={handleSettingsUpdate}
-        settings={settings}
-      />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t("pageTitle")}</h1>
+          <p className="text-gray-500 mt-1">{t("pageDesc")}</p>
+        </div>
+        <CalendarConnectionCard
+          onConnect={handleSettingsUpdate}
+          settings={settings}
+        />
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Action buttons */}
-      <div className="flex justify-end gap-2">
-        <button
-          onClick={() => {
-            setEditingEvent(null);
-            setShowEventForm(true);
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
-        >
-          + {t("addEvent")}
-        </button>
-        <button
-          onClick={handleDisconnect}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
-        >
-          {t("disconnect")}
-        </button>
+      {/* Header with action buttons */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t("pageTitle")}</h1>
+          <p className="text-gray-500 mt-1">{t("pageDesc")}</p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => {
+              setEditingEvent(null);
+              setShowEventForm(true);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+          >
+            + {t("addEvent")}
+          </button>
+          <button
+            onClick={handleDisconnect}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm"
+          >
+            {t("disconnect")}
+          </button>
+        </div>
       </div>
 
       {error && (
