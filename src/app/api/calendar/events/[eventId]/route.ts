@@ -86,9 +86,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     const body = await request.json();
-    const { summary, description, startDate, endDate, allDay, location } = body;
+    const { summary, description, startDate, endDate, allDay, location, timeZone } = body;
 
     const accessToken = await getValidAccessToken(settings.connectedByUserId);
+
+    // Use client-provided timezone, or fall back to server timezone
+    const eventTimeZone = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     const eventData = allDay
       ? {
@@ -103,10 +106,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           description,
           location,
           start: startDate
-            ? { dateTime: startDate, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+            ? { dateTime: startDate, timeZone: eventTimeZone }
             : undefined,
           end: endDate
-            ? { dateTime: endDate, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+            ? { dateTime: endDate, timeZone: eventTimeZone }
             : undefined,
         };
 

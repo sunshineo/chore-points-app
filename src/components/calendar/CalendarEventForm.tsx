@@ -82,6 +82,9 @@ export default function CalendarEventForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Get the user's timezone
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   // Initialize form with event data or defaults
   useEffect(() => {
     if (event) {
@@ -139,6 +142,7 @@ export default function CalendarEventForm({
         endDate: allDay
           ? endDate
           : `${endDate}T${endTime}:00`,
+        timeZone: userTimezone,
       };
 
       const url = event
@@ -265,6 +269,16 @@ export default function CalendarEventForm({
               {t("allDayEvent")}
             </label>
           </div>
+
+          {/* Timezone indicator */}
+          {!allDay && (
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{t("timezone")}: {userTimezone}</span>
+            </div>
+          )}
 
           {/* Start Date/Time */}
           <div className="grid grid-cols-2 gap-4">

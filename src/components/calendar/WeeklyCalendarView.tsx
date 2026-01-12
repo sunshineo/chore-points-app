@@ -970,20 +970,20 @@ export default function WeeklyCalendarView() {
           onClick={() => { setSelectedEvent(null); setIsEditing(false); setIsDeleting(false); }}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-auto"
+            className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-auto overflow-x-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-start justify-between p-4 border-b">
-              <div className="flex items-center gap-3">
-                <span className={`w-3 h-3 rounded-full ${getEventColor(selectedEvent.summary).dotColor}`}></span>
-                <h3 className="text-lg font-semibold text-gray-900">
+            <div className="flex items-start justify-between gap-3 p-4 border-b">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                <span className={`w-3 h-3 rounded-full flex-shrink-0 mt-1.5 ${getEventColor(selectedEvent.summary).dotColor}`}></span>
+                <h3 className="text-lg font-semibold text-gray-900 break-words">
                   {isEditing ? (t("editEvent") || "Edit Event") : selectedEvent.summary}
                 </h3>
               </div>
               <button
                 onClick={() => { setSelectedEvent(null); setIsEditing(false); setIsDeleting(false); }}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-gray-400 hover:text-gray-600 transition flex-shrink-0"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1202,22 +1202,22 @@ export default function WeeklyCalendarView() {
 
                   {/* Location */}
                   {selectedEvent.location && (
-                    <div className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <p className="text-sm text-gray-900">{selectedEvent.location}</p>
+                      <p className="text-sm text-gray-900 break-words min-w-0">{selectedEvent.location}</p>
                     </div>
                   )}
 
                   {/* Description */}
                   {selectedEvent.description && (
-                    <div className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <svg className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                       </svg>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedEvent.description}</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap break-words min-w-0">{selectedEvent.description}</p>
                     </div>
                   )}
                 </div>
@@ -1270,7 +1270,7 @@ export default function WeeklyCalendarView() {
           onClick={() => setIsCreating(false)}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-auto"
+            className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
