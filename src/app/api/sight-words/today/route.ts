@@ -83,12 +83,8 @@ export async function GET(req: Request) {
           }
         } else {
           // Completed before today - counts toward overall progress
+          // but should NOT be selected as today's word (we want to advance to next uncompleted word)
           completedCount++;
-          if (!todaysWord) {
-            // This is the next word to learn (previously learned, but not today)
-            todaysWord = word;
-            alreadyCompletedToday = false;
-          }
         }
       } else {
         // Never completed - this is the next word to learn
