@@ -245,6 +245,15 @@ export default function BadgeImageUpload({
         </div>
       )}
 
+      {/* Hidden file input - always in DOM for reliable ref access */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
       {imageUrl ? (
         <div className="relative inline-block">
           <img
@@ -261,8 +270,9 @@ export default function BadgeImageUpload({
           </button>
         </div>
       ) : (
-        <label
-          htmlFor="badge-image-upload"
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
           className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-colors"
         >
           <svg
@@ -278,16 +288,7 @@ export default function BadgeImageUpload({
               d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
-          <input
-            id="badge-image-upload"
-            key={imageUrl ? "has-image" : "no-image"}
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-        </label>
+        </button>
       )}
       <p className="mt-1 text-xs text-gray-500">
         Upload a custom image (optional)
