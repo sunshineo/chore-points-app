@@ -78,6 +78,10 @@ export default function CalendarView() {
 
       if (res.ok) {
         setEvents(data.events || []);
+      } else if (res.status === 401) {
+        // Token expired/revoked - need to reconnect
+        setSettings((prev) => prev ? { ...prev, isConnected: false } : null);
+        setEvents([]);
       } else {
         setError(data.error || t("failedToLoadEvents"));
       }
@@ -121,6 +125,10 @@ export default function CalendarView() {
 
       if (res.ok) {
         loadEvents();
+      } else if (res.status === 401) {
+        // Token expired/revoked - need to reconnect
+        setSettings((prev) => prev ? { ...prev, isConnected: false } : null);
+        setEvents([]);
       } else {
         const data = await res.json();
         setError(data.error || t("failedToDeleteEvent"));
