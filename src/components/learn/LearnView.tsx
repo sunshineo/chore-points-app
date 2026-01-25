@@ -33,7 +33,10 @@ export default function LearnView({ kidId }: { kidId?: string }) {
 
   const fetchTodaysWord = async () => {
     try {
-      const url = kidId ? `/api/sight-words/today?kidId=${kidId}` : "/api/sight-words/today";
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const params = new URLSearchParams({ timezone });
+      if (kidId) params.set("kidId", kidId);
+      const url = `/api/sight-words/today?${params.toString()}`;
       const response = await fetch(url);
       const result = await response.json();
       if (response.ok) {
@@ -59,6 +62,7 @@ export default function LearnView({ kidId }: { kidId?: string }) {
     setSubmitting(true);
 
     try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const response = await fetch("/api/sight-words/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,6 +70,7 @@ export default function LearnView({ kidId }: { kidId?: string }) {
           sightWordId: data.sightWord.id,
           answer: answer.trim(),
           kidId, // Pass kidId for view-as mode
+          timezone,
         }),
       });
 

@@ -31,6 +31,9 @@ export async function GET(req: Request) {
       );
     }
 
+    // Get timezone from query params (sent by client)
+    const timezone = searchParams.get("timezone") || "America/Los_Angeles";
+
     // Get all active sight words for the family, ordered by sortOrder
     const allWords = await prisma.sightWord.findMany({
       where: {
@@ -56,11 +59,16 @@ export async function GET(req: Request) {
     // Build a map of wordId -> progress
     const progressMap = new Map(progress.map((p) => [p.sightWordId, p]));
 
-    // Get today's date in UTC for timezone-agnostic comparison
-    const todayUTC = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+    // Helper to get date string in user's timezone
+    const getLocalDateString = (date: Date, tz: string): string => {
+      return date.toLocaleDateString("en-CA", { timeZone: tz }); // "YYYY-MM-DD" format
+    };
+
+    // Get today's date in user's timezone
+    const todayLocal = getLocalDateString(new Date(), timezone);
 
     // Find the first word that hasn't been completed today
-    // A word is "completed for today" if quizPassedAt is today (in UTC)
+    // A word is "completed for today" if quizPassedAt is today (in user's timezone)
     let todaysWord = null;
     let completedCount = 0;
     let alreadyCompletedToday = false;
@@ -69,12 +77,13 @@ export async function GET(req: Request) {
       const wordProgress = progressMap.get(word.id);
 
       if (wordProgress?.quizPassedAt) {
-        const passedDateUTC = new Date(wordProgress.quizPassedAt)
-          .toISOString()
-          .split("T")[0];
+        const passedDateLocal = getLocalDateString(
+          new Date(wordProgress.quizPassedAt),
+          timezone
+        );
 
-        if (passedDateUTC === todayUTC) {
-          // This word was completed today (in UTC)
+        if (passedDateLocal === todayLocal) {
+          // This word was completed today (in user's timezone)
           completedCount++;
           if (!todaysWord) {
             // This is today's word (already completed)

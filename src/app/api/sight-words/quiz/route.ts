@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     const session = await requireFamily();
 
-    const { sightWordId, answer, kidId } = await req.json();
+    const { sightWordId, answer, kidId, timezone = "America/Los_Angeles" } = await req.json();
 
     // Determine the target kid - either the logged-in kid, or the kid specified by parent
     let targetKidId = session.user.id;
@@ -61,8 +61,13 @@ export async function POST(req: Request) {
       });
     }
 
-    // Check if already completed today (using UTC for timezone-agnostic comparison)
-    const todayUTC = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+    // Helper to get date string in user's timezone
+    const getLocalDateString = (date: Date, tz: string): string => {
+      return date.toLocaleDateString("en-CA", { timeZone: tz }); // "YYYY-MM-DD" format
+    };
+
+    // Get today's date in user's timezone
+    const todayLocal = getLocalDateString(new Date(), timezone);
 
     const existingProgress = await prisma.sightWordProgress.findUnique({
       where: {
@@ -73,13 +78,14 @@ export async function POST(req: Request) {
       },
     });
 
-    // Check if already passed today
+    // Check if already passed today (in user's timezone)
     let alreadyPassedToday = false;
     if (existingProgress?.quizPassedAt) {
-      const passedDateUTC = new Date(existingProgress.quizPassedAt)
-        .toISOString()
-        .split("T")[0];
-      alreadyPassedToday = passedDateUTC === todayUTC;
+      const passedDateLocal = getLocalDateString(
+        new Date(existingProgress.quizPassedAt),
+        timezone
+      );
+      alreadyPassedToday = passedDateLocal === todayLocal;
     }
 
     if (alreadyPassedToday) {
