@@ -209,6 +209,14 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
                 className="w-full h-full group-hover:scale-105 transition-transform duration-200"
               />
             </div>
+            {/* Points text - always visible at bottom */}
+            {photo.points > 0 && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 rounded-b-lg">
+                <p className="text-green-400 text-sm font-semibold">
+                  +{photo.points} {tCommon("points")}
+                </p>
+              </div>
+            )}
             {/* Overlay with info on hover */}
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex flex-col justify-end p-3">
               <p className="text-white text-sm font-medium truncate">
