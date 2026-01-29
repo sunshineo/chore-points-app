@@ -193,7 +193,7 @@ export default function NavBar() {
                       pathname === "/sight-words" ? "text-blue-400" : ""
                     }`}
                   >
-                    {t("sightWords")}
+                    {t("learn")}
                   </Link>
                   <Link
                     href="/settings"
