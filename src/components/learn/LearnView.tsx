@@ -17,7 +17,12 @@ type TodayResponse = {
   progress: { current: number; total: number };
 };
 
-export default function LearnView({ kidId }: { kidId?: string }) {
+type Props = {
+  kidId?: string;
+  onComplete?: () => void;
+};
+
+export default function LearnView({ kidId, onComplete }: Props) {
   const [data, setData] = useState<TodayResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [showQuiz, setShowQuiz] = useState(false);
@@ -30,6 +35,12 @@ export default function LearnView({ kidId }: { kidId?: string }) {
   useEffect(() => {
     fetchTodaysWord();
   }, [kidId]);
+
+  useEffect(() => {
+    if (data?.alreadyCompletedToday) {
+      onComplete?.();
+    }
+  }, [data?.alreadyCompletedToday, onComplete]);
 
   const fetchTodaysWord = async () => {
     try {
@@ -101,6 +112,7 @@ export default function LearnView({ kidId }: { kidId?: string }) {
               }
             : null
         );
+        onComplete?.();
       }
     } catch (error) {
       console.error("Failed to submit quiz:", error);
