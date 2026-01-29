@@ -151,6 +151,15 @@ export default function MathModule({ kidId, locked, onComplete }: Props) {
     );
   }
 
+  // No data state (API error)
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-gray-500">Failed to load math problems</div>
+      </div>
+    );
+  }
+
   // Both complete state
   if (bothComplete) {
     return (
