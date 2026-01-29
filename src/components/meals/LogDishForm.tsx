@@ -1,0 +1,325 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
+
+type Dish = {
+  id: string;
+  name: string;
+  photoUrl: string;
+};
+
+type LogDishFormProps = {
+  onClose: () => void;
+  onSuccess: () => void;
+};
+
+export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
+  const t = useTranslations("meals");
+  const tCommon = useTranslations("common");
+
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [isNewDish, setIsNewDish] = useState(false);
+  const [newDishName, setNewDishName] = useState("");
+  const [mealType, setMealType] = useState<"BREAKFAST" | "LUNCH" | "DINNER">("DINNER");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchDishes();
+  }, []);
+
+  const fetchDishes = async () => {
+    try {
+      const response = await fetch("/api/dishes");
+      const data = await response.json();
+      if (response.ok) {
+        setDishes(data.dishes);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dishes:", err);
+    }
+  };
+
+  const filteredDishes = dishes.filter((dish) =>
+    dish.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("File too large (max 5MB)");
+        return;
+      }
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadPhoto = async (): Promise<string | null> => {
+    if (!photoFile) return null;
+
+    const formData = new FormData();
+    formData.append("file", photoFile);
+
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to upload photo");
+    }
+
+    const data = await response.json();
+    return data.url;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSaving(true);
+
+    try {
+      let photoUrl: string | null = null;
+
+      // Upload photo if provided
+      if (photoFile) {
+        photoUrl = await uploadPhoto();
+      }
+
+      // For new dish, photo is required
+      if (isNewDish && !photoUrl) {
+        setError(t("photoRequired"));
+        setSaving(false);
+        return;
+      }
+
+      const body: Record<string, unknown> = {
+        mealType,
+        date,
+      };
+
+      if (isNewDish) {
+        body.newDish = {
+          name: newDishName,
+          photoUrl,
+        };
+      } else if (selectedDish) {
+        body.dishId = selectedDish.id;
+      } else {
+        setError("Please select a dish or add a new one");
+        setSaving(false);
+        return;
+      }
+
+      const response = await fetch("/api/meals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to log meal");
+      }
+
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-900">{t("logDish")}</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Dish Selection */}
+            {!isNewDish ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("selectExisting")}
+                </label>
+                <input
+                  type="text"
+                  placeholder={t("searchDishes")}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md mb-2"
+                />
+                <div className="max-h-40 overflow-y-auto border rounded-md">
+                  {filteredDishes.length === 0 ? (
+                    <div className="p-3 text-gray-500 text-sm">
+                      {t("noMatchingDishes")}
+                    </div>
+                  ) : (
+                    filteredDishes.map((dish) => (
+                      <button
+                        key={dish.id}
+                        type="button"
+                        onClick={() => setSelectedDish(dish)}
+                        className={`w-full p-2 text-left flex items-center gap-2 hover:bg-gray-50 ${
+                          selectedDish?.id === dish.id ? "bg-orange-50 border-l-2 border-orange-500" : ""
+                        }`}
+                      >
+                        <img
+                          src={dish.photoUrl}
+                          alt={dish.name}
+                          className="w-10 h-10 rounded object-cover"
+                        />
+                        <span className="text-sm">{dish.name}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsNewDish(true)}
+                  className="mt-2 text-sm text-orange-600 hover:text-orange-700"
+                >
+                  + {t("orAddNew")}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t("dishName")}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsNewDish(false);
+                      setNewDishName("");
+                      setPhotoFile(null);
+                      setPhotoPreview(null);
+                    }}
+                    className="text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    {t("selectExisting")}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={newDishName}
+                  onChange={(e) => setNewDishName(e.target.value)}
+                  placeholder={t("dishNamePlaceholder")}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required={isNewDish}
+                />
+              </div>
+            )}
+
+            {/* Photo Upload (required for new, optional for existing) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("photo")} {isNewDish ? `(${t("photoRequired")})` : `(${t("photoOptional")})`}
+              </label>
+              {photoPreview ? (
+                <div className="relative">
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    className="w-full h-40 object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoFile(null);
+                      setPhotoPreview(null);
+                    }}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <label className="block w-full p-4 border-2 border-dashed rounded-md text-center cursor-pointer hover:border-orange-500">
+                  <span className="text-gray-500">Click to upload</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Meal Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("mealType")}
+              </label>
+              <select
+                value={mealType}
+                onChange={(e) => setMealType(e.target.value as "BREAKFAST" | "LUNCH" | "DINNER")}
+                className="w-full px-3 py-2 border rounded-md"
+              >
+                <option value="BREAKFAST">{t("breakfast")}</option>
+                <option value="LUNCH">{t("lunch")}</option>
+                <option value="DINNER">{t("dinner")}</option>
+              </select>
+            </div>
+
+            {/* Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("date")}
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+
+            {/* Submit */}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                {tCommon("cancel")}
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 disabled:opacity-50"
+              >
+                {saving ? t("logging") : t("logMeal")}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
