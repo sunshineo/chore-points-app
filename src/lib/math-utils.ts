@@ -33,8 +33,8 @@ export type DailyMathProblems = {
 
 /**
  * Generate deterministic math problems for a given date and kid.
- * Addition: two numbers that sum to <= 99
- * Subtraction: first number <= 100, second <= first (result >= 0)
+ * Addition: 1-digit + 2-digits (e.g., 5 + 23)
+ * Subtraction: 2-digits - 1-digit (e.g., 45 - 7)
  */
 export function generateDailyMathProblems(
   dateStr: string,
@@ -43,16 +43,14 @@ export function generateDailyMathProblems(
   const seed = createSeed(dateStr, kidId);
   const random = mulberry32(seed);
 
-  // Addition: a + b <= 99
-  // Pick a between 1-98, then b between 1-(99-a)
-  const addA = Math.floor(random() * 98) + 1; // 1-98
-  const maxAddB = 99 - addA;
-  const addB = Math.floor(random() * maxAddB) + 1; // 1 to (99-a)
+  // Addition: 1-digit (1-9) + 2-digits (10-99)
+  const addA = Math.floor(random() * 9) + 1; // 1-9
+  const addB = Math.floor(random() * 90) + 10; // 10-99
 
-  // Subtraction: a <= 100, b <= a, result >= 0
-  // Pick a between 2-100, then b between 1-(a-1) to ensure positive result
-  const subA = Math.floor(random() * 99) + 2; // 2-100
-  const subB = Math.floor(random() * (subA - 1)) + 1; // 1 to (a-1)
+  // Subtraction: 2-digits (10-99) - 1-digit (1-9), ensuring result >= 0
+  const subA = Math.floor(random() * 90) + 10; // 10-99
+  const maxSubB = Math.min(9, subA - 1); // 1-9, but not more than subA-1
+  const subB = Math.floor(random() * maxSubB) + 1; // 1 to min(9, subA-1)
 
   return {
     addition: { a: addA, b: addB, answer: addA + addB },
