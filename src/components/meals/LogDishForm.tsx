@@ -31,10 +31,7 @@ export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
   const [isNewDish, setIsNewDish] = useState(false);
   const [newDishName, setNewDishName] = useState("");
   const [mealType, setMealType] = useState<"BREAKFAST" | "LUNCH" | "DINNER">("DINNER");
-  const [date, setDate] = useState(() => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  });
+  const [date, setDate] = useState("");
   const [cookedById, setCookedById] = useState<string>("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -42,6 +39,9 @@ export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Set date on client side to use local timezone
+    const today = new Date();
+    setDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
     fetchDishes();
     fetchParents();
   }, []);
