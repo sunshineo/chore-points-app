@@ -56,6 +56,7 @@ model User {
   badges              Badge[]       @relation("KidBadges")
   achievementBadges   AchievementBadge[] @relation("KidAchievementBadges")
   sightWordProgress   SightWordProgress[] @relation("KidSightWordProgress")
+  mathProgress        MathProgress[] @relation("KidMathProgress")
   createdSightWords   SightWord[]   @relation("SightWordCreatedBy")
   updatedSightWords   SightWord[]   @relation("SightWordUpdatedBy")
   createdBadgeTemplates BadgeTemplate[] @relation("BadgeTemplateCreatedBy")
@@ -422,6 +423,24 @@ model SightWordProgress {
   @@unique([kidId, sightWordId])
   @@index([kidId])
   @@index([sightWordId])
+}
+
+model MathProgress {
+  id                  String    @id @default(cuid())
+
+  kidId               String
+  kid                 User      @relation("KidMathProgress", fields: [kidId], references: [id], onDelete: Cascade)
+
+  date                String    // "YYYY-MM-DD" in user's timezone
+  additionPassedAt    DateTime?
+  subtractionPassedAt DateTime?
+  pointAwarded        Boolean   @default(false)
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([kidId, date])
+  @@index([kidId])
 }
 
 model BadgeTemplate {
