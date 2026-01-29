@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/permissions";
-import LearnView from "@/components/learn/LearnView";
+import LearningCenter from "@/components/learn/LearningCenter";
 
 export default async function LearnPage() {
   const session = await getSession();
@@ -21,10 +21,10 @@ export default async function LearnPage() {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50">
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Learn Words</h1>
-          <p className="text-gray-600 mt-1">Practice your sight words!</p>
+          <h1 className="text-3xl font-bold text-gray-800">Learning Center</h1>
+          <p className="text-gray-600 mt-1">Daily sight words and math practice</p>
         </div>
-        <LearnView />
+        <LearningCenter />
       </div>
     </div>
   );
