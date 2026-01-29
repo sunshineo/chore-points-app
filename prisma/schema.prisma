@@ -20,6 +20,12 @@ enum RedemptionStatus {
   DENIED
 }
 
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -54,6 +60,9 @@ model User {
   updatedSightWords   SightWord[]   @relation("SightWordUpdatedBy")
   createdBadgeTemplates BadgeTemplate[] @relation("BadgeTemplateCreatedBy")
   updatedBadgeTemplates BadgeTemplate[] @relation("BadgeTemplateUpdatedBy")
+  createdDishes     Dish[]       @relation("DishCreatedBy")
+  loggedMeals       MealLog[]    @relation("MealLoggedBy")
+  weeklyVotes       WeeklyVote[] @relation("VoteCastBy")
 
   // NextAuth fields
   accounts      Account[]
@@ -83,6 +92,9 @@ model Family {
   achievementBadges AchievementBadge[]
   sightWords  SightWord[]
   badgeTemplates BadgeTemplate[]
+  dishes      Dish[]
+  mealLogs    MealLog[]
+  weeklyVotes WeeklyVote[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -443,4 +455,73 @@ model BadgeTemplate {
   @@unique([familyId, builtInBadgeId])
   @@unique([familyId, choreId, type])
   @@index([familyId])
+}
+
+model Dish {
+  id          String   @id @default(cuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  name        String
+  photoUrl    String
+  totalVotes  Int      @default(0)
+
+  createdById String
+  createdBy   User     @relation("DishCreatedBy", fields: [createdById], references: [id])
+
+  mealLogs    MealLog[]
+  weeklyVotes WeeklyVote[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([familyId, totalVotes])
+}
+
+model MealLog {
+  id          String   @id @default(cuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  dishId      String
+  dish        Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  mealType    MealType
+  date        DateTime
+
+  loggedById  String
+  loggedBy    User     @relation("MealLoggedBy", fields: [loggedById], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([familyId])
+  @@index([familyId, date])
+  @@index([dishId])
+}
+
+model WeeklyVote {
+  id                 String   @id @default(cuid())
+  familyId           String
+  family             Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  dishId             String?
+  dish               Dish?    @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  suggestedDishName  String?
+
+  voterId            String
+  voter              User     @relation("VoteCastBy", fields: [voterId], references: [id])
+
+  weekStart          DateTime
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([familyId, voterId, dishId, weekStart])
+  @@unique([familyId, voterId, suggestedDishName, weekStart])
+  @@index([familyId])
+  @@index([familyId, weekStart])
+  @@index([voterId])
 }
