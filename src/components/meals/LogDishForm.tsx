@@ -9,6 +9,12 @@ type Dish = {
   photoUrl: string;
 };
 
+type Parent = {
+  id: string;
+  name: string | null;
+  email: string;
+};
+
 type LogDishFormProps = {
   onClose: () => void;
   onSuccess: () => void;
@@ -19,12 +25,14 @@ export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
   const tCommon = useTranslations("common");
 
   const [dishes, setDishes] = useState<Dish[]>([]);
+  const [parents, setParents] = useState<Parent[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [isNewDish, setIsNewDish] = useState(false);
   const [newDishName, setNewDishName] = useState("");
   const [mealType, setMealType] = useState<"BREAKFAST" | "LUNCH" | "DINNER">("DINNER");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [cookedById, setCookedById] = useState<string>("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -32,6 +40,7 @@ export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
 
   useEffect(() => {
     fetchDishes();
+    fetchParents();
   }, []);
 
   const fetchDishes = async () => {
@@ -43,6 +52,18 @@ export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
       }
     } catch (err) {
       console.error("Failed to fetch dishes:", err);
+    }
+  };
+
+  const fetchParents = async () => {
+    try {
+      const response = await fetch("/api/family/parents");
+      const data = await response.json();
+      if (response.ok) {
+        setParents(data.parents);
+      }
+    } catch (err) {
+      console.error("Failed to fetch parents:", err);
     }
   };
 
@@ -104,6 +125,7 @@ export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
       const body: Record<string, unknown> = {
         mealType,
         date,
+        cookedById: cookedById || undefined,
       };
 
       if (isNewDish) {
@@ -299,6 +321,27 @@ export default function LogDishForm({ onClose, onSuccess }: LogDishFormProps) {
                 className="w-full px-3 py-2 border rounded-md"
               />
             </div>
+
+            {/* Cooked By */}
+            {parents.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("selectCook")}
+                </label>
+                <select
+                  value={cookedById}
+                  onChange={(e) => setCookedById(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                >
+                  <option value="">--</option>
+                  {parents.map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.name || parent.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Submit */}
             <div className="flex gap-2 pt-2">

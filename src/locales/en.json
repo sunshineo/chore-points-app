@@ -586,6 +586,8 @@
     "noSuggestionsYet": "No new dish suggestions this week",
     "votedBy": "Voted by",
     "weekResets": "Week resets Monday",
-    "manageMeals": "Plan family meals together"
+    "manageMeals": "Plan family meals together",
+    "cookedBy": "Cooked by",
+    "selectCook": "Who cooked this?"
   }
 }

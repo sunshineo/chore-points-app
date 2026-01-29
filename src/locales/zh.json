@@ -586,6 +586,8 @@
     "noSuggestionsYet": "本周没有新菜建议",
     "votedBy": "投票人",
     "weekResets": "每周一重置",
-    "manageMeals": "一起计划家庭餐食"
+    "manageMeals": "一起计划家庭餐食",
+    "cookedBy": "谁做的",
+    "selectCook": "谁做了这道菜？"
   }
 }

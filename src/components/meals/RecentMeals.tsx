@@ -18,6 +18,10 @@ type Meal = {
     name: string | null;
     email: string;
   };
+  cookedBy: {
+    name: string | null;
+    email: string;
+  } | null;
 };
 
 export default function RecentMeals() {
@@ -122,9 +126,9 @@ export default function RecentMeals() {
                 <p className="text-sm text-gray-500">
                   {mealTypeLabel(meal.mealType)} •{" "}
                   {new Date(meal.date).toLocaleDateString()}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {meal.loggedBy.name || meal.loggedBy.email}
+                  {meal.cookedBy && (
+                    <> • {t("cookedBy")}: {meal.cookedBy.name || meal.cookedBy.email}</>
+                  )}
                 </p>
               </div>
             </div>

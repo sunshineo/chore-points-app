@@ -62,6 +62,7 @@ model User {
   updatedBadgeTemplates BadgeTemplate[] @relation("BadgeTemplateUpdatedBy")
   createdDishes     Dish[]       @relation("DishCreatedBy")
   loggedMeals       MealLog[]    @relation("MealLoggedBy")
+  cookedMeals       MealLog[]    @relation("MealCookedBy")
   weeklyVotes       WeeklyVote[] @relation("VoteCastBy")
 
   // NextAuth fields
@@ -492,6 +493,9 @@ model MealLog {
 
   loggedById  String
   loggedBy    User     @relation("MealLoggedBy", fields: [loggedById], references: [id])
+
+  cookedById  String?
+  cookedBy    User?    @relation("MealCookedBy", fields: [cookedById], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

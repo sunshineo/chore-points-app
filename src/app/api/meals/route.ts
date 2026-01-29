@@ -27,6 +27,9 @@ export async function GET(req: Request) {
         loggedBy: {
           select: { id: true, name: true, email: true },
         },
+        cookedBy: {
+          select: { id: true, name: true, email: true },
+        },
       },
       orderBy: {
         date: "desc",
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
   try {
     const session = await requireFamily();
 
-    const { dishId, newDish, mealType, date } = await req.json();
+    const { dishId, newDish, mealType, date, cookedById } = await req.json();
 
     // Validate mealType
     if (!mealType || !Object.values(MealType).includes(mealType)) {
@@ -106,12 +109,16 @@ export async function POST(req: Request) {
         mealType: mealType as MealType,
         date: date ? new Date(date) : new Date(),
         loggedById: session.user.id,
+        cookedById: cookedById || null,
       },
       include: {
         dish: {
           select: { id: true, name: true, photoUrl: true },
         },
         loggedBy: {
+          select: { id: true, name: true, email: true },
+        },
+        cookedBy: {
           select: { id: true, name: true, email: true },
         },
       },
