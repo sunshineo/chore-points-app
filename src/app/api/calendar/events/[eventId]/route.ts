@@ -8,6 +8,16 @@ import {
   deleteEvent,
 } from "@/lib/google-calendar";
 
+// Add one day to a date string (YYYY-MM-DD) for Google Calendar's exclusive end date
+function addOneDay(dateStr: string): string {
+  const date = new Date(dateStr + "T12:00:00"); // Use noon to avoid timezone edge cases
+  date.setDate(date.getDate() + 1);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // Convert a local datetime string (e.g., "2025-01-15T09:00:00") to ISO format with offset
 function toISOWithOffset(localDateTimeStr: string, timeZone: string): string {
   // Parse the local datetime components
@@ -164,12 +174,15 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       };
     } else if (allDay) {
       // CalendarEventForm all-day format
+      // For all-day events, Google Calendar uses exclusive end dates (end = day after last day)
+      const startDateStr = startDate ? startDate.split("T")[0] : undefined;
+      const endDateStr = endDate ? endDate.split("T")[0] : startDateStr;
       eventData = {
         summary,
         description,
         location,
-        start: startDate ? { date: startDate.split("T")[0] } : undefined,
-        end: endDate ? { date: endDate.split("T")[0] } : undefined,
+        start: startDateStr ? { date: startDateStr } : undefined,
+        end: endDateStr ? { date: addOneDay(endDateStr) } : undefined, // Add 1 day for exclusive end
       };
     } else {
       // CalendarEventForm timed event format
