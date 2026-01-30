@@ -190,12 +190,12 @@ export default function MealPlanSelector({ onPlanSaved }: MealPlanSelectorProps)
                   </div>
                 )}
               </button>
-              {/* Edit button - visible on hover for parents */}
+              {/* Edit button - always visible for parents */}
               {isParent && (
                 <button
                   type="button"
                   onClick={(e) => handleEditClick(e, dish)}
-                  className="absolute top-1 left-1 bg-white/90 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  className="absolute top-1 left-1 bg-white/90 text-gray-700 rounded-full w-6 h-6 flex items-center justify-center shadow-sm hover:bg-white"
                   title={t("editDish")}
                 >
                   <svg
