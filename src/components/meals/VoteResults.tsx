@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
+import MealPlanSelector from "./MealPlanSelector";
+import GroceryList from "./GroceryList";
 
 type Vote = {
   id: string;
@@ -35,6 +37,13 @@ type SuggestionVotes = {
   votes: Vote[];
 };
 
+type PlannedDish = {
+  id: string;
+  name: string;
+  photoUrl: string;
+  ingredients: string[];
+};
+
 export default function VoteResults() {
   const t = useTranslations("meals");
   const tCommon = useTranslations("common");
@@ -42,12 +51,9 @@ export default function VoteResults() {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [weekStart, setWeekStart] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [plannedDishes, setPlannedDishes] = useState<PlannedDish[]>([]);
 
-  useEffect(() => {
-    fetchVotes();
-  }, []);
-
-  const fetchVotes = async () => {
+  const fetchVotes = useCallback(async () => {
     try {
       const response = await fetch("/api/votes");
       const data = await response.json();
@@ -60,6 +66,30 @@ export default function VoteResults() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchCurrentPlan = useCallback(async () => {
+    try {
+      const response = await fetch("/api/meal-plans");
+      const data = await response.json();
+      if (response.ok && data.plan) {
+        const dishes = data.plan.plannedMeals.map(
+          (pm: { dish: PlannedDish }) => pm.dish
+        );
+        setPlannedDishes(dishes);
+      }
+    } catch (err) {
+      console.error("Failed to fetch plan:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchVotes();
+    fetchCurrentPlan();
+  }, [fetchVotes, fetchCurrentPlan]);
+
+  const handlePlanSaved = (dishes: PlannedDish[]) => {
+    setPlannedDishes(dishes);
   };
 
   if (loading) {
@@ -190,6 +220,12 @@ export default function VoteResults() {
           )}
         </>
       )}
+
+      {/* Meal Plan Selector */}
+      <MealPlanSelector onPlanSaved={handlePlanSaved} />
+
+      {/* Grocery List */}
+      {plannedDishes.length > 0 && <GroceryList dishes={plannedDishes} />}
     </div>
   );
 }

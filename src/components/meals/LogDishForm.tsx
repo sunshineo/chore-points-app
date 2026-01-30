@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import IngredientsInput from "./IngredientsInput";
 
 type Dish = {
   id: string;
@@ -40,6 +41,7 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
   const [selectedDish, setSelectedDish] = useState<Dish | null>(meal?.dish || null);
   const [isNewDish, setIsNewDish] = useState(false);
   const [newDishName, setNewDishName] = useState("");
+  const [newDishIngredients, setNewDishIngredients] = useState<string[]>([]);
   const [mealType, setMealType] = useState<"BREAKFAST" | "LUNCH" | "DINNER">(meal?.mealType || "DINNER");
   const [date, setDate] = useState("");
   const [cookedById, setCookedById] = useState<string>(meal?.cookedBy?.id || "");
@@ -173,6 +175,7 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
         body.newDish = {
           name: newDishName,
           photoUrl,
+          ingredients: newDishIngredients,
         };
       } else if (selectedDish) {
         body.dishId = selectedDish.id;
@@ -295,6 +298,7 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
                     onClick={() => {
                       setIsNewDish(false);
                       setNewDishName("");
+                      setNewDishIngredients([]);
                       setPhotoFile(null);
                       setPhotoPreview(null);
                     }}
@@ -311,6 +315,14 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
                   className="w-full px-3 py-2 border rounded-md"
                   required={isNewDish}
                 />
+
+                {/* Ingredients for new dish */}
+                <div className="mt-4">
+                  <IngredientsInput
+                    value={newDishIngredients}
+                    onChange={setNewDishIngredients}
+                  />
+                </div>
               </div>
             )}
 

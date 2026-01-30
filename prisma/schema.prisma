@@ -65,6 +65,7 @@ model User {
   loggedMeals       MealLog[]    @relation("MealLoggedBy")
   cookedMeals       MealLog[]    @relation("MealCookedBy")
   weeklyVotes       WeeklyVote[] @relation("VoteCastBy")
+  weeklyPlans       WeeklyPlan[] @relation("WeeklyPlanCreatedBy")
 
   // NextAuth fields
   accounts      Account[]
@@ -97,6 +98,7 @@ model Family {
   dishes      Dish[]
   mealLogs    MealLog[]
   weeklyVotes WeeklyVote[]
+  weeklyPlans WeeklyPlan[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -485,12 +487,14 @@ model Dish {
   name        String
   photoUrl    String
   totalVotes  Int      @default(0)
+  ingredients String[] @default([])
 
   createdById String
   createdBy   User     @relation("DishCreatedBy", fields: [createdById], references: [id])
 
   mealLogs    MealLog[]
   weeklyVotes WeeklyVote[]
+  plannedMeals PlannedMeal[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -547,4 +551,38 @@ model WeeklyVote {
   @@index([familyId])
   @@index([familyId, weekStart])
   @@index([voterId])
+}
+
+model WeeklyPlan {
+  id          String   @id @default(cuid())
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  weekStart   DateTime
+
+  createdById String
+  createdBy   User     @relation("WeeklyPlanCreatedBy", fields: [createdById], references: [id])
+
+  plannedMeals PlannedMeal[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([familyId, weekStart])
+  @@index([familyId])
+}
+
+model PlannedMeal {
+  id          String   @id @default(cuid())
+  planId      String
+  plan        WeeklyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  dishId      String
+  dish        Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([planId])
+  @@index([dishId])
 }

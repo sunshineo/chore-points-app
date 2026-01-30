@@ -69,10 +69,18 @@ export async function POST(req: Request) {
         );
       }
 
+      // Process ingredients if provided
+      const ingredients = Array.isArray(newDish.ingredients)
+        ? newDish.ingredients
+            .map((i: unknown) => String(i).trim())
+            .filter((i: string) => i.length > 0)
+        : [];
+
       const createdDish = await prisma.dish.create({
         data: {
           name: newDish.name.trim(),
           photoUrl: newDish.photoUrl,
+          ingredients,
           familyId: session.user.familyId!,
           createdById: session.user.id,
         },
