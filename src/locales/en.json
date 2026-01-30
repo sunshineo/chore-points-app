@@ -603,6 +603,7 @@
     "selectCook": "Who cooked this?",
     "editMeal": "Edit Meal",
     "edit": "Edit",
+    "editDish": "Edit Dish",
     "ingredients": "Ingredients",
     "ingredientsPlaceholder": "beef, broccoli, soy sauce",
     "ingredientsHelp": "Comma-separated list for grocery planning",
