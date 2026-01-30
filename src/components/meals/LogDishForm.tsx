@@ -8,6 +8,7 @@ type Dish = {
   id: string;
   name: string;
   photoUrl: string;
+  ingredients?: string[];
 };
 
 type Parent = {
@@ -42,6 +43,7 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
   const [isNewDish, setIsNewDish] = useState(false);
   const [newDishName, setNewDishName] = useState("");
   const [newDishIngredients, setNewDishIngredients] = useState<string[]>([]);
+  const [editDishIngredients, setEditDishIngredients] = useState<string[]>([]);
   const [mealType, setMealType] = useState<"BREAKFAST" | "LUNCH" | "DINNER">(meal?.mealType || "DINNER");
   const [date, setDate] = useState("");
   const [cookedById, setCookedById] = useState<string>(meal?.cookedBy?.id || "");
@@ -56,6 +58,8 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
       // For edit mode, parse existing date
       const mealDate = new Date(meal.date);
       setDate(`${mealDate.getFullYear()}-${String(mealDate.getMonth() + 1).padStart(2, '0')}-${String(mealDate.getDate()).padStart(2, '0')}`);
+      // Fetch dish details including ingredients
+      fetchDishDetails(meal.dish.id);
     } else {
       const today = new Date();
       setDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
@@ -63,6 +67,18 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
     fetchDishes();
     fetchParents();
   }, [meal]);
+
+  const fetchDishDetails = async (dishId: string) => {
+    try {
+      const response = await fetch(`/api/dishes/${dishId}`);
+      const data = await response.json();
+      if (response.ok && data.dish) {
+        setEditDishIngredients(data.dish.ingredients || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dish details:", err);
+    }
+  };
 
   const fetchDishes = async () => {
     try {
@@ -129,8 +145,23 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
     setSaving(true);
 
     try {
-      // Edit mode - only update mealType, date, cookedById
+      // Edit mode - update mealType, date, cookedById and dish ingredients
       if (isEditMode && meal) {
+        // Update dish ingredients
+        const dishResponse = await fetch(`/api/dishes/${meal.dish.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ingredients: editDishIngredients,
+          }),
+        });
+
+        if (!dishResponse.ok) {
+          const data = await dishResponse.json();
+          throw new Error(data.error || "Failed to update dish ingredients");
+        }
+
+        // Update meal
         const response = await fetch(`/api/meals/${meal.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -229,18 +260,25 @@ export default function LogDishForm({ meal, onClose, onSuccess }: LogDishFormPro
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Dish Display (read-only in edit mode) */}
             {isEditMode && meal ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("dishName")}
-                </label>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
-                  <img
-                    src={meal.dish.photoUrl}
-                    alt={meal.dish.name}
-                    className="w-12 h-12 rounded object-cover"
-                  />
-                  <span className="font-medium text-gray-900">{meal.dish.name}</span>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("dishName")}
+                  </label>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
+                    <img
+                      src={meal.dish.photoUrl}
+                      alt={meal.dish.name}
+                      className="w-12 h-12 rounded object-cover"
+                    />
+                    <span className="font-medium text-gray-900">{meal.dish.name}</span>
+                  </div>
                 </div>
+                {/* Ingredients for existing dish */}
+                <IngredientsInput
+                  value={editDishIngredients}
+                  onChange={setEditDishIngredients}
+                />
               </div>
             ) : !isNewDish ? (
               <div>
