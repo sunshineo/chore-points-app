@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/permissions";
 import MealsPageHeader from "@/components/meals/MealsPageHeader";
-import RecentMeals from "@/components/meals/RecentMeals";
+import MealsCalendarView from "@/components/meals/MealsCalendarView";
 
 export default async function MealsPage() {
   const session = await getSession();
@@ -19,7 +19,7 @@ export default async function MealsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <MealsPageHeader />
         <div className="mt-8">
-          <RecentMeals />
+          <MealsCalendarView />
         </div>
       </div>
     </div>
