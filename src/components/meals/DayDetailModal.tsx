@@ -274,9 +274,7 @@ export default function DayDetailModal({ date, onClose, onSave }: DayDetailModal
       case "DINNER":
         return t("dinner");
       case "SNACK":
-        return "Snack"; // Add to translations later
-      default:
-        return type.toLowerCase();
+        return t("snack");
     }
   };
 
