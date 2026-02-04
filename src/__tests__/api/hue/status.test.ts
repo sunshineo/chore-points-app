@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Role } from '@prisma/client'
+import { Role, Family } from '@prisma/client'
 
 let mockSession: { user: { id: string; role: Role; familyId: string | null } } | null = null
 
@@ -27,6 +27,8 @@ import { prisma } from '@/lib/db'
 
 const mockPrisma = vi.mocked(prisma)
 
+type PartialFamily = Partial<Family>
+
 describe('Hue Status and Disconnect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -42,7 +44,7 @@ describe('Hue Status and Disconnect', () => {
       mockPrisma.family.findUnique.mockResolvedValue({
         id: 'family-1',
         hueAccessToken: null,
-      } as any)
+      } as PartialFamily as Family)
 
       const response = await GET()
       const data = await response.json()
@@ -60,7 +62,7 @@ describe('Hue Status and Disconnect', () => {
         id: 'family-1',
         hueAccessToken: 'token',
         hueUsername: 'username',
-      } as any)
+      } as PartialFamily as Family)
 
       const response = await GET()
       const data = await response.json()
@@ -76,7 +78,7 @@ describe('Hue Status and Disconnect', () => {
         user: { id: 'user-1', role: Role.PARENT, familyId: 'family-1' },
       }
 
-      mockPrisma.family.update.mockResolvedValue({} as any)
+      mockPrisma.family.update.mockResolvedValue({} as PartialFamily as Family)
 
       const response = await DELETE()
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Family } from '@prisma/client'
 
 // Mock prisma
 vi.mock('@/lib/db', () => ({
@@ -18,12 +19,11 @@ import { prisma } from '@/lib/db'
 import {
   getHueAccessToken,
   exchangeCodeForTokens,
-  refreshHueToken,
-  HUE_OAUTH_URL,
-  HUE_API_URL,
 } from '@/lib/hue'
 
 const mockPrisma = vi.mocked(prisma)
+
+type PartialFamily = Partial<Family>
 
 describe('Hue API Client', () => {
   beforeEach(() => {
@@ -40,7 +40,7 @@ describe('Hue API Client', () => {
         hueRefreshToken: 'refresh-token',
         hueTokenExpiry: futureDate,
         hueUsername: 'hue-user',
-      } as any)
+      } as PartialFamily as Family)
 
       const result = await getHueAccessToken('family-1')
 
@@ -59,7 +59,7 @@ describe('Hue API Client', () => {
         hueRefreshToken: 'refresh-token',
         hueTokenExpiry: pastDate,
         hueUsername: 'hue-user',
-      } as any)
+      } as PartialFamily as Family)
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -70,7 +70,7 @@ describe('Hue API Client', () => {
         }),
       })
 
-      mockPrisma.family.update.mockResolvedValue({} as any)
+      mockPrisma.family.update.mockResolvedValue({} as PartialFamily as Family)
 
       const result = await getHueAccessToken('family-1')
 
@@ -88,7 +88,7 @@ describe('Hue API Client', () => {
         hueRefreshToken: null,
         hueTokenExpiry: null,
         hueUsername: null,
-      } as any)
+      } as PartialFamily as Family)
 
       const result = await getHueAccessToken('family-1')
 

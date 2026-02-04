@@ -5,7 +5,6 @@ export const HUE_API_URL = "https://api.meethue.com/route/api";
 
 const HUE_CLIENT_ID = process.env.HUE_CLIENT_ID!;
 const HUE_CLIENT_SECRET = process.env.HUE_CLIENT_SECRET!;
-const HUE_REDIRECT_URI = process.env.HUE_REDIRECT_URI!;
 
 interface TokenResponse {
   access_token: string;
@@ -202,6 +201,24 @@ export interface HueScene {
   type: string;
 }
 
+// Internal Hue API response types
+interface HueGroupResponse {
+  name: string;
+  type: string;
+  state?: {
+    any_on?: boolean;
+  };
+  action?: {
+    bri?: number;
+  };
+}
+
+interface HueSceneResponse {
+  name: string;
+  group?: string;
+  type: string;
+}
+
 /**
  * Get all rooms/groups from Hue
  */
@@ -217,18 +234,17 @@ export async function getHueRooms(
     throw new Error("Failed to fetch rooms");
   }
 
-  const data = await response.json();
+  const data: Record<string, HueGroupResponse> = await response.json();
   const rooms: HueRoom[] = [];
 
   for (const [id, group] of Object.entries(data)) {
-    const g = group as any;
-    if (g.type === "Room" || g.type === "Zone") {
+    if (group.type === "Room" || group.type === "Zone") {
       rooms.push({
         id,
-        name: g.name,
-        type: g.type,
-        on: g.state?.any_on || false,
-        brightness: Math.round((g.action?.bri || 0) / 254 * 100),
+        name: group.name,
+        type: group.type,
+        on: group.state?.any_on || false,
+        brightness: Math.round((group.action?.bri || 0) / 254 * 100),
       });
     }
   }
@@ -245,7 +261,7 @@ export async function controlHueRoom(
   roomId: string,
   options: { on?: boolean; brightness?: number }
 ): Promise<void> {
-  const body: Record<string, any> = {};
+  const body: Record<string, boolean | number> = {};
 
   if (options.on !== undefined) {
     body.on = options.on;
@@ -287,16 +303,15 @@ export async function getHueScenes(
     throw new Error("Failed to fetch scenes");
   }
 
-  const data = await response.json();
+  const data: Record<string, HueSceneResponse> = await response.json();
   const scenes: HueScene[] = [];
 
   for (const [id, scene] of Object.entries(data)) {
-    const s = scene as any;
     scenes.push({
       id,
-      name: s.name,
-      group: s.group,
-      type: s.type,
+      name: scene.name,
+      group: scene.group,
+      type: scene.type,
     });
   }
 
