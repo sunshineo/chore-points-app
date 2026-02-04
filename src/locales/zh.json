@@ -650,6 +650,12 @@
     "feedbackPrompt": "获取 AI 智能健康反馈",
     "voteResults": "投票结果",
     "goToVote": "去投票",
-    "planMeals": "规划餐食"
+    "planMeals": "规划餐食",
+    "photoOptionalShort": "可选",
+    "nextWeek": "下周",
+    "thisWeek": "本周",
+    "weeksAhead": "{count}周后",
+    "weeksAgo": "{count}周前",
+    "itemsRemaining": "剩余 {remaining} / {total} 项"
   }
 }

@@ -650,6 +650,12 @@
     "feedbackPrompt": "Get AI-powered health feedback on your meal plan",
     "voteResults": "Vote Results",
     "goToVote": "Go to voting",
-    "planMeals": "Plan Meals"
+    "planMeals": "Plan Meals",
+    "photoOptionalShort": "optional",
+    "nextWeek": "Next Week",
+    "thisWeek": "This Week",
+    "weeksAhead": "{count} weeks ahead",
+    "weeksAgo": "{count} weeks ago",
+    "itemsRemaining": "{remaining} / {total} items remaining"
   }
 }

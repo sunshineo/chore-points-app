@@ -332,6 +332,7 @@ export default function DayDetailModal({ date, onClose, onSave }: DayDetailModal
                     onRemoveDish={(dishEntryId) =>
                       removeDishFromMeal(meal.id, dishEntryId)
                     }
+                    onDishCreated={(dish) => setDishes((prev) => [dish, ...prev])}
                   />
                 ))}
 
@@ -451,6 +452,7 @@ type MealCardProps = {
   onRemoveMeal: () => void;
   onAddDish: (dishId: string | null, dishName: string) => void;
   onRemoveDish: (dishEntryId: string) => void;
+  onDishCreated: (dish: Dish) => void;
 };
 
 function MealCard({
@@ -461,10 +463,38 @@ function MealCard({
   onRemoveMeal,
   onAddDish,
   onRemoveDish,
+  onDishCreated,
 }: MealCardProps) {
+  const t = useTranslations("meals");
   const [showDishSelector, setShowDishSelector] = useState(false);
   const [freeFormDish, setFreeFormDish] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setUploadError("File too large (max 5MB)");
+        return;
+      }
+      setUploadError("");
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const clearPhoto = () => {
+    if (photoPreview) {
+      URL.revokeObjectURL(photoPreview);
+    }
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setUploadError("");
+  };
 
   // Filter dishes based on search
   const filteredDishes = dishes.filter((dish) =>
@@ -477,9 +507,52 @@ function MealCard({
     setSearchQuery("");
   };
 
-  const handleAddFreeForm = () => {
+  const handleAddFreeForm = async () => {
     const trimmed = freeFormDish.trim();
-    if (trimmed) {
+    if (!trimmed) return;
+
+    // If there's a photo, create a proper dish with the photo
+    if (photoFile) {
+      setUploading(true);
+      setUploadError("");
+      try {
+        // Upload photo first
+        const formData = new FormData();
+        formData.append("file", photoFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          throw new Error("Failed to upload photo");
+        }
+        const uploadData = await uploadRes.json();
+        const photoUrl = uploadData.url;
+
+        // Create the dish
+        const dishRes = await fetch("/api/dishes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: trimmed, photoUrl }),
+        });
+        if (!dishRes.ok) {
+          throw new Error("Failed to create dish");
+        }
+        const dishData = await dishRes.json();
+
+        // Add the new dish to the meal and update the dish library
+        onDishCreated(dishData.dish);
+        onAddDish(dishData.dish.id, dishData.dish.name);
+        setFreeFormDish("");
+        clearPhoto();
+        setShowDishSelector(false);
+      } catch (err) {
+        setUploadError(err instanceof Error ? err.message : "Upload failed");
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      // No photo - add as free-form dish
       onAddDish(null, trimmed);
       setFreeFormDish("");
       setShowDishSelector(false);
@@ -572,22 +645,59 @@ function MealCard({
 
           {/* Or add free-form */}
           <div className="border-t pt-2 mt-2">
-            <div className="text-xs text-gray-500 mb-1">Or type a custom dish:</div>
-            <div className="flex gap-2">
+            <div className="text-xs text-gray-500 mb-1">Or add a new dish:</div>
+            <div className="space-y-2">
               <input
                 type="text"
                 value={freeFormDish}
                 onChange={(e) => setFreeFormDish(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddFreeForm()}
-                placeholder="Custom dish name..."
-                className="flex-1 px-3 py-1.5 border rounded-md text-sm"
+                placeholder="Dish name..."
+                className="w-full px-3 py-1.5 border rounded-md text-sm"
               />
+
+              {/* Photo upload */}
+              <div>
+                <div className="text-xs text-gray-500 mb-1">
+                  {t("photo")} ({t("photoOptionalShort")})
+                </div>
+                {photoPreview ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      className="w-20 h-20 object-cover rounded-md"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearPhoto}
+                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ) : (
+                  <label className="block w-full p-2 border border-dashed rounded-md text-center cursor-pointer hover:border-orange-400 text-sm text-gray-500">
+                    Click to add photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              {uploadError && (
+                <div className="text-xs text-red-600">{uploadError}</div>
+              )}
+
               <button
                 onClick={handleAddFreeForm}
-                disabled={!freeFormDish.trim()}
-                className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300 disabled:opacity-50"
+                disabled={!freeFormDish.trim() || uploading}
+                className="w-full px-3 py-1.5 bg-orange-500 text-white rounded-md text-sm hover:bg-orange-600 disabled:opacity-50"
               >
-                Add
+                {uploading ? "Adding..." : photoFile ? "Add with Photo" : "Add without Photo"}
               </button>
             </div>
           </div>
@@ -598,6 +708,7 @@ function MealCard({
               setShowDishSelector(false);
               setSearchQuery("");
               setFreeFormDish("");
+              clearPhoto();
             }}
             className="text-sm text-gray-500 hover:text-gray-700"
           >

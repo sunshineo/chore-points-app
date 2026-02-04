@@ -12,12 +12,13 @@ type Dish = {
 
 type GroceryListProps = {
   dishes: Dish[];
+  showHeader?: boolean;
 };
 
 // Storage key for localStorage (device-specific checkmarks)
 const STORAGE_KEY = "grocery-list-checked";
 
-export default function GroceryList({ dishes }: GroceryListProps) {
+export default function GroceryList({ dishes, showHeader = true }: GroceryListProps) {
   const t = useTranslations("meals");
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
@@ -97,8 +98,10 @@ export default function GroceryList({ dishes }: GroceryListProps) {
 
   if (ingredients.length === 0) {
     return (
-      <div className="mt-8">
-        <h2 className="text-lg font-bold text-gray-900 mb-2">{t("groceryList")}</h2>
+      <div className={showHeader ? "mt-8" : ""}>
+        {showHeader && (
+          <h2 className="text-lg font-bold text-gray-900 mb-2">{t("groceryList")}</h2>
+        )}
         <div className="bg-white rounded-lg shadow p-6 text-center">
           <p className="text-gray-500">{t("noIngredientsYet")}</p>
         </div>
@@ -111,12 +114,18 @@ export default function GroceryList({ dishes }: GroceryListProps) {
   ).length;
 
   return (
-    <div className="mt-8">
+    <div className={showHeader ? "mt-8" : ""}>
       <div className="flex items-center justify-between mb-2">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">{t("groceryList")}</h2>
-          <p className="text-sm text-gray-500">{t("groceryDesc")}</p>
-        </div>
+        {showHeader ? (
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">{t("groceryList")}</h2>
+            <p className="text-sm text-gray-500">{t("groceryDesc")}</p>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500">
+            {t("itemsRemaining", { remaining: uncheckedCount, total: ingredients.length })}
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={copyToClipboard}
@@ -136,9 +145,11 @@ export default function GroceryList({ dishes }: GroceryListProps) {
       </div>
 
       <div className="bg-white rounded-lg shadow p-4">
-        <div className="text-sm text-gray-500 mb-3">
-          {uncheckedCount} / {ingredients.length}
-        </div>
+        {showHeader && (
+          <div className="text-sm text-gray-500 mb-3">
+            {uncheckedCount} / {ingredients.length}
+          </div>
+        )}
         <ul className="space-y-2">
           {ingredients.map((ingredient) => {
             const isChecked = checkedItems.has(ingredient.toLowerCase());
