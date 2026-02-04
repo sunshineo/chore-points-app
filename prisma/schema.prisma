@@ -27,16 +27,16 @@ enum MealType {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime?
-  name          String?
-  image         String?
-  password      String?
-  role          Role      @default(PARENT)
-  lastViewedPoints  Int   @default(0)
-  familyId      String?
-  family        Family?   @relation(fields: [familyId], references: [id])
+  id               String    @id @default(cuid())
+  email            String    @unique
+  emailVerified    DateTime?
+  name             String?
+  image            String?
+  password         String?
+  role             Role      @default(PARENT)
+  lastViewedPoints Int       @default(0)
+  familyId         String?
+  family           Family?   @relation(fields: [familyId], references: [id])
 
   // Relations for audit trails
   createdChores       Chore[]       @relation("ChoreCreatedBy")
@@ -71,8 +71,8 @@ model User {
   createdMealPlans  MealPlan[]   @relation("MealPlanCreatedBy")
 
   // NextAuth fields
-  accounts      Account[]
-  sessions      Session[]
+  accounts Account[]
+  sessions Session[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -81,20 +81,20 @@ model User {
 }
 
 model Family {
-  id          String   @id @default(cuid())
-  name        String
-  inviteCode  String   @unique
+  id         String @id @default(cuid())
+  name       String
+  inviteCode String @unique
 
-  users       User[]
-  chores      Chore[]
-  pointEntries PointEntry[]
-  rewards     Reward[]
-  redemptions Redemption[]
-  milestones  Milestone[]
-  calendarSettings CalendarSettings?
-  todos       FamilyTodo[]
-  photos      Photo[]
-  badges      Badge[]
+  users             User[]
+  chores            Chore[]
+  pointEntries      PointEntry[]
+  rewards           Reward[]
+  redemptions       Redemption[]
+  milestones        Milestone[]
+  calendarSettings  CalendarSettings?
+  todos             FamilyTodo[]
+  photos            Photo[]
+  badges            Badge[]
   achievementBadges AchievementBadge[]
   sightWords  SightWord[]
   badgeTemplates BadgeTemplate[]
@@ -107,62 +107,68 @@ model Family {
   mathSettings   MathSettings?
   customMathQuestions CustomMathQuestion[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // Philips Hue integration
+  hueAccessToken  String?
+  hueRefreshToken String?
+  hueTokenExpiry  DateTime?
+  hueUsername     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Chore {
-  id            String   @id @default(cuid())
-  familyId      String
-  family        Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   title         String
   icon          String?
   defaultPoints Int
-  isActive      Boolean  @default(true)
+  isActive      Boolean @default(true)
 
-  createdById   String
-  createdBy     User     @relation("ChoreCreatedBy", fields: [createdById], references: [id])
-  updatedById   String
-  updatedBy     User     @relation("ChoreUpdatedBy", fields: [updatedById], references: [id])
+  createdById String
+  createdBy   User   @relation("ChoreCreatedBy", fields: [createdById], references: [id])
+  updatedById String
+  updatedBy   User   @relation("ChoreUpdatedBy", fields: [updatedById], references: [id])
 
-  pointEntries  PointEntry[]
-  badges        Badge[]
+  pointEntries   PointEntry[]
+  badges         Badge[]
   badgeTemplates BadgeTemplate[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([familyId, isActive])
 }
 
 model PointEntry {
-  id           String   @id @default(cuid())
-  familyId     String
-  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  kidId        String
-  kid          User     @relation("KidPointEntries", fields: [kidId], references: [id])
+  kidId String
+  kid   User   @relation("KidPointEntries", fields: [kidId], references: [id])
 
-  choreId      String?
-  chore        Chore?   @relation(fields: [choreId], references: [id], onDelete: SetNull)
+  choreId String?
+  chore   Chore?  @relation(fields: [choreId], references: [id], onDelete: SetNull)
 
-  points       Int
-  note         String?
-  photoUrl     String?
-  date         DateTime @default(now())
+  points   Int
+  note     String?
+  photoUrl String?
+  date     DateTime @default(now())
 
-  redemptionId String?  @unique
+  redemptionId String?     @unique
   redemption   Redemption? @relation(fields: [redemptionId], references: [id], onDelete: SetNull)
 
-  createdById  String
-  createdBy    User     @relation("PointEntryCreatedBy", fields: [createdById], references: [id])
-  updatedById  String
-  updatedBy    User     @relation("PointEntryUpdatedBy", fields: [updatedById], references: [id])
+  createdById String
+  createdBy   User   @relation("PointEntryCreatedBy", fields: [createdById], references: [id])
+  updatedById String
+  updatedBy   User   @relation("PointEntryUpdatedBy", fields: [updatedById], references: [id])
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([kidId])
@@ -170,49 +176,49 @@ model PointEntry {
 }
 
 model Reward {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  title       String
-  costPoints  Int
-  imageUrl    String?
+  title      String
+  costPoints Int
+  imageUrl   String?
 
   createdById String
-  createdBy   User     @relation("RewardCreatedBy", fields: [createdById], references: [id])
+  createdBy   User   @relation("RewardCreatedBy", fields: [createdById], references: [id])
   updatedById String
-  updatedBy   User     @relation("RewardUpdatedBy", fields: [updatedById], references: [id])
+  updatedBy   User   @relation("RewardUpdatedBy", fields: [updatedById], references: [id])
 
   redemptions Redemption[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
 }
 
 model Redemption {
-  id          String            @id @default(cuid())
-  familyId    String
-  family      Family            @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  kidId       String
-  kid         User              @relation("RedemptionRequested", fields: [kidId], references: [id])
+  kidId String
+  kid   User   @relation("RedemptionRequested", fields: [kidId], references: [id])
 
-  rewardId    String
-  reward      Reward            @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  rewardId String
+  reward   Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
 
-  status      RedemptionStatus  @default(PENDING)
+  status RedemptionStatus @default(PENDING)
 
-  requestedAt DateTime          @default(now())
-  resolvedAt  DateTime?
+  requestedAt  DateTime  @default(now())
+  resolvedAt   DateTime?
   resolvedById String?
-  resolvedBy  User?             @relation("RedemptionResolvedBy", fields: [resolvedById], references: [id])
+  resolvedBy   User?     @relation("RedemptionResolvedBy", fields: [resolvedById], references: [id])
 
-  pointEntry  PointEntry?
+  pointEntry PointEntry?
 
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([kidId])
@@ -259,12 +265,12 @@ model VerificationToken {
 }
 
 model Milestone {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  kidId       String
-  kid         User     @relation("KidMilestones", fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   User   @relation("KidMilestones", fields: [kidId], references: [id], onDelete: Cascade)
 
   title       String
   description String?
@@ -273,10 +279,10 @@ model Milestone {
   imageUrl    String?
 
   createdById String
-  createdBy   User     @relation("MilestoneCreatedBy", fields: [createdById], references: [id])
+  createdBy   User   @relation("MilestoneCreatedBy", fields: [createdById], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([kidId])
@@ -284,9 +290,9 @@ model Milestone {
 }
 
 model CalendarSettings {
-  id                   String    @id @default(cuid())
-  familyId             String    @unique
-  family               Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String @unique
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   selectedCalendarId   String?
   selectedCalendarName String?
@@ -294,48 +300,48 @@ model CalendarSettings {
   connectedByUserId    String?
   connectedAt          DateTime?
 
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FamilyTodo {
-  id          String    @id @default(cuid())
-  familyId    String
-  family      Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   title       String
   icon        String?
   isCompleted Boolean   @default(false)
   dueDate     DateTime?
-  assignedTo  String?   // "both", "Yue", "Mingfei", or null
+  assignedTo  String? // "both", "Yue", "Mingfei", or null
 
   createdById String
-  createdBy   User      @relation("TodoCreatedBy", fields: [createdById], references: [id])
+  createdBy   User   @relation("TodoCreatedBy", fields: [createdById], references: [id])
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([familyId, isCompleted])
 }
 
 model Photo {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  kidId       String
-  kid         User     @relation("KidPhotos", fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   User   @relation("KidPhotos", fields: [kidId], references: [id], onDelete: Cascade)
 
-  photoUrl    String
-  caption     String?
-  date        DateTime @default(now())
+  photoUrl String
+  caption  String?
+  date     DateTime @default(now())
 
   createdById String
-  createdBy   User     @relation("PhotoCreatedBy", fields: [createdById], references: [id])
+  createdBy   User   @relation("PhotoCreatedBy", fields: [createdById], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([kidId])
@@ -343,24 +349,24 @@ model Photo {
 }
 
 model Badge {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  kidId       String
-  kid         User     @relation("KidBadges", fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   User   @relation("KidBadges", fields: [kidId], references: [id], onDelete: Cascade)
 
-  choreId     String
-  chore       Chore    @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  choreId String
+  chore   Chore  @relation(fields: [choreId], references: [id], onDelete: Cascade)
 
-  count       Int      @default(0)
-  level       Int      @default(0)
+  count Int @default(0)
+  level Int @default(0)
 
-  firstEarnedAt  DateTime?
-  lastLevelUpAt  DateTime?
+  firstEarnedAt DateTime?
+  lastLevelUpAt DateTime?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([kidId, choreId])
   @@index([familyId])
@@ -369,19 +375,19 @@ model Badge {
 }
 
 model AchievementBadge {
-  id              String   @id @default(cuid())
-  familyId        String
-  family          Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  kidId           String
-  kid             User     @relation("KidAchievementBadges", fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   User   @relation("KidAchievementBadges", fields: [kidId], references: [id], onDelete: Cascade)
 
-  badgeId         String   // Maps to badge definition ID in code
-  earnedAt        DateTime @default(now())
-  metadata        Json?    // Store relevant data (e.g., streak dates, milestone value)
+  badgeId  String // Maps to badge definition ID in code
+  earnedAt DateTime @default(now())
+  metadata Json? // Store relevant data (e.g., streak dates, milestone value)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([kidId, badgeId]) // Each kid can only earn each badge once
   @@index([familyId])
@@ -390,44 +396,44 @@ model AchievementBadge {
 }
 
 model SightWord {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  word        String
-  imageUrl    String?
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
+  word      String
+  imageUrl  String?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
 
   createdById String
-  createdBy   User     @relation("SightWordCreatedBy", fields: [createdById], references: [id])
+  createdBy   User   @relation("SightWordCreatedBy", fields: [createdById], references: [id])
   updatedById String
-  updatedBy   User     @relation("SightWordUpdatedBy", fields: [updatedById], references: [id])
+  updatedBy   User   @relation("SightWordUpdatedBy", fields: [updatedById], references: [id])
 
-  progress    SightWordProgress[]
+  progress SightWordProgress[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([familyId, sortOrder])
 }
 
 model SightWordProgress {
-  id            String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  kidId         String
-  kid           User     @relation("KidSightWordProgress", fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   User   @relation("KidSightWordProgress", fields: [kidId], references: [id], onDelete: Cascade)
 
-  sightWordId   String
-  sightWord     SightWord @relation(fields: [sightWordId], references: [id], onDelete: Cascade)
+  sightWordId String
+  sightWord   SightWord @relation(fields: [sightWordId], references: [id], onDelete: Cascade)
 
-  viewedAt      DateTime?
-  quizPassedAt  DateTime?
-  pointAwarded  Boolean   @default(false)
+  viewedAt     DateTime?
+  quizPassedAt DateTime?
+  pointAwarded Boolean   @default(false)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([kidId, sightWordId])
   @@index([kidId])
@@ -435,10 +441,10 @@ model SightWordProgress {
 }
 
 model MathProgress {
-  id                  String    @id @default(cuid())
+  id String @id @default(cuid())
 
-  kidId               String
-  kid                 User      @relation("KidMathProgress", fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   User   @relation("KidMathProgress", fields: [kidId], references: [id], onDelete: Cascade)
 
   date                String    // "YYYY-MM-DD" in user's timezone
   additionPassedAt    DateTime? // Legacy field for backwards compatibility
@@ -447,8 +453,8 @@ model MathProgress {
   questionsTarget     Int       @default(2) // Target count for this day (from settings)
   pointAwarded        Boolean   @default(false)
 
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([kidId, date])
   @@index([kidId])
@@ -536,33 +542,33 @@ model CustomMathQuestion {
 }
 
 model BadgeTemplate {
-  id              String   @id @default(cuid())
-  familyId        String
-  family          Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  builtInBadgeId  String?  // For overriding achievement badges (e.g., "streak_7_days_10pts")
-  choreId         String?  // For chore-specific badge customization
-  chore           Chore?   @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  builtInBadgeId String? // For overriding achievement badges (e.g., "streak_7_days_10pts")
+  choreId        String? // For chore-specific badge customization
+  chore          Chore?  @relation(fields: [choreId], references: [id], onDelete: Cascade)
 
-  type            String   @default("custom")  // "achievement" | "chore_level" | "custom"
+  type String @default("custom") // "achievement" | "chore_level" | "custom"
 
-  name            String?
-  nameZh          String?
-  description     String?
-  descriptionZh   String?
-  imageUrl        String?  // Custom uploaded image (replaces emoji)
-  icon            String?  // Custom emoji fallback
+  name          String?
+  nameZh        String?
+  description   String?
+  descriptionZh String?
+  imageUrl      String? // Custom uploaded image (replaces emoji)
+  icon          String? // Custom emoji fallback
 
-  ruleConfig      Json?    // For custom badges: rule configuration
-  isActive        Boolean  @default(true)
+  ruleConfig Json? // For custom badges: rule configuration
+  isActive   Boolean @default(true)
 
-  createdById     String
-  createdBy       User     @relation("BadgeTemplateCreatedBy", fields: [createdById], references: [id])
-  updatedById     String
-  updatedBy       User     @relation("BadgeTemplateUpdatedBy", fields: [updatedById], references: [id])
+  createdById String
+  createdBy   User   @relation("BadgeTemplateCreatedBy", fields: [createdById], references: [id])
+  updatedById String
+  updatedBy   User   @relation("BadgeTemplateUpdatedBy", fields: [updatedById], references: [id])
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([familyId, builtInBadgeId])
   @@unique([familyId, choreId, type])
@@ -570,9 +576,9 @@ model BadgeTemplate {
 }
 
 model Dish {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   name        String
   photoUrl    String
@@ -580,40 +586,40 @@ model Dish {
   ingredients String[] @default([])
 
   createdById String
-  createdBy   User     @relation("DishCreatedBy", fields: [createdById], references: [id])
+  createdBy   User   @relation("DishCreatedBy", fields: [createdById], references: [id])
 
-  mealLogs    MealLog[]
-  weeklyVotes WeeklyVote[]
-  plannedMeals PlannedMeal[]
-  dailyMealDishes    DailyMealDish[]
+  mealLogs             MealLog[]
+  weeklyVotes          WeeklyVote[]
+  plannedMeals         PlannedMeal[]
+  dailyMealDishes      DailyMealDish[]
   plannedDayMealDishes PlannedDayMealDish[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([familyId, totalVotes])
 }
 
 model MealLog {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  dishId      String
-  dish        Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  dishId String
+  dish   Dish   @relation(fields: [dishId], references: [id], onDelete: Cascade)
 
-  mealType    MealType
-  date        DateTime
+  mealType MealType
+  date     DateTime
 
-  loggedById  String
-  loggedBy    User     @relation("MealLoggedBy", fields: [loggedById], references: [id])
+  loggedById String
+  loggedBy   User   @relation("MealLoggedBy", fields: [loggedById], references: [id])
 
-  cookedById  String?
-  cookedBy    User?    @relation("MealCookedBy", fields: [cookedById], references: [id])
+  cookedById String?
+  cookedBy   User?   @relation("MealCookedBy", fields: [cookedById], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([familyId])
   @@index([familyId, date])
@@ -621,22 +627,22 @@ model MealLog {
 }
 
 model WeeklyVote {
-  id                 String   @id @default(cuid())
-  familyId           String
-  family             Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  dishId             String?
-  dish               Dish?    @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  dishId String?
+  dish   Dish?   @relation(fields: [dishId], references: [id], onDelete: Cascade)
 
-  suggestedDishName  String?
+  suggestedDishName String?
 
-  voterId            String
-  voter              User     @relation("VoteCastBy", fields: [voterId], references: [id])
+  voterId String
+  voter   User   @relation("VoteCastBy", fields: [voterId], references: [id])
 
-  weekStart          DateTime
+  weekStart DateTime
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([familyId, voterId, dishId, weekStart])
   @@unique([familyId, voterId, suggestedDishName, weekStart])
@@ -646,52 +652,52 @@ model WeeklyVote {
 }
 
 model WeeklyPlan {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  weekStart   DateTime
+  weekStart DateTime
 
   createdById String
-  createdBy   User     @relation("WeeklyPlanCreatedBy", fields: [createdById], references: [id])
+  createdBy   User   @relation("WeeklyPlanCreatedBy", fields: [createdById], references: [id])
 
   plannedMeals PlannedMeal[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([familyId, weekStart])
   @@index([familyId])
 }
 
 model PlannedMeal {
-  id          String   @id @default(cuid())
-  planId      String
-  plan        WeeklyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id     String     @id @default(cuid())
+  planId String
+  plan   WeeklyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
-  dishId      String
-  dish        Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  dishId String
+  dish   Dish   @relation(fields: [dishId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([planId])
   @@index([dishId])
 }
 
 model DailyMealLog {
-  id          String   @id @default(cuid())
-  familyId    String
-  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  date        DateTime @db.Date
-  notes       String?
+  date  DateTime @db.Date
+  notes String?
 
-  meals       DailyMeal[]
-  dailyItems  DailyItem[]
+  meals      DailyMeal[]
+  dailyItems DailyItem[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([familyId, date])
   @@index([familyId])
@@ -699,117 +705,117 @@ model DailyMealLog {
 }
 
 model DailyMeal {
-  id            String   @id @default(cuid())
-  dailyLogId    String
-  dailyLog      DailyMealLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  id         String       @id @default(cuid())
+  dailyLogId String
+  dailyLog   DailyMealLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
 
-  mealType      String   // "breakfast", "lunch", "dinner", "snack", or custom
-  notes         String?
+  mealType String // "breakfast", "lunch", "dinner", "snack", or custom
+  notes    String?
 
-  dishes        DailyMealDish[]
+  dishes DailyMealDish[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([dailyLogId])
 }
 
 model DailyMealDish {
-  id          String   @id @default(cuid())
-  mealId      String
-  meal        DailyMeal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  id     String    @id @default(cuid())
+  mealId String
+  meal   DailyMeal @relation(fields: [mealId], references: [id], onDelete: Cascade)
 
-  dishId      String?
-  dish        Dish?    @relation(fields: [dishId], references: [id], onDelete: SetNull)
-  dishName    String   // Always store name (from library or free-form)
-  isFreeForm  Boolean  @default(false)
+  dishId     String?
+  dish       Dish?   @relation(fields: [dishId], references: [id], onDelete: SetNull)
+  dishName   String // Always store name (from library or free-form)
+  isFreeForm Boolean @default(false)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([mealId])
   @@index([dishId])
 }
 
 model DailyItem {
-  id          String   @id @default(cuid())
-  dailyLogId  String
-  dailyLog    DailyMealLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+  id         String       @id @default(cuid())
+  dailyLogId String
+  dailyLog   DailyMealLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
 
-  name        String   // e.g., "Apples", "Whole milk"
+  name String // e.g., "Apples", "Whole milk"
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([dailyLogId])
 }
 
 model MealPlan {
-  id              String   @id @default(cuid())
-  familyId        String
-  family          Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  weekStart       DateTime @db.Date
-  weeklyStaples   String[] @default([])
+  weekStart        DateTime  @db.Date
+  weeklyStaples    String[]  @default([])
   aiRecommendation String?
-  aiGeneratedAt   DateTime?
+  aiGeneratedAt    DateTime?
 
-  createdById     String
-  createdBy       User     @relation("MealPlanCreatedBy", fields: [createdById], references: [id])
+  createdById String
+  createdBy   User   @relation("MealPlanCreatedBy", fields: [createdById], references: [id])
 
-  plannedDays     PlannedDay[]
+  plannedDays PlannedDay[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([familyId, weekStart])
   @@index([familyId])
 }
 
 model PlannedDay {
-  id          String   @id @default(cuid())
-  planId      String
-  plan        MealPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id     String   @id @default(cuid())
+  planId String
+  plan   MealPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
-  date        DateTime @db.Date
+  date DateTime @db.Date
 
-  meals       PlannedDayMeal[]
+  meals PlannedDayMeal[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([planId, date])
   @@index([planId])
 }
 
 model PlannedDayMeal {
-  id          String   @id @default(cuid())
-  dayId       String
-  day         PlannedDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  id    String     @id @default(cuid())
+  dayId String
+  day   PlannedDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
 
-  mealType    String   // "breakfast", "lunch", "dinner", "snack"
-  notes       String?
+  mealType String // "breakfast", "lunch", "dinner", "snack"
+  notes    String?
 
-  dishes      PlannedDayMealDish[]
+  dishes PlannedDayMealDish[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([dayId])
 }
 
 model PlannedDayMealDish {
-  id          String   @id @default(cuid())
-  mealId      String
-  meal        PlannedDayMeal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  id     String         @id @default(cuid())
+  mealId String
+  meal   PlannedDayMeal @relation(fields: [mealId], references: [id], onDelete: Cascade)
 
-  dishId      String?
-  dish        Dish?    @relation(fields: [dishId], references: [id], onDelete: SetNull)
-  dishName    String
-  isFreeForm  Boolean  @default(false)
+  dishId     String?
+  dish       Dish?   @relation(fields: [dishId], references: [id], onDelete: SetNull)
+  dishName   String
+  isFreeForm Boolean @default(false)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([mealId])
   @@index([dishId])
