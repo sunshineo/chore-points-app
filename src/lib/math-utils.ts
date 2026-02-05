@@ -173,9 +173,10 @@ function generateSubtraction(random: () => number, settings: MathSettings): Ques
     };
   }
 
-  // Fallback: ensure a > b
-  a = randomInRange(random, settings.subtractionMinA, settings.subtractionMaxA);
-  b = randomInRange(random, 1, Math.min(a - 1, settings.subtractionMaxB));
+  // Fallback: ensure a > b with safe bounds
+  a = randomInRange(random, Math.max(2, settings.subtractionMinA), Math.max(2, settings.subtractionMaxA));
+  const maxB = Math.max(1, Math.min(a - 1, settings.subtractionMaxB));
+  b = randomInRange(random, 1, maxB);
   return {
     index: 0,
     type: "subtraction",

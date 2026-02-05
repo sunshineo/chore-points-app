@@ -59,25 +59,35 @@ const defaultSettings: MathSettings = {
 
 export default function MathSettingsForm() {
   const t = useTranslations("learn");
+  const tCommon = useTranslations("common");
   const [settings, setSettings] = useState<MathSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/math/settings")
       .then((res) => res.json())
       .then((data) => {
-        setSettings({ ...defaultSettings, ...data });
+        if (data.error) {
+          setError(data.error);
+        } else {
+          setSettings({ ...defaultSettings, ...data });
+        }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
-  }, []);
+      .catch(() => {
+        setError(tCommon("somethingWentWrong"));
+        setLoading(false);
+      });
+  }, [tCommon]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setSaved(false);
+    setError(null);
 
     try {
       const res = await fetch("/api/math/settings", {
@@ -86,10 +96,16 @@ export default function MathSettingsForm() {
         body: JSON.stringify(settings),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        setError(data.error || tCommon("somethingWentWrong"));
       }
+    } catch {
+      setError(tCommon("somethingWentWrong"));
     } finally {
       setSaving(false);
     }
@@ -502,6 +518,13 @@ export default function MathSettingsForm() {
           </div>
         </label>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Save Button */}
       <div className="flex items-center gap-4">
