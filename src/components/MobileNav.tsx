@@ -13,6 +13,7 @@ export default function MobileNav() {
   const t = useTranslations("nav");
   const { isKidMode } = useKidMode();
   const [showMore, setShowMore] = useState(false);
+  const [learnExpanded, setLearnExpanded] = useState(false);
 
   // Don't show on login/signup pages or if not logged in
   if (
@@ -39,10 +40,16 @@ export default function MobileNav() {
     { href: "/calendar", label: t("calendar"), icon: "📅" },
     { href: "/gallery", label: t("gallery"), icon: "📷" },
     { href: "/milestones", label: t("milestones"), icon: "🏆" },
-    { href: "/sight-words", label: t("sightWords"), icon: "📚" },
-    { href: "/learn/progress", label: t("math"), icon: "🔢" },
     { href: "/settings", label: t("settings"), icon: "⚙️" },
   ];
+
+  // Learn sub-links
+  const learnSubLinks = [
+    { href: "/sight-words", label: t("sightWords"), icon: "📚" },
+    { href: "/learn/progress", label: t("math"), icon: "🔢" },
+  ];
+
+  const isLearnActive = pathname === "/sight-words" || pathname.startsWith("/learn/progress");
 
   const kidModeLinks = [
     { href: "/view-as/points", label: t("myPoints"), icon: "💎" },
@@ -71,11 +78,7 @@ export default function MobileNav() {
   }
 
   // Check if any secondary link is active
-  const isSecondaryActive = secondaryLinks.some(link =>
-    link.href === "/learn/progress"
-      ? pathname.startsWith("/learn/progress")
-      : pathname === link.href
-  );
+  const isSecondaryActive = secondaryLinks.some(link => pathname === link.href) || isLearnActive;
 
   return (
     <>
@@ -88,12 +91,10 @@ export default function MobileNav() {
       )}
 
       {/* More menu popup */}
-      {showMore && secondaryLinks.length > 0 && (
+      {showMore && (secondaryLinks.length > 0 || learnSubLinks.length > 0) && (
         <div className="sm:hidden fixed bottom-20 right-2 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50 min-w-[160px]">
           {secondaryLinks.map((link) => {
-            const isActive = link.href === "/learn/progress"
-              ? pathname.startsWith("/learn/progress")
-              : pathname === link.href;
+            const isActive = pathname === link.href;
             return (
               <Link
                 key={link.href}
@@ -110,6 +111,51 @@ export default function MobileNav() {
               </Link>
             );
           })}
+
+          {/* Learn expandable section */}
+          {learnSubLinks.length > 0 && (
+            <>
+              <button
+                onClick={() => setLearnExpanded(!learnExpanded)}
+                className={`flex items-center gap-3 px-4 py-3 transition-colors w-full ${
+                  isLearnActive
+                    ? "text-blue-400 bg-gray-700/50"
+                    : "text-gray-300 hover:text-white hover:bg-gray-700/30"
+                }`}
+              >
+                <span className="text-lg">📖</span>
+                <span className="text-sm font-medium flex-1 text-left">{t("learn")}</span>
+                <svg
+                  className={`w-4 h-4 transition-transform ${learnExpanded ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {learnExpanded && learnSubLinks.map((link) => {
+                const isActive = link.href === "/learn/progress"
+                  ? pathname.startsWith("/learn/progress")
+                  : pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setShowMore(false)}
+                    className={`flex items-center gap-3 pl-8 pr-4 py-2 transition-colors ${
+                      isActive
+                        ? "text-blue-400 bg-gray-700/50"
+                        : "text-gray-300 hover:text-white hover:bg-gray-700/30"
+                    }`}
+                  >
+                    <span className="text-base">{link.icon}</span>
+                    <span className="text-sm">{link.label}</span>
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </div>
       )}
 

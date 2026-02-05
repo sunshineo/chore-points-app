@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,6 +14,21 @@ export default function NavBar() {
   const t = useTranslations("nav");
   const { locale, setLocale } = useLocale();
   const { isKidMode } = useKidMode();
+  const [learnDropdownOpen, setLearnDropdownOpen] = useState(false);
+  const learnDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (learnDropdownRef.current && !learnDropdownRef.current.contains(event.target as Node)) {
+        setLearnDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const isLearnActive = pathname === "/sight-words" || pathname.startsWith("/learn/progress");
 
   const toggleLanguage = () => {
     setLocale(locale === "en" ? "zh" : "en");
@@ -187,22 +203,46 @@ export default function NavBar() {
                   >
                     {t("calendar")}
                   </Link>
-                  <Link
-                    href="/sight-words"
-                    className={`hover:text-gray-300 transition ${
-                      pathname === "/sight-words" ? "text-blue-400" : ""
-                    }`}
-                  >
-                    {t("sightWords")}
-                  </Link>
-                  <Link
-                    href="/learn/progress"
-                    className={`hover:text-gray-300 transition ${
-                      pathname.startsWith("/learn/progress") ? "text-blue-400" : ""
-                    }`}
-                  >
-                    {t("math")}
-                  </Link>
+                  <div className="relative" ref={learnDropdownRef}>
+                    <button
+                      onClick={() => setLearnDropdownOpen(!learnDropdownOpen)}
+                      className={`hover:text-gray-300 transition flex items-center gap-1 ${
+                        isLearnActive ? "text-blue-400" : ""
+                      }`}
+                    >
+                      {t("learn")}
+                      <svg
+                        className={`w-3 h-3 transition-transform ${learnDropdownOpen ? "rotate-180" : ""}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {learnDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 bg-gray-700 rounded-lg shadow-lg py-1 min-w-[140px] z-50">
+                        <Link
+                          href="/sight-words"
+                          onClick={() => setLearnDropdownOpen(false)}
+                          className={`block px-4 py-2 hover:bg-gray-600 transition ${
+                            pathname === "/sight-words" ? "text-blue-400" : ""
+                          }`}
+                        >
+                          {t("sightWords")}
+                        </Link>
+                        <Link
+                          href="/learn/progress"
+                          onClick={() => setLearnDropdownOpen(false)}
+                          className={`block px-4 py-2 hover:bg-gray-600 transition ${
+                            pathname.startsWith("/learn/progress") ? "text-blue-400" : ""
+                          }`}
+                        >
+                          {t("math")}
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                   <Link
                     href="/settings"
                     className={`hover:text-gray-300 transition ${
