@@ -46,10 +46,11 @@ export default function MobileNav() {
   // Learn sub-links
   const learnSubLinks = [
     { href: "/sight-words", label: t("sightWords"), icon: "📚" },
-    { href: "/learn/progress", label: t("math"), icon: "🔢" },
+    { href: "/learn/progress", label: t("mathProgress"), icon: "📊" },
+    { href: "/learn/settings", label: t("mathSettings"), icon: "🔢" },
   ];
 
-  const isLearnActive = pathname === "/sight-words" || pathname.startsWith("/learn/progress");
+  const isLearnActive = pathname === "/sight-words" || pathname.startsWith("/learn/");
 
   const kidModeLinks = [
     { href: "/view-as/points", label: t("myPoints"), icon: "💎" },

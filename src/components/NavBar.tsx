@@ -28,7 +28,7 @@ export default function NavBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const isLearnActive = pathname === "/sight-words" || pathname.startsWith("/learn/progress");
+  const isLearnActive = pathname === "/sight-words" || pathname.startsWith("/learn/");
 
   const toggleLanguage = () => {
     setLocale(locale === "en" ? "zh" : "en");
@@ -235,10 +235,19 @@ export default function NavBar() {
                           href="/learn/progress"
                           onClick={() => setLearnDropdownOpen(false)}
                           className={`block px-4 py-2 hover:bg-gray-600 transition ${
-                            pathname.startsWith("/learn/progress") ? "text-blue-400" : ""
+                            pathname === "/learn/progress" ? "text-blue-400" : ""
                           }`}
                         >
-                          {t("math")}
+                          {t("mathProgress")}
+                        </Link>
+                        <Link
+                          href="/learn/settings"
+                          onClick={() => setLearnDropdownOpen(false)}
+                          className={`block px-4 py-2 hover:bg-gray-600 transition ${
+                            pathname === "/learn/settings" ? "text-blue-400" : ""
+                          }`}
+                        >
+                          {t("mathSettings")}
                         </Link>
                       </div>
                     )}
