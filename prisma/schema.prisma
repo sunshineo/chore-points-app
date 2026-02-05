@@ -441,8 +441,10 @@ model MathProgress {
   kid                 User      @relation("KidMathProgress", fields: [kidId], references: [id], onDelete: Cascade)
 
   date                String    // "YYYY-MM-DD" in user's timezone
-  additionPassedAt    DateTime?
-  subtractionPassedAt DateTime?
+  additionPassedAt    DateTime? // Legacy field for backwards compatibility
+  subtractionPassedAt DateTime? // Legacy field for backwards compatibility
+  questionsCompleted  Int       @default(0) // Count of questions answered correctly
+  questionsTarget     Int       @default(2) // Target count for this day (from settings)
   pointAwarded        Boolean   @default(false)
 
   createdAt           DateTime  @default(now())

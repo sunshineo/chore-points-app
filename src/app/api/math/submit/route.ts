@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireFamily } from "@/lib/permissions";
 import {
-  generateDailyMathProblems,
+  generateQuestionsWithSettings,
   getLocalDateString,
 } from "@/lib/math-utils";
 
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   try {
     const session = await requireFamily();
     const {
-      type,
+      questionIndex,
       answer,
       kidId,
       timezone = "America/Los_Angeles",
@@ -19,10 +19,9 @@ export async function POST(req: Request) {
       source = "daily",
     } = await req.json();
 
-    // Validate type
-    if (!["addition", "subtraction", "multiplication", "division"].includes(type)) {
+    if (typeof questionIndex !== "number" || questionIndex < 0) {
       return NextResponse.json(
-        { error: "Invalid question type" },
+        { error: "questionIndex must be a non-negative number" },
         { status: 400 }
       );
     }
@@ -55,35 +54,34 @@ export async function POST(req: Request) {
     // Get today's date in user's timezone
     const todayStr = getLocalDateString(new Date(), timezone);
 
-    // Generate today's problems
-    const problems = generateDailyMathProblems(todayStr, targetKidId);
+    // Fetch family's math settings
+    const settings = await prisma.mathSettings.findUnique({
+      where: { familyId: session.user.familyId! },
+    });
 
-    let expectedAnswer: number;
-    let questionStr: string;
+    const questionsTarget = settings?.dailyQuestionCount ?? 2;
 
-    if (type === "addition") {
-      expectedAnswer = problems.addition.answer;
-      questionStr = `${problems.addition.a} + ${problems.addition.b}`;
-    } else if (type === "subtraction") {
-      expectedAnswer = problems.subtraction.answer;
-      questionStr = `${problems.subtraction.a} - ${problems.subtraction.b}`;
-    } else {
-      // For multiplication/division, we'll need settings-based generation
-      // For now, return error as they're not yet implemented
+    // Generate today's questions
+    const questions = generateQuestionsWithSettings(todayStr, targetKidId, settings || {});
+
+    // Validate question index
+    if (questionIndex >= questions.length) {
       return NextResponse.json(
-        { error: "Question type not yet supported" },
+        { error: "Invalid question index" },
         { status: 400 }
       );
     }
 
+    const question = questions[questionIndex];
+    const expectedAnswer = question.answer;
     const isCorrect = answer === expectedAnswer;
 
     // Log the attempt
     await prisma.mathAttempt.create({
       data: {
         kidId: targetKidId,
-        questionType: type,
-        question: questionStr,
+        questionType: question.type,
+        question: question.question,
         correctAnswer: expectedAnswer,
         givenAnswer: answer,
         isCorrect,
@@ -109,28 +107,28 @@ export async function POST(req: Request) {
       },
     });
 
-    // Check if already completed this type today
-    if (type === "addition" && existingProgress?.additionPassedAt) {
+    const currentCompleted = existingProgress?.questionsCompleted ?? 0;
+
+    // Check if this question was already completed (by checking if we're past this index)
+    if (questionIndex < currentCompleted) {
       return NextResponse.json({
         correct: true,
         pointAwarded: false,
         message: "alreadyCompleted",
       });
     }
-    if (type === "subtraction" && existingProgress?.subtractionPassedAt) {
+
+    // Only increment if this is the next expected question
+    if (questionIndex !== currentCompleted) {
       return NextResponse.json({
         correct: true,
         pointAwarded: false,
-        message: "alreadyCompleted",
+        message: "wrongOrder",
       });
     }
 
     // Update progress
-    const updateData =
-      type === "addition"
-        ? { additionPassedAt: new Date() }
-        : { subtractionPassedAt: new Date() };
-
+    const newCompleted = currentCompleted + 1;
     const updatedProgress = await prisma.mathProgress.upsert({
       where: {
         kidId_date: {
@@ -141,17 +139,20 @@ export async function POST(req: Request) {
       create: {
         kidId: targetKidId,
         date: todayStr,
-        ...updateData,
+        questionsCompleted: 1,
+        questionsTarget,
       },
-      update: updateData,
+      update: {
+        questionsCompleted: newCompleted,
+        questionsTarget,
+      },
     });
 
-    // Check if both are now complete and point not yet awarded
-    const bothComplete =
-      updatedProgress.additionPassedAt && updatedProgress.subtractionPassedAt;
+    // Check if all questions are now complete and point not yet awarded
+    const allComplete = updatedProgress.questionsCompleted >= questionsTarget;
     let pointAwarded = false;
 
-    if (bothComplete && !updatedProgress.pointAwarded) {
+    if (allComplete && !updatedProgress.pointAwarded) {
       // Award point
       await prisma.$transaction([
         prisma.mathProgress.update({
@@ -175,6 +176,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       correct: true,
       pointAwarded,
+      questionsCompleted: updatedProgress.questionsCompleted,
+      questionsTarget,
+      allComplete,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Something went wrong";

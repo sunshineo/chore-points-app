@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireFamily } from "@/lib/permissions";
 import {
-  generateDailyMathProblems,
+  generateQuestionsWithSettings,
   getLocalDateString,
+  Question,
 } from "@/lib/math-utils";
 
 // GET /api/math/today - Get today's math problems and completion status
@@ -40,8 +41,13 @@ export async function GET(req: Request) {
     // Get today's date in user's timezone
     const todayStr = getLocalDateString(new Date(), timezone);
 
-    // Generate today's problems (deterministic based on date + kidId)
-    const problems = generateDailyMathProblems(todayStr, targetKidId);
+    // Fetch family's math settings
+    const settings = await prisma.mathSettings.findUnique({
+      where: { familyId: session.user.familyId! },
+    });
+
+    // Generate questions based on settings (or defaults)
+    const questions = generateQuestionsWithSettings(todayStr, targetKidId, settings || {});
 
     // Get progress for today
     const progress = await prisma.mathProgress.findUnique({
@@ -53,17 +59,29 @@ export async function GET(req: Request) {
       },
     });
 
+    const questionsCompleted = progress?.questionsCompleted ?? 0;
+    const questionsTarget = settings?.dailyQuestionCount ?? 2;
+    const allComplete = questionsCompleted >= questionsTarget;
+
     return NextResponse.json({
-      addition: { a: problems.addition.a, b: problems.addition.b },
-      subtraction: { a: problems.subtraction.a, b: problems.subtraction.b },
-      additionComplete: !!progress?.additionPassedAt,
-      subtractionComplete: !!progress?.subtractionPassedAt,
-      pointAwarded: !!progress?.pointAwarded,
+      questions: questions.map((q: Question) => ({
+        index: q.index,
+        type: q.type,
+        a: q.a,
+        b: q.b,
+        question: q.question,
+        // Don't send answer to client
+      })),
+      questionsCompleted,
+      questionsTarget,
+      allComplete,
+      pointAwarded: progress?.pointAwarded ?? false,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: error.message },
-      { status: error.message.includes("Forbidden") ? 403 : 401 }
+      { error: message },
+      { status: message.includes("Forbidden") ? 403 : 401 }
     );
   }
 }

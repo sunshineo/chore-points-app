@@ -4,22 +4,32 @@ import { useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import confetti from "canvas-confetti";
 
-type MathProblem = {
+type Question = {
+  index: number;
+  type: "addition" | "subtraction" | "multiplication" | "division";
   a: number;
   b: number;
+  question: string;
 };
 
 type MathData = {
-  addition: MathProblem;
-  subtraction: MathProblem;
-  additionComplete: boolean;
-  subtractionComplete: boolean;
+  questions: Question[];
+  questionsCompleted: number;
+  questionsTarget: number;
+  allComplete: boolean;
   pointAwarded: boolean;
 };
 
 type Props = {
   kidId?: string;
   onComplete: () => void;
+};
+
+const operatorMap: Record<string, string> = {
+  addition: "+",
+  subtraction: "−",
+  multiplication: "×",
+  division: "÷",
 };
 
 export default function MathModule({ kidId, onComplete }: Props) {
@@ -35,9 +45,10 @@ export default function MathModule({ kidId, onComplete }: Props) {
   const questionStartTime = useRef<number>(Date.now());
   const t = useTranslations("learn");
 
-  // Current step: "addition" or "subtraction"
-  const currentStep = data?.additionComplete ? "subtraction" : "addition";
-  const bothComplete = data?.additionComplete && data?.subtractionComplete;
+  // Current question index
+  const currentIndex = data?.questionsCompleted ?? 0;
+  const currentQuestion = data?.questions?.[currentIndex];
+  const allComplete = data?.allComplete ?? false;
 
   useEffect(() => {
     fetchMathData();
@@ -46,7 +57,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
   // Reset timer when moving to next question
   useEffect(() => {
     questionStartTime.current = Date.now();
-  }, [currentStep]);
+  }, [currentIndex]);
 
   const fetchMathData = async () => {
     try {
@@ -58,7 +69,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
       const result = await response.json();
       if (response.ok) {
         setData(result);
-        if (result.additionComplete && result.subtractionComplete) {
+        if (result.allComplete) {
           onComplete();
         }
       }
@@ -71,7 +82,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data || submitting || !answer.trim()) return;
+    if (!data || submitting || !answer.trim() || !currentQuestion) return;
 
     const numAnswer = parseInt(answer, 10);
     if (isNaN(numAnswer)) return;
@@ -86,7 +97,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: currentStep,
+          questionIndex: currentIndex,
           answer: numAnswer,
           kidId,
           timezone,
@@ -104,9 +115,8 @@ export default function MathModule({ kidId, onComplete }: Props) {
           prev
             ? {
                 ...prev,
-                [currentStep === "addition"
-                  ? "additionComplete"
-                  : "subtractionComplete"]: true,
+                questionsCompleted: result.questionsCompleted ?? prev.questionsCompleted + 1,
+                allComplete: result.allComplete ?? false,
                 pointAwarded: result.pointAwarded,
               }
             : null
@@ -154,8 +164,8 @@ export default function MathModule({ kidId, onComplete }: Props) {
     );
   }
 
-  // Both complete state
-  if (bothComplete) {
+  // All complete state
+  if (allComplete) {
     return (
       <div className="text-center py-8">
         <div className="bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-8">
@@ -167,15 +177,22 @@ export default function MathModule({ kidId, onComplete }: Props) {
     );
   }
 
+  // No current question (shouldn't happen if not complete)
+  if (!currentQuestion) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-gray-500">No questions available</div>
+      </div>
+    );
+  }
+
   // Active problem state
-  const problem =
-    currentStep === "addition" ? data?.addition : data?.subtraction;
-  const operator = currentStep === "addition" ? "+" : "−";
-  const stepLabel = currentStep === "addition" ? t("addition") : t("subtraction");
+  const operator = operatorMap[currentQuestion.type] || "+";
+  const typeLabel = t(currentQuestion.type);
 
   return (
     <div className="text-center">
-      <h2 className="text-lg font-semibold text-gray-600 mb-4">{stepLabel}</h2>
+      <h2 className="text-lg font-semibold text-gray-600 mb-4">{typeLabel}</h2>
 
       <div
         className={`bg-gradient-to-br from-orange-400 to-yellow-500 rounded-3xl p-8 shadow-2xl ${
@@ -185,7 +202,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
         {/* Problem Display */}
         <div className="text-white mb-6">
           <span className="text-6xl sm:text-7xl font-bold tracking-wide">
-            {problem?.a} {operator} {problem?.b} = ?
+            {currentQuestion.a} {operator} {currentQuestion.b} = ?
           </span>
         </div>
 
@@ -221,7 +238,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
 
       {/* Step indicator */}
       <div className="mt-4 text-sm text-gray-500">
-        {t("step")} {currentStep === "addition" ? "1" : "2"} {t("of")} 2
+        {t("step")} {currentIndex + 1} {t("of")} {data.questionsTarget}
       </div>
     </div>
   );
