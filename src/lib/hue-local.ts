@@ -211,9 +211,9 @@ export const HUE_ROOMS = {
 // Preset celebration effects
 export const celebrationEffects = {
   /**
-   * Flash living room blue 3 times - for points celebration
+   * Flash bedroom blue 3 times - for points celebration
    */
-  pointsCelebration: () => flashLights(HUE_ROOMS.LIVING_ROOM, "blue", 3, 600),
+  pointsCelebration: () => flashLights(HUE_ROOMS.BEDROOM, "blue", 3, 600),
   
   /**
    * Flash living room green 3 times - for achievement unlocked
