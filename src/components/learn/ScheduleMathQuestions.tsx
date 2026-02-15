@@ -18,25 +18,37 @@ type Props = {
   kids: Kid[];
 };
 
+const operations = [
+  { key: "+", label: "➕", calc: (a: number, b: number) => a + b },
+  { key: "−", label: "➖", calc: (a: number, b: number) => a - b },
+  { key: "×", label: "✖️", calc: (a: number, b: number) => a * b },
+  { key: "÷", label: "➗", calc: (a: number, b: number) => Math.floor(a / b) },
+];
+
 export default function ScheduleMathQuestions({ kids }: Props) {
   const t = useTranslations("learn");
   const tCommon = useTranslations("common");
   const [selectedKid, setSelectedKid] = useState(kids[0]?.id || "");
   const [selectedDate, setSelectedDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split("T")[0];
+    // Default to today
+    return new Date().toISOString().split("T")[0];
   });
-  const [rows, setRows] = useState<QuestionRow[]>([{ question: "", answer: "" }]);
+  const [rows, setRows] = useState<QuestionRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [existingIds, setExistingIds] = useState<string[]>([]);
 
+  // Quick-add state
+  const [quickOp, setQuickOp] = useState("+");
+  const [quickA, setQuickA] = useState("");
+  const [quickB, setQuickB] = useState("");
+
   const fetchExisting = useCallback(async () => {
     if (!selectedKid || !selectedDate) return;
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({
         kidId: selectedKid,
@@ -55,7 +67,7 @@ export default function ScheduleMathQuestions({ kids }: Props) {
         );
         setExistingIds(data.questions.map((q: { id: string }) => q.id));
       } else {
-        setRows([{ question: "", answer: "" }]);
+        setRows([]);
         setExistingIds([]);
       }
     } catch {
@@ -69,7 +81,27 @@ export default function ScheduleMathQuestions({ kids }: Props) {
     fetchExisting();
   }, [fetchExisting]);
 
-  const addRow = () => {
+  // Quick-add: compute and add a standard arithmetic question
+  const handleQuickAdd = () => {
+    const a = parseInt(quickA);
+    const b = parseInt(quickB);
+    if (isNaN(a) || isNaN(b)) return;
+    if (rows.length >= 10) return;
+
+    // Validate division
+    if (quickOp === "÷" && b === 0) return;
+
+    const op = operations.find((o) => o.key === quickOp)!;
+    const ans = op.calc(a, b);
+    const questionText = `${a} ${quickOp} ${b}`;
+
+    setRows([...rows, { question: questionText, answer: String(ans) }]);
+    setQuickA("");
+    setQuickB("");
+  };
+
+  // Manual free-form add
+  const addEmptyRow = () => {
     if (rows.length >= 10) return;
     setRows([...rows, { question: "", answer: "" }]);
   };
@@ -144,7 +176,7 @@ export default function ScheduleMathQuestions({ kids }: Props) {
       for (const id of existingIds) {
         await fetch(`/api/math/questions/${id}`, { method: "DELETE" });
       }
-      setRows([{ question: "", answer: "" }]);
+      setRows([]);
       setExistingIds([]);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -155,10 +187,13 @@ export default function ScheduleMathQuestions({ kids }: Props) {
     }
   };
 
+  const selectedKidName = kids.find((k) => k.id === selectedKid)?.name || t("unnamed");
+
   return (
-    <div className="space-y-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">{t("scheduleQuestions")}</h2>
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">{t("scheduleQuestions")}</h1>
         <p className="text-gray-600 mt-1">{t("scheduleQuestionsDesc")}</p>
       </div>
 
@@ -167,35 +202,93 @@ export default function ScheduleMathQuestions({ kids }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t("selectDate")}
+              📅 {t("selectDate")}
             </label>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t("selectKid")}
-            </label>
-            <select
-              value={selectedKid}
-              onChange={(e) => setSelectedKid(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              {kids.map((kid) => (
-                <option key={kid.id} value={kid.id}>
-                  {kid.name || t("unnamed")}
-                </option>
-              ))}
-            </select>
-          </div>
+          {kids.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                👦 {t("selectKid")}
+              </label>
+              <select
+                value={selectedKid}
+                onChange={(e) => setSelectedKid(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+              >
+                {kids.map((kid) => (
+                  <option key={kid.id} value={kid.id}>
+                    {kid.name || t("unnamed")}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Question rows */}
+      {/* Quick Add Helper */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          ⚡ {t("quickAdd")}
+        </h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={quickA}
+            onChange={(e) => setQuickA(e.target.value)}
+            placeholder="3"
+            className="w-20 px-3 py-3 border border-gray-300 rounded-lg text-center text-2xl font-bold focus:ring-2 focus:ring-blue-500"
+          />
+          <div className="flex gap-1">
+            {operations.map((op) => (
+              <button
+                key={op.key}
+                type="button"
+                onClick={() => setQuickOp(op.key)}
+                className={`w-12 h-12 rounded-lg text-xl font-bold transition ${
+                  quickOp === op.key
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {op.key}
+              </button>
+            ))}
+          </div>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={quickB}
+            onChange={(e) => setQuickB(e.target.value)}
+            placeholder="5"
+            className="w-20 px-3 py-3 border border-gray-300 rounded-lg text-center text-2xl font-bold focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="button"
+            onClick={handleQuickAdd}
+            disabled={!quickA || !quickB || rows.length >= 10}
+            className="px-5 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition text-lg"
+          >
+            {t("addQuestion")}
+          </button>
+        </div>
+        {/* Preview */}
+        {quickA && quickB && !isNaN(parseInt(quickA)) && !isNaN(parseInt(quickB)) && (
+          <div className="mt-3 text-gray-500 text-sm">
+            {t("preview")}: {quickA} {quickOp} {quickB} ={" "}
+            {operations.find((o) => o.key === quickOp)!.calc(parseInt(quickA), parseInt(quickB))}
+          </div>
+        )}
+      </div>
+
+      {/* Question list */}
       {loading ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="animate-pulse space-y-4">
@@ -204,48 +297,61 @@ export default function ScheduleMathQuestions({ kids }: Props) {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
-          {rows.map((row, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-500 w-6">{i + 1}.</span>
-              <input
-                type="text"
-                value={row.question}
-                onChange={(e) => updateRow(i, "question", e.target.value)}
-                placeholder={t("questionPlaceholder")}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <input
-                type="number"
-                value={row.answer}
-                onChange={(e) => updateRow(i, "answer", e.target.value)}
-                placeholder={t("expectedAnswer")}
-                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              {rows.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeRow(i)}
-                  className="text-red-500 hover:text-red-700 text-sm"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-
-          {rows.length < 10 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900">
+              📝 {t("questionList")} ({rows.length}/10)
+            </h3>
             <button
               type="button"
-              onClick={addRow}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              onClick={addEmptyRow}
+              disabled={rows.length >= 10}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-40"
             >
-              {t("addQuestion")}
+              + {t("addFreeForm")}
             </button>
+          </div>
+
+          {rows.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <span className="text-4xl block mb-2">📭</span>
+              <p>{t("noQuestionsYet")}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {rows.map((row, i) => (
+                <div key={i} className="flex items-center gap-2 group">
+                  <span className="text-sm font-bold text-gray-400 w-6 text-center">{i + 1}</span>
+                  <input
+                    type="text"
+                    value={row.question}
+                    onChange={(e) => updateRow(i, "question", e.target.value)}
+                    placeholder={t("questionPlaceholder")}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                  />
+                  <span className="text-gray-400 font-bold">=</span>
+                  <input
+                    type="number"
+                    value={row.answer}
+                    onChange={(e) => updateRow(i, "answer", e.target.value)}
+                    placeholder="?"
+                    className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg text-center font-bold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRow(i)}
+                    className="text-gray-300 hover:text-red-500 transition p-1"
+                    title={tCommon("delete")}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
 
           {rows.length >= 10 && (
-            <p className="text-sm text-gray-500">{t("maxQuestionsReached")}</p>
+            <p className="text-sm text-amber-600 mt-3">⚠️ {t("maxQuestionsReached")}</p>
           )}
         </div>
       )}
@@ -258,26 +364,34 @@ export default function ScheduleMathQuestions({ kids }: Props) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-        >
-          {saving ? t("savingQuestions") : t("saveQuestions")}
-        </button>
-        {existingIds.length > 0 && (
+      {rows.length > 0 && (
+        <div className="flex items-center gap-4">
           <button
-            onClick={handleClear}
+            onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50 transition"
+            className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-lg"
           >
-            {t("clearDay")}
+            {saving ? t("savingQuestions") : `💾 ${t("saveQuestions")}`}
           </button>
-        )}
-        {saved && (
-          <span className="text-green-600 font-medium">✓ {t("questionsScheduled")}</span>
-        )}
+          {existingIds.length > 0 && (
+            <button
+              onClick={handleClear}
+              disabled={saving}
+              className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 disabled:opacity-50 transition"
+            >
+              🗑️ {t("clearDay")}
+            </button>
+          )}
+          {saved && (
+            <span className="text-green-600 font-medium text-lg">✅ {t("questionsScheduled")}</span>
+          )}
+        </div>
+      )}
+
+      {/* Info box for grandma */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-blue-800 text-sm">
+        <p className="font-medium mb-1">💡 {t("howItWorks")}</p>
+        <p>{t("howItWorksDesc", { name: selectedKidName })}</p>
       </div>
     </div>
   );

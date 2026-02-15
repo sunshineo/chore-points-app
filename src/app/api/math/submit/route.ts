@@ -155,13 +155,18 @@ export async function POST(req: Request) {
       });
     }
 
-    // Update progress and award 1 point per correct answer
     const newCompleted = currentCompleted + 1;
     const allComplete = newCompleted >= questionsTarget;
+    const isCustom = customQuestions.length > 0;
 
-    const pointNote = customQuestions.length > 0
-      ? "Math: custom question"
-      : "Math: daily practice";
+    // Point logic differs:
+    // - Custom questions: 1 point per correct answer (immediate reward)
+    // - Auto-generated: 1 point when ALL questions complete (original behavior)
+    const shouldAwardPoint = isCustom
+      ? true // always award for each correct custom answer
+      : allComplete; // only award when all auto questions done
+
+    const pointNote = isCustom ? "Math: custom question" : "Math: daily practice";
 
     const updatedProgress = await prisma.$transaction(async (tx) => {
       const progress = await tx.mathProgress.upsert({
@@ -185,24 +190,26 @@ export async function POST(req: Request) {
         },
       });
 
-      // Award 1 point for this correct answer
-      await tx.pointEntry.create({
-        data: {
-          familyId: session.user.familyId!,
-          kidId: targetKidId,
-          points: 1,
-          note: pointNote,
-          createdById: session.user.id,
-          updatedById: session.user.id,
-        },
-      });
+      if (shouldAwardPoint) {
+        const points = isCustom ? 1 : 1; // 1 point either way, but timing differs
+        await tx.pointEntry.create({
+          data: {
+            familyId: session.user.familyId!,
+            kidId: targetKidId,
+            points,
+            note: pointNote,
+            createdById: session.user.id,
+            updatedById: session.user.id,
+          },
+        });
+      }
 
       return progress;
     });
 
     return NextResponse.json({
       correct: true,
-      pointAwarded: true,
+      pointAwarded: shouldAwardPoint,
       questionsCompleted: updatedProgress.questionsCompleted,
       questionsTarget,
       allComplete,

@@ -43,6 +43,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
     pointAwarded: boolean;
   } | null>(null);
   const [shake, setShake] = useState(false);
+  const [pointFlash, setPointFlash] = useState(false);
   const questionStartTime = useRef<number>(Date.now());
   const t = useTranslations("learn");
 
@@ -125,6 +126,12 @@ export default function MathModule({ kidId, onComplete }: Props) {
         setAnswer("");
         questionStartTime.current = Date.now();
 
+        // Show +1 point flash for custom questions
+        if (data?.source === "custom" && result.pointAwarded && !result.allComplete) {
+          setPointFlash(true);
+          setTimeout(() => setPointFlash(false), 1200);
+        }
+
         if (result.allComplete) {
           confetti({
             particleCount: 100,
@@ -172,7 +179,11 @@ export default function MathModule({ kidId, onComplete }: Props) {
         <div className="bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-8">
           <span className="text-6xl mb-4 block">🎉</span>
           <h2 className="text-2xl font-bold text-white">{t("mathComplete")}</h2>
-          <p className="text-white/80 mt-2">+{data.questionsTarget} {data.questionsTarget === 1 ? "point" : "points"} earned!</p>
+          <p className="text-white/80 mt-2">
+            {data.source === "custom"
+              ? `+${data.questionsTarget} ${data.questionsTarget === 1 ? "point" : "points"} earned!`
+              : t("pointEarned")}
+          </p>
         </div>
       </div>
     );
@@ -247,6 +258,13 @@ export default function MathModule({ kidId, onComplete }: Props) {
       <div className="mt-4 text-sm text-gray-500">
         {t("step")} {currentIndex + 1} {t("of")} {data.questionsTarget}
       </div>
+
+      {/* Point flash for custom questions */}
+      {pointFlash && (
+        <div className="mt-3 text-green-600 font-bold text-lg animate-bounce">
+          +1 ⭐
+        </div>
+      )}
     </div>
   );
 }
