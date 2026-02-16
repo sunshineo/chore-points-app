@@ -159,13 +159,7 @@ export async function POST(req: Request) {
     const allComplete = newCompleted >= questionsTarget;
     const isCustom = customQuestions.length > 0;
 
-    // Point logic differs:
-    // - Custom questions: 1 point per correct answer (immediate reward)
-    // - Auto-generated: 1 point when ALL questions complete (original behavior)
-    const shouldAwardPoint = isCustom
-      ? true // always award for each correct custom answer
-      : allComplete; // only award when all auto questions done
-
+    // Award 1 point per correct answer for both custom and auto-generated
     const pointNote = isCustom ? "Math: custom question" : "Math: daily practice";
 
     const updatedProgress = await prisma.$transaction(async (tx) => {
@@ -190,26 +184,24 @@ export async function POST(req: Request) {
         },
       });
 
-      if (shouldAwardPoint) {
-        const points = isCustom ? 1 : 1; // 1 point either way, but timing differs
-        await tx.pointEntry.create({
-          data: {
-            familyId: session.user.familyId!,
-            kidId: targetKidId,
-            points,
-            note: pointNote,
-            createdById: session.user.id,
-            updatedById: session.user.id,
-          },
-        });
-      }
+      // Award 1 point for each correct answer
+      await tx.pointEntry.create({
+        data: {
+          familyId: session.user.familyId!,
+          kidId: targetKidId,
+          points: 1,
+          note: pointNote,
+          createdById: session.user.id,
+          updatedById: session.user.id,
+        },
+      });
 
       return progress;
     });
 
     return NextResponse.json({
       correct: true,
-      pointAwarded: shouldAwardPoint,
+      pointAwarded: true,
       questionsCompleted: updatedProgress.questionsCompleted,
       questionsTarget,
       allComplete,

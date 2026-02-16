@@ -126,8 +126,8 @@ export default function MathModule({ kidId, onComplete }: Props) {
         setAnswer("");
         questionStartTime.current = Date.now();
 
-        // Show +1 point flash for custom questions
-        if (data?.source === "custom" && result.pointAwarded && !result.allComplete) {
+        // Show +1 point flash after each correct answer
+        if (result.pointAwarded && !result.allComplete) {
           setPointFlash(true);
           setTimeout(() => setPointFlash(false), 1200);
         }
@@ -180,9 +180,7 @@ export default function MathModule({ kidId, onComplete }: Props) {
           <span className="text-6xl mb-4 block">🎉</span>
           <h2 className="text-2xl font-bold text-white">{t("mathComplete")}</h2>
           <p className="text-white/80 mt-2">
-            {data.source === "custom"
-              ? `+${data.questionsTarget} ${data.questionsTarget === 1 ? "point" : "points"} earned!`
-              : t("pointEarned")}
+            +{data.questionsTarget} {data.questionsTarget === 1 ? "point" : "points"} earned!
           </p>
         </div>
       </div>
