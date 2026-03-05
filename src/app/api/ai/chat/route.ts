@@ -1,59 +1,69 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireParentInFamily } from "@/lib/permissions";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const anthropic = new Anthropic();
+const openai = new OpenAI();
 
 type Message = {
   role: "user" | "assistant";
   content: string;
 };
 
-// Tool definitions for Claude
-const tools: Anthropic.Tool[] = [
+// Tool definitions for OpenAI
+const tools: OpenAI.ChatCompletionTool[] = [
   {
-    name: "get_family_kids",
-    description:
-      "Get all kids in the parent's family with their current point balances. Call this when you need to know which kids are in the family or check balances.",
-    input_schema: {
-      type: "object" as const,
-      properties: {},
-      required: [],
-    },
-  },
-  {
-    name: "add_points",
-    description:
-      "Add or remove points for a kid. Use positive numbers to award points and negative numbers to deduct points. Always include a reason/note.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        kidId: {
-          type: "string",
-          description: "The ID of the kid to add/remove points for",
-        },
-        points: {
-          type: "number",
-          description:
-            "Number of points to add (positive) or remove (negative)",
-        },
-        note: {
-          type: "string",
-          description: "Reason for the point change, e.g. 'Cleaned his room'",
-        },
+    type: "function",
+    function: {
+      name: "get_family_kids",
+      description:
+        "Get all kids in the parent's family with their current point balances. Call this when you need to know which kids are in the family or check balances.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
       },
-      required: ["kidId", "points", "note"],
     },
   },
   {
-    name: "get_available_chores",
-    description:
-      "Get the list of defined chores with their default point values. Useful when you need to suggest point amounts.",
-    input_schema: {
-      type: "object" as const,
-      properties: {},
-      required: [],
+    type: "function",
+    function: {
+      name: "add_points",
+      description:
+        "Add or remove points for a kid. Use positive numbers to award points and negative numbers to deduct points. Always include a reason/note.",
+      parameters: {
+        type: "object",
+        properties: {
+          kidId: {
+            type: "string",
+            description: "The ID of the kid to add/remove points for",
+          },
+          points: {
+            type: "number",
+            description:
+              "Number of points to add (positive) or remove (negative)",
+          },
+          note: {
+            type: "string",
+            description:
+              "Reason for the point change, e.g. 'Cleaned his room'",
+          },
+        },
+        required: ["kidId", "points", "note"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_available_chores",
+      description:
+        "Get the list of defined chores with their default point values. Useful when you need to suggest point amounts.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
     },
   },
 ];
@@ -72,7 +82,6 @@ async function executeTool(
         select: { id: true, name: true, email: true },
       });
 
-      // Get point balances for each kid
       const kidsWithPoints = await Promise.all(
         kids.map(async (kid) => {
           const entries = await prisma.pointEntry.findMany({
@@ -94,13 +103,11 @@ async function executeTool(
         note: string;
       };
 
-      // Verify kid belongs to family
       const kid = await prisma.user.findUnique({ where: { id: kidId } });
       if (!kid || kid.familyId !== familyId || kid.role !== "KID") {
         return JSON.stringify({ error: "Kid not found in your family" });
       }
 
-      // Create point entry
       const entry = await prisma.pointEntry.create({
         data: {
           familyId,
@@ -113,7 +120,6 @@ async function executeTool(
         },
       });
 
-      // Get updated total
       const entries = await prisma.pointEntry.findMany({
         where: { familyId, kidId },
         select: { points: true },
@@ -161,14 +167,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Build conversation messages for Claude
-    const apiMessages: Anthropic.MessageParam[] = history
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({ role: m.role, content: m.content }));
-
-    // Add the new user message
-    apiMessages.push({ role: "user", content: message });
-
     const systemPrompt = `You are GemSteps Assistant, a helpful AI for managing kids' chore points. You help parents award and track points for their children.
 
 Key behaviors:
@@ -182,72 +180,65 @@ Key behaviors:
 - After adding or removing points, confirm the action and mention the new balance.
 - You can reference get_available_chores if you want to match activities to defined chores.`;
 
-    // Agentic loop: keep calling until Claude stops requesting tools
+    // Build messages for OpenAI
+    const apiMessages: OpenAI.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemPrompt },
+    ];
+
+    for (const m of history) {
+      if (m.role === "user" || m.role === "assistant") {
+        apiMessages.push({ role: m.role, content: m.content });
+      }
+    }
+    apiMessages.push({ role: "user", content: message });
+
+    // Agentic loop
     let currentMessages = apiMessages;
-    let response: Anthropic.Message;
+    let response: OpenAI.ChatCompletion;
     const maxIterations = 5;
     let iteration = 0;
+    let assistantContent = "";
 
     while (iteration < maxIterations) {
       iteration++;
 
-      response = await anthropic.messages.create({
-        model: "claude-haiku-4-5",
+      response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
         max_tokens: 1024,
-        system: systemPrompt,
-        tools,
         messages: currentMessages,
+        tools,
       });
 
-      if (response.stop_reason === "end_turn") {
+      const choice = response.choices[0];
+
+      if (choice.finish_reason === "stop" || !choice.message.tool_calls?.length) {
+        assistantContent = choice.message.content || "I processed your request.";
         break;
       }
 
-      if (response.stop_reason === "tool_use") {
-        // Execute all tool calls
-        const toolUseBlocks = response.content.filter(
-          (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+      // Handle tool calls
+      currentMessages = [
+        ...currentMessages,
+        choice.message,
+      ];
+
+      for (const toolCall of choice.message.tool_calls) {
+        if (toolCall.type !== "function") continue;
+        const fn = toolCall.function;
+        const toolInput = JSON.parse(fn.arguments);
+        const result = await executeTool(
+          fn.name,
+          toolInput,
+          familyId,
+          parentId
         );
-
-        // Add assistant message with tool calls
-        currentMessages = [
-          ...currentMessages,
-          { role: "assistant" as const, content: response.content },
-        ];
-
-        // Execute tools and collect results
-        const toolResults: Anthropic.ToolResultBlockParam[] = [];
-        for (const toolBlock of toolUseBlocks) {
-          const result = await executeTool(
-            toolBlock.name,
-            toolBlock.input as Record<string, unknown>,
-            familyId,
-            parentId
-          );
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: toolBlock.id,
-            content: result,
-          });
-        }
-
-        currentMessages = [
-          ...currentMessages,
-          { role: "user" as const, content: toolResults },
-        ];
-
-        continue;
+        currentMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: result,
+        });
       }
-
-      // Any other stop reason, break
-      break;
     }
-
-    // Extract text response
-    const textBlock = response!.content.find(
-      (b): b is Anthropic.TextBlock => b.type === "text"
-    );
-    const responseText = textBlock?.text || "I processed your request.";
 
     // Gather updated balances for the UI
     const kids = await prisma.user.findMany({
@@ -265,7 +256,7 @@ Key behaviors:
     }
 
     return NextResponse.json({
-      response: responseText,
+      response: assistantContent,
       balances,
     });
   } catch (error: unknown) {
