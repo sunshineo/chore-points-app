@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/permissions";
+import { prisma } from "@/lib/db";
 import FamilySetup from "@/components/family/FamilySetup";
 import ParentDashboardHeader from "@/components/parent/ParentDashboardHeader";
+import ParentChat from "@/components/chat/ParentChat";
 import WeeklyCalendarView from "@/components/calendar/WeeklyCalendarView";
 import FamilyTodoList from "@/components/dashboard/FamilyTodoList";
 import PhotoCarousel from "@/components/dashboard/PhotoCarousel";
@@ -25,11 +27,17 @@ export default async function DashboardPage() {
 
   // If user has a family, show appropriate dashboard based on role
   if (session.user.role === "PARENT") {
+    const kids = await prisma.user.findMany({
+      where: { familyId: session.user.familyId, role: "KID" },
+      select: { id: true, name: true },
+    });
+
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ParentDashboardHeader />
           <div className="mt-6 space-y-6">
+            <ParentChat kids={kids} />
             <WeeklyCalendarView />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FamilyTodoList />

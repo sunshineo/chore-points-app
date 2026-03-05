@@ -55,7 +55,10 @@
     "dailyProgress": "每日进度",
     "ptsThisMonth": "分 本月",
     "trackPoints": "查看你的积分和家务记录",
-    "redeemRewards": "兑换奖励"
+    "redeemRewards": "兑换奖励",
+    "recentActivity": "最近活动",
+    "earnedPoints": "获得积分",
+    "spentPoints": "使用积分"
   },
   "calendar": {
     "weekdays": ["日", "一", "二", "三", "四", "五", "六"],
@@ -787,5 +790,15 @@
     "unavailable": "Hue不可用",
     "reconnect": "重新连接",
     "allRooms": "所有房间"
+  },
+  "chat": {
+    "title": "GemSteps 助手",
+    "welcome": "你好！我可以帮你管理积分。",
+    "welcomeHint": "告诉我孩子们做了什么，我会处理积分。你也可以查询余额。",
+    "placeholder": "例如：Jasper打扫了房间，给他5分",
+    "send": "发送",
+    "example1": "给Jasper 5分，因为打扫了房间",
+    "example2": "大家有多少积分？",
+    "example3": "扣Jasper 3分，因为没做作业"
   }
 }

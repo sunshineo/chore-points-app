@@ -55,7 +55,10 @@
     "dailyProgress": "Daily Progress",
     "ptsThisMonth": "pts this month",
     "trackPoints": "Track your points and see your chore history",
-    "redeemRewards": "Redeem Rewards"
+    "redeemRewards": "Redeem Rewards",
+    "recentActivity": "Recent Activity",
+    "earnedPoints": "Earned points",
+    "spentPoints": "Points spent"
   },
   "calendar": {
     "weekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
@@ -787,5 +790,15 @@
     "unavailable": "Hue unavailable",
     "reconnect": "Reconnect",
     "allRooms": "All Rooms"
+  },
+  "chat": {
+    "title": "GemSteps Assistant",
+    "welcome": "Hi! I can help manage points.",
+    "welcomeHint": "Tell me what your kids did and I'll handle the points. You can also ask about balances.",
+    "placeholder": "e.g. Jasper cleaned his room, give him 5 points",
+    "send": "Send",
+    "example1": "Give Jasper 5 points for cleaning his room",
+    "example2": "How many points does everyone have?",
+    "example3": "Take away 3 points from Jasper for not doing homework"
   }
 }
