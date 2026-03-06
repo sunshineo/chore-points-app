@@ -109,7 +109,7 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
               setTotalPoints(newTotal);
               setAnimationType(type);
               setTimeout(() => setAnimationType(null), 2500);
-            }, 2500);
+            }, 3500);
           } else {
             // No emoji — just do counter animation immediately
             setRainEmoji(type === "gain" ? "💎" : "💨");
@@ -227,7 +227,7 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
         <div className={`bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-3xl shadow-xl p-8 text-white relative ${animationType ? "pulse-glow" : ""}`}>
           {/* Phase 1: Big activity emoji on dark backdrop */}
           {showEmoji && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none rounded-3xl" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}>
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none rounded-3xl" style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)" }}>
               <div className="text-[120px] sm:text-[150px] animate-bounce drop-shadow-2xl">
                 {rainEmoji}
               </div>
