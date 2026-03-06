@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { verifyKioskToken } from "../verify/route";
 
 // Extract first emoji from a string
 function extractEmoji(text: string): string | null {
@@ -57,6 +58,12 @@ export async function GET(
   { params }: { params: Promise<{ kidId: string }> }
 ) {
   const { kidId } = await params;
+
+  // Verify kiosk token
+  const token = _req.nextUrl.searchParams.get("token") || _req.headers.get("x-kiosk-token") || "";
+  if (!verifyKioskToken(token)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   // Look up the kid
   const kid = await prisma.user.findUnique({

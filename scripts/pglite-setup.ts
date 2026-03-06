@@ -23,7 +23,8 @@ async function main() {
     await client.query('SELECT 1 FROM "User" LIMIT 1');
     await client.query('SELECT 1 FROM "Family" LIMIT 1');
     await client.query('SELECT 1 FROM "Chore" LIMIT 1');
-    // All critical tables exist — database is already initialized
+    // All critical tables exist — apply any pending column migrations
+    await client.exec('ALTER TABLE "Chore" ADD COLUMN IF NOT EXISTS "schedule" TEXT;');
     await client.close();
     return;
   } catch {
