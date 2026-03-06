@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import ChoreFlashcards from "@/components/chores/ChoreFlashcards";
@@ -17,20 +17,36 @@ type PointEntry = {
   chore?: { title: string } | null;
 };
 
+// Extract emoji characters from a string
+function extractEmojis(text: string): string[] {
+  const emojiRegex = /(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+  return [...(text.match(emojiRegex) || [])];
+}
+
+// Get the display emoji for a point entry
+function getEntryEmoji(entry: PointEntry): string | null {
+  if (entry.chore?.title) {
+    const emojis = extractEmojis(entry.chore.title);
+    if (emojis.length > 0) return emojis[0];
+  }
+  if (entry.note) {
+    const emojis = extractEmojis(entry.note);
+    if (emojis.length > 0) return emojis[0];
+  }
+  return null;
+}
+
 type KidPointsViewProps = {
   kidId: string;
   readOnly?: boolean;
 };
 
-// Animated gem particle for the rain effect
-function GemParticle({ index, type }: { index: number; type: "gain" | "lose" }) {
+// Animated particle for the rain effect — uses activity emoji if available
+function RainParticle({ index, type, emoji }: { index: number; type: "gain" | "lose"; emoji: string }) {
   const left = Math.random() * 100;
   const delay = Math.random() * 0.8;
   const duration = 1.5 + Math.random() * 1;
-  const size = 16 + Math.random() * 16;
-  const gem = type === "gain"
-    ? ["&#x1F48E;", "&#x2B50;", "&#x2728;"][index % 3]
-    : ["&#x1F4A8;"][0];
+  const size = 20 + Math.random() * 20;
 
   return (
     <span
@@ -43,18 +59,21 @@ function GemParticle({ index, type }: { index: number; type: "gain" | "lose" }) 
         fontSize: `${size}px`,
         top: type === "gain" ? "-40px" : "50%",
       }}
-      dangerouslySetInnerHTML={{ __html: gem }}
-    />
+    >
+      {emoji}
+    </span>
   );
 }
 
 export default function KidPointsView({ kidId, readOnly = false }: KidPointsViewProps) {
   const [totalPoints, setTotalPoints] = useState(0);
-  const [prevPoints, setPrevPoints] = useState<number | null>(null);
   const [entries, setEntries] = useState<PointEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [animationType, setAnimationType] = useState<"gain" | "lose" | null>(null);
+  const [rainEmoji, setRainEmoji] = useState("💎");
+  const [showEmoji, setShowEmoji] = useState(false);
   const [displayedPoints, setDisplayedPoints] = useState(0);
+  const prevTotalRef = useRef<number | null>(null);
   const t = useTranslations("points");
   const tCommon = useTranslations("common");
   const tBadges = useTranslations("badges");
@@ -65,20 +84,53 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
       const data = await response.json();
       if (response.ok) {
         const newTotal = data.totalPoints;
-        if (prevPoints !== null && newTotal !== prevPoints) {
-          setAnimationType(newTotal > prevPoints ? "gain" : "lose");
-          setTimeout(() => setAnimationType(null), 2500);
+        const newEntries: PointEntry[] = data.entries || [];
+        const prev = prevTotalRef.current;
+
+        if (prev !== null && newTotal !== prev) {
+          const type = newTotal > prev ? "gain" : "lose";
+
+          // Get emoji from the most recent entry
+          let emoji: string | null = null;
+          if (type === "gain" && newEntries.length > 0) {
+            emoji = getEntryEmoji(newEntries[0]);
+          }
+
+          if (emoji) {
+            // Phase 1: Show big emoji for 2.5s, DON'T update points yet
+            setRainEmoji(emoji);
+            setShowEmoji(true);
+            setEntries(newEntries);
+            prevTotalRef.current = newTotal;
+
+            // Phase 2: After emoji display, update points + counter animation
+            setTimeout(() => {
+              setShowEmoji(false);
+              setTotalPoints(newTotal);
+              setAnimationType(type);
+              setTimeout(() => setAnimationType(null), 2500);
+            }, 2500);
+          } else {
+            // No emoji — just do counter animation immediately
+            setRainEmoji(type === "gain" ? "💎" : "💨");
+            setAnimationType(type);
+            setTotalPoints(newTotal);
+            setEntries(newEntries);
+            prevTotalRef.current = newTotal;
+            setTimeout(() => setAnimationType(null), 2500);
+          }
+        } else {
+          prevTotalRef.current = newTotal;
+          setTotalPoints(newTotal);
+          setEntries(newEntries);
         }
-        setPrevPoints(totalPoints || null);
-        setTotalPoints(newTotal);
-        setEntries(data.entries || []);
       }
     } catch (error) {
       console.error("Failed to fetch points:", error);
     } finally {
       setLoading(false);
     }
-  }, [kidId, prevPoints, totalPoints]);
+  }, [kidId]);
 
   useEffect(() => {
     fetchPoints();
@@ -112,7 +164,6 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
     return () => clearInterval(interval);
   }, [fetchPoints]);
 
-  // Recent activity (last 5 entries)
   const recentActivity = entries.slice(0, 5);
 
   if (loading) {
@@ -174,11 +225,20 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
       {/* Gem Counter Hero */}
       <div className="mb-8 relative overflow-hidden">
         <div className={`bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-3xl shadow-xl p-8 text-white relative ${animationType ? "pulse-glow" : ""}`}>
-          {/* Animation particles */}
-          {animationType && (
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Phase 1: Big activity emoji on dark backdrop */}
+          {showEmoji && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none rounded-3xl" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}>
+              <div className="text-[120px] sm:text-[150px] animate-bounce drop-shadow-2xl">
+                {rainEmoji}
+              </div>
+            </div>
+          )}
+
+          {/* Phase 2: Counter bump glow */}
+          {animationType && !showEmoji && (
+            <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
               {Array.from({ length: 12 }).map((_, i) => (
-                <GemParticle key={i} index={i} type={animationType} />
+                <RainParticle key={i} index={i} type={animationType} emoji={rainEmoji} />
               ))}
             </div>
           )}
