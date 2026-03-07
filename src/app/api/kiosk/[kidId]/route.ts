@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyKioskToken } from "../verify/route";
-import { getTodayStartPT, getWeekStartPT, buildBonusNote, getBaseSchedule, isChoreActiveToday } from "@/lib/date-utils";
+import { getTodayStartPT, getWeekStartPT, buildBonusNote, getBaseSchedule, isChoreActiveToday, getTodayStringPT, isSchoolDayBasic } from "@/lib/date-utils";
 
 // Extract first emoji from a string
 function extractEmoji(text: string): string | null {
@@ -31,6 +31,17 @@ export async function GET(
   if (!kid || !kid.familyId) {
     return NextResponse.json({ error: "Kid not found" }, { status: 404 });
   }
+
+  // Check if today is a custom off-day (school breaks, family holidays)
+  const todayStr = getTodayStringPT();
+  const customOffDay = await prisma.schoolOff.findFirst({
+    where: {
+      familyId: kid.familyId,
+      date: new Date(todayStr + "T00:00:00"),
+    },
+  });
+  // School day = basic check (weekday + not federal holiday) AND not a custom off-day
+  const isSchoolDay = isSchoolDayBasic() && !customOffDay;
 
   // Get all active scheduled chores for the family
   const chores = await prisma.chore.findMany({
@@ -110,7 +121,7 @@ export async function GET(
     const emoji = chore.icon || extractEmoji(chore.title);
     const baseSchedule = getBaseSchedule(chore.schedule);
     const weekdayOnly = chore.schedule.endsWith("_weekday");
-    const activeToday = isChoreActiveToday(chore.schedule);
+    const activeToday = weekdayOnly ? isSchoolDay : true;
     const base = { id: chore.id, title: chore.title, emoji, defaultPoints: chore.defaultPoints, weekdayOnly, activeToday };
     if (baseSchedule === "morning") {
       morning.push({ ...base, completedToday: completedTodayChoreIds.has(chore.id) });

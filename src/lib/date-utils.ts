@@ -80,24 +80,109 @@ export function getBaseSchedule(schedule: string): string {
 }
 
 /**
- * Check if today is a weekday in PT timezone.
+ * Get today's date string in PT timezone as "YYYY-MM-DD".
  */
-export function isWeekdayPT(): boolean {
+export function getTodayStringPT(): string {
   const now = new Date();
-  const ptDay = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Los_Angeles",
-    weekday: "short",
-  }).format(now);
-  return !["Sat", "Sun"].includes(ptDay);
+  return now.toLocaleDateString("en-CA", { timeZone: TZ }); // "YYYY-MM-DD"
 }
 
 /**
- * Check if a chore should be shown today based on its schedule.
- * Chores with "_weekday" suffix only show on Mon-Fri.
+ * Get today's date parts in PT timezone.
+ */
+function getTodayPartsPT(): { year: number; month: number; day: number; dayOfWeek: number } {
+  const now = new Date();
+  const ptNow = new Date(now.toLocaleString("en-US", { timeZone: TZ }));
+  return {
+    year: ptNow.getFullYear(),
+    month: ptNow.getMonth() + 1, // 1-indexed
+    day: ptNow.getDate(),
+    dayOfWeek: ptNow.getDay(), // 0=Sun, 6=Sat
+  };
+}
+
+/**
+ * Check if today is a weekday in PT timezone.
+ */
+export function isWeekdayPT(): boolean {
+  const { dayOfWeek } = getTodayPartsPT();
+  return dayOfWeek >= 1 && dayOfWeek <= 5;
+}
+
+/**
+ * Get the Nth weekday of a month (for floating holidays).
+ * n=1 means first, n=-1 means last.
+ */
+function nthWeekdayOfMonth(year: number, month: number, weekday: number, n: number): number {
+  if (n > 0) {
+    // First day of month
+    const first = new Date(year, month - 1, 1);
+    let day = 1 + ((weekday - first.getDay() + 7) % 7);
+    day += (n - 1) * 7;
+    return day;
+  } else {
+    // Last weekday of month
+    const lastDay = new Date(year, month, 0).getDate();
+    const last = new Date(year, month - 1, lastDay);
+    let day = lastDay - ((last.getDay() - weekday + 7) % 7);
+    day += (n + 1) * 7;
+    return day;
+  }
+}
+
+/**
+ * Compute US federal holidays for a given year.
+ * Returns set of "YYYY-MM-DD" strings.
+ */
+export function getUSFederalHolidays(year: number): Set<string> {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmt = (m: number, d: number) => `${year}-${pad(m)}-${pad(d)}`;
+  const holidays = new Set<string>();
+
+  // Fixed-date holidays
+  holidays.add(fmt(1, 1));   // New Year's Day
+  holidays.add(fmt(7, 4));   // Independence Day
+  holidays.add(fmt(12, 25)); // Christmas Day
+
+  // Floating holidays (month, weekday, nth)
+  holidays.add(fmt(1, nthWeekdayOfMonth(year, 1, 1, 3)));   // MLK Day: 3rd Monday of Jan
+  holidays.add(fmt(2, nthWeekdayOfMonth(year, 2, 1, 3)));   // Presidents' Day: 3rd Monday of Feb
+  holidays.add(fmt(5, nthWeekdayOfMonth(year, 5, 1, -1)));  // Memorial Day: Last Monday of May
+  holidays.add(fmt(9, nthWeekdayOfMonth(year, 9, 1, 1)));   // Labor Day: 1st Monday of Sep
+  holidays.add(fmt(10, nthWeekdayOfMonth(year, 10, 1, 2)));  // Columbus Day: 2nd Monday of Oct
+  holidays.add(fmt(11, 11));                                  // Veterans Day
+  const thanksgivingDay = nthWeekdayOfMonth(year, 11, 4, 4); // Thanksgiving: 4th Thursday of Nov
+  holidays.add(fmt(11, thanksgivingDay));
+  holidays.add(fmt(11, thanksgivingDay + 1));                 // Black Friday (most schools off)
+
+  return holidays;
+}
+
+/**
+ * Check if today (in PT) is a US federal holiday.
+ */
+export function isUSHolidayPT(): boolean {
+  const { year } = getTodayPartsPT();
+  const todayStr = getTodayStringPT();
+  return getUSFederalHolidays(year).has(todayStr);
+}
+
+/**
+ * Check if today is a "school day" based on weekday + federal holidays.
+ * Does NOT check custom off-days (those need DB lookup via isSchoolDay()).
+ */
+export function isSchoolDayBasic(): boolean {
+  return isWeekdayPT() && !isUSHolidayPT();
+}
+
+/**
+ * Check if a chore should be active today based on its schedule.
+ * For full school-day checks (including custom off-days), use isChoreActiveTodayFull().
+ * This version only checks weekday + federal holidays.
  */
 export function isChoreActiveToday(schedule: string): boolean {
   if (schedule.endsWith("_weekday")) {
-    return isWeekdayPT();
+    return isSchoolDayBasic();
   }
   return true;
 }

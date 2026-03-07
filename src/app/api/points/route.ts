@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireFamily } from "@/lib/permissions";
 import { calculateLevel, getLevelInfo } from "@/lib/badges";
 import { evaluateAndAwardBadges } from "@/lib/badge-evaluator";
-import { getPeriodStartPT, buildBonusNote, getBaseSchedule, isChoreActiveToday } from "@/lib/date-utils";
+import { getPeriodStartPT, buildBonusNote, getBaseSchedule, isSchoolDayBasic, getTodayStringPT } from "@/lib/date-utils";
 
 // GET /api/points - Get kid's total points and ledger history
 export async function GET(req: Request) {
@@ -257,9 +257,19 @@ export async function POST(req: Request) {
           select: { id: true, schedule: true },
         });
 
-        // Filter out weekday-only chores if today is a weekend
+        // Check custom off-days for school-day determination
+        const todayStr = getTodayStringPT();
+        const customOffDay = await prisma.schoolOff.findFirst({
+          where: {
+            familyId: session.user.familyId!,
+            date: new Date(todayStr + "T00:00:00"),
+          },
+        });
+        const isSchoolDay = isSchoolDayBasic() && !customOffDay;
+
+        // Filter out weekday-only chores on non-school days
         const activeChores = allScheduleChores.filter(
-          (c) => c.schedule && isChoreActiveToday(c.schedule)
+          (c) => c.schedule?.endsWith("_weekday") ? isSchoolDay : true
         );
 
         // Get completed chore IDs for this kid in this period

@@ -107,6 +107,7 @@ model Family {
   mealPlans      MealPlan[]
   mathSettings   MathSettings?
   customMathQuestions CustomMathQuestion[]
+  schoolOffDays  SchoolOff[]
 
   // Philips Hue integration
   hueAccessToken  String?
@@ -809,6 +810,22 @@ model PlannedDayMeal {
   updatedAt DateTime @updatedAt
 
   @@index([dayId])
+}
+
+model SchoolOff {
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  date  DateTime @db.Date  // Single date (no school this day)
+  label String?            // Optional label ("Spring Break", "Teacher Planning Day")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([familyId, date])
+  @@index([familyId])
+  @@index([familyId, date])
 }
 
 model PlannedDayMealDish {
