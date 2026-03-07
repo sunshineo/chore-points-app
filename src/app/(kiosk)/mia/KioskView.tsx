@@ -57,6 +57,9 @@ const CHORE_EMOJI_MAP: Record<string, string> = {
   体操课: "🤸",
   刷牙: "🪥",
   洗澡: "🛁",
+  "7:45前起床": "⏰",
+  "8:15前出门": "🚪",
+  "8点前上楼": "⬆️",
 };
 
 function getChoreEmoji(chore: ChoreItem): string {
@@ -100,8 +103,16 @@ function RainParticle({
 
 // ── Chore tile ─────────────────────────────────────────────────────────────
 
+/** Strip emoji characters from title to get clean text label */
+function getChoreLabel(title: string): string {
+  return title
+    .replace(/(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu, "")
+    .trim();
+}
+
 function ChoreTile({ chore, done }: { chore: ChoreItem; done: boolean }) {
   const emoji = getChoreEmoji(chore);
+  const label = getChoreLabel(chore.title);
 
   return (
     <div
@@ -121,11 +132,18 @@ function ChoreTile({ chore, done }: { chore: ChoreItem; done: boolean }) {
       </div>
 
       {/* Emoji */}
-      <span style={{ fontSize: 44, lineHeight: 1 }}>{emoji}</span>
+      <span style={{ fontSize: 36, lineHeight: 1 }}>{emoji}</span>
+
+      {/* Text label */}
+      <span className={`mt-1 text-xs font-bold text-center leading-tight px-1 ${done ? "text-emerald-700" : "text-gray-600"}`}
+        style={{ maxWidth: 100, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+      >
+        {label}
+      </span>
 
       {/* Points */}
-      <span className={`mt-1.5 text-base font-black ${done ? "text-emerald-600" : "text-gray-400"}`}>
-        {chore.defaultPoints}
+      <span className={`text-xs font-black ${done ? "text-emerald-600" : "text-gray-400"}`}>
+        {chore.defaultPoints}分
       </span>
     </div>
   );

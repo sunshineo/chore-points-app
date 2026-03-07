@@ -39,7 +39,7 @@ export async function GET(
       isActive: true,
       schedule: { not: null },
     },
-    select: { id: true, title: true, defaultPoints: true, schedule: true },
+    select: { id: true, title: true, icon: true, defaultPoints: true, schedule: true },
     orderBy: { createdAt: "asc" },
   });
 
@@ -103,7 +103,7 @@ export async function GET(
   const weekly: ChoreItem[] = [];
 
   for (const chore of chores) {
-    const emoji = extractEmoji(chore.title);
+    const emoji = chore.icon || extractEmoji(chore.title);
     const base = { id: chore.id, title: chore.title, emoji, defaultPoints: chore.defaultPoints };
     if (chore.schedule === "morning") {
       morning.push({ ...base, completedToday: completedTodayChoreIds.has(chore.id) });
