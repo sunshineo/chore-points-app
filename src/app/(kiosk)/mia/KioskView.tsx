@@ -159,54 +159,17 @@ function ChoreTile({ chore, done, colorIndex }: { chore: ChoreItem; done: boolea
 
 // ── Section ────────────────────────────────────────────────────────────────
 
-function BonusTile({ awarded, colorIndex }: { awarded: boolean; colorIndex: number }) {
-  const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
 
-  return (
-    <div
-      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white overflow-hidden bg-gradient-to-br ${gradient}`}
-      style={{ width: 165, height: 165, opacity: awarded ? 0.55 : 1 }}
-    >
-      {/* White overlay to soften the gradient */}
-      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
-
-      {/* Status badge */}
-      <div
-        className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow
-          ${awarded ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}
-      >
-        {awarded ? "✓" : "!"}
-      </div>
-
-      {/* Emoji */}
-      <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>🌟</span>
-
-      {/* Title */}
-      <h3 className="relative z-10 mt-2 font-bold text-sm text-white"
-        style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
-      >
-        全勤奖
-      </h3>
-
-      {/* Points badge */}
-      <span className={`relative z-10 mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${awarded ? "bg-white/40" : "bg-white/30"}`}>
-        +5 分
-      </span>
-    </div>
-  );
-}
 
 function ChoreSection({
   label,
   chores,
   isWeekly,
-  bonus,
   colorOffset,
 }: {
   label: string;
   chores: ChoreItem[];
   isWeekly?: boolean;
-  bonus?: BonusStatus;
   colorOffset?: number;
 }) {
   if (chores.length === 0) return (
@@ -217,10 +180,15 @@ function ChoreSection({
 
   const offset = colorOffset ?? 0;
 
+  // Split into bonus-eligible (activeToday) and extras
+  const bonusChores = chores.filter((c) => c.activeToday !== false);
+  const extraChores = chores.filter((c) => c.activeToday === false);
+
   return (
     <div>
+      {/* Bonus-eligible chores */}
       <div className="flex flex-wrap gap-3">
-        {chores.map((chore, i) => (
+        {bonusChores.map((chore, i) => (
           <ChoreTile
             key={chore.id}
             chore={chore}
@@ -228,10 +196,28 @@ function ChoreSection({
             colorIndex={offset + i}
           />
         ))}
-        {bonus && (
-          <BonusTile awarded={bonus.bonusAwarded} colorIndex={offset + chores.length} />
-        )}
       </div>
+
+      {/* Extra chores (don't count toward bonus) */}
+      {extraChores.length > 0 && (
+        <>
+          <div className="flex items-center gap-3 my-3 px-1">
+            <div className="flex-1 h-px bg-gray-300" />
+            <span className="text-xs font-semibold text-gray-400 whitespace-nowrap">额外任务 · 不计全勤</span>
+            <div className="flex-1 h-px bg-gray-300" />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {extraChores.map((chore, i) => (
+              <ChoreTile
+                key={chore.id}
+                chore={chore}
+                done={isWeekly ? !!chore.completedThisWeek : !!chore.completedToday}
+                colorIndex={offset + bonusChores.length + i}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -616,27 +602,40 @@ export default function KioskView({ kidId }: { kidId: string }) {
           <div className="flex px-4 pt-3 pb-1 gap-2">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.key;
-              const chores = data.chores[tab.key];
               const bonus = data.bonuses?.[tab.key];
               const completed = bonus?.completed ?? 0;
-              const total = bonus?.total ?? chores.length;
+              const total = bonus?.total ?? data.chores[tab.key].length;
+              const allDone = total > 0 && completed === total;
+              const bonusAwarded = bonus?.bonusAwarded ?? false;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-200 ${
+                  className={`flex-1 py-3 rounded-xl font-bold transition-all duration-200 ${
                     isActive
                       ? "bg-indigo-600 text-white shadow-md"
                       : "bg-white text-gray-500 border-2 border-gray-200"
                   }`}
                 >
-                  <span style={{ fontSize: 22 }}>{tab.emoji}</span>
-                  <span className="ml-1 text-lg">{tab.label}</span>
-                  <span className={`ml-1.5 text-base font-bold px-2 py-0.5 rounded-full ${
-                    isActive ? "bg-white/20" : "bg-gray-100"
-                  }`}>
-                    {completed}/{total}
-                  </span>
+                  <div className="flex items-center justify-center gap-1">
+                    <span style={{ fontSize: 22 }}>{tab.emoji}</span>
+                    <span className="text-lg">{tab.label}</span>
+                    <span className={`text-base font-bold px-2 py-0.5 rounded-full ${
+                      isActive ? "bg-white/20" : "bg-gray-100"
+                    }`}>
+                      {completed}/{total}
+                    </span>
+                  </div>
+                  {/* Bonus indicator */}
+                  {allDone || bonusAwarded ? (
+                    <div className={`text-xs font-bold mt-0.5 ${isActive ? "text-yellow-300" : "text-yellow-500"}`}>
+                      🌟 全勤 +5
+                    </div>
+                  ) : (
+                    <div className={`text-xs mt-0.5 ${isActive ? "text-white/50" : "text-gray-300"}`}>
+                      全勤 +5
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -648,7 +647,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
               label=""
               chores={data.chores[activeTab]}
               isWeekly={activeTab === "weekly"}
-              bonus={data.bonuses?.[activeTab]}
               colorOffset={activeTab === "morning" ? 0 : activeTab === "evening" ? 3 : 6}
             />
           </div>
