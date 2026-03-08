@@ -610,14 +610,15 @@ export default function KioskView({ kidId }: { kidId: string }) {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 py-2.5 rounded-xl text-base font-bold transition-all duration-200 ${
+                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-200 ${
                     isActive
                       ? "bg-indigo-600 text-white shadow-md"
                       : "bg-white text-gray-500 border-2 border-gray-200"
                   }`}
                 >
-                  {tab.emoji} {tab.label}
-                  <span className={`ml-1.5 text-sm font-bold px-1.5 py-0.5 rounded-full ${
+                  <span style={{ fontSize: 22 }}>{tab.emoji}</span>
+                  <span className="ml-1 text-lg">{tab.label}</span>
+                  <span className={`ml-1.5 text-base font-bold px-2 py-0.5 rounded-full ${
                     isActive ? "bg-white/20" : "bg-gray-100"
                   }`}>
                     {completed}/{total}
