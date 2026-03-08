@@ -86,10 +86,10 @@ export async function GET(
   });
   const totalPoints = totalPointsResult._sum.points ?? 0;
 
-  // Latest point entry for animation detection
+  // Latest point entry for animation detection (use createdAt, not date — some entries like redemptions may have future dates)
   const latestEntry = await prisma.pointEntry.findFirst({
     where: { kidId },
-    orderBy: { date: "desc" },
+    orderBy: { createdAt: "desc" },
     select: {
       id: true,
       points: true,
