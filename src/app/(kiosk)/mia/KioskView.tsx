@@ -126,40 +126,42 @@ function ChoreTile({ chore, done, colorIndex }: { chore: ChoreItem; done: boolea
 
   return (
     <div
-      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white
+      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white overflow-hidden
         ${inactive
           ? "bg-gray-200 opacity-40"
-          : done
-            ? `bg-gradient-to-br ${gradient} opacity-60`
-            : `bg-gradient-to-br ${gradient}`
+          : `bg-gradient-to-br ${gradient}`
         }`}
-      style={{ width: 165, height: 165 }}
+      style={{ width: 165, height: 165, opacity: inactive ? 0.4 : (done ? 0.55 : 1) }}
     >
+      {/* White overlay to soften the gradient */}
+      {!inactive && (
+        <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+      )}
       {/* Status badge — green ✓ when done, red ! when not */}
       {!inactive && (
         <div
-          className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold
-            ${done ? "bg-emerald-400 text-white" : "bg-red-400 text-white"}`}
+          className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow
+            ${done ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}
         >
           {done ? "✓" : "!"}
         </div>
       )}
 
       {/* Emoji */}
-      <span className="text-5xl" style={{ lineHeight: 1 }}>{emoji}</span>
+      <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>{emoji}</span>
 
       {/* Title */}
-      <h3 className={`mt-2 font-bold text-sm leading-tight text-center px-2 ${inactive ? "text-gray-500" : "text-white"}`}
-        style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+      <h3 className={`relative z-10 mt-2 font-bold text-sm leading-tight text-center px-2 ${inactive ? "text-gray-500" : "text-white"}`}
+        style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textShadow: inactive ? "none" : "0 1px 3px rgba(0,0,0,0.3)" }}
       >
         {chore.title}
       </h3>
 
       {/* Points badge */}
       {inactive ? (
-        <span className="mt-1 text-xs font-bold text-gray-400">周一~五</span>
+        <span className="relative z-10 mt-1 text-xs font-bold text-gray-400">周一~五</span>
       ) : (
-        <span className={`mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${done ? "bg-white/30" : "bg-white/20"}`}>
+        <span className={`relative z-10 mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${done ? "bg-white/40" : "bg-white/30"}`}>
           +{chore.defaultPoints} 分
         </span>
       )}
