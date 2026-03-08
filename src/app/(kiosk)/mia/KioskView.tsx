@@ -135,33 +135,34 @@ function ChoreTile({ chore, done, colorIndex }: { chore: ChoreItem; done: boolea
         }`}
       style={{ width: 165, height: 165 }}
     >
-      {/* Done checkmark overlay */}
-      {!inactive && done && (
-        <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-base font-bold">
-          ✓
+      {/* Status badge — green ✓ when done, red ! when not */}
+      {!inactive && (
+        <div
+          className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold
+            ${done ? "bg-emerald-400 text-white" : "bg-red-400 text-white"}`}
+        >
+          {done ? "✓" : "!"}
         </div>
       )}
 
       {/* Emoji */}
-      <span className="text-5xl mb-2" style={{ lineHeight: 1 }}>{emoji}</span>
+      <span className="text-5xl" style={{ lineHeight: 1 }}>{emoji}</span>
 
       {/* Title */}
-      <h3 className={`font-bold text-sm leading-tight text-center px-2 ${inactive ? "text-gray-500" : "text-white"}`}
+      <h3 className={`mt-2 font-bold text-sm leading-tight text-center px-2 ${inactive ? "text-gray-500" : "text-white"}`}
         style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
       >
         {chore.title}
       </h3>
 
       {/* Points badge */}
-      <div className="mt-auto mb-2">
-        {inactive ? (
-          <span className="text-xs font-bold text-gray-400">周一~五</span>
-        ) : (
-          <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${done ? "bg-white/30" : "bg-white/20"}`}>
-            +{chore.defaultPoints} 分
-          </span>
-        )}
-      </div>
+      {inactive ? (
+        <span className="mt-1 text-xs font-bold text-gray-400">周一~五</span>
+      ) : (
+        <span className={`mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${done ? "bg-white/30" : "bg-white/20"}`}>
+          +{chore.defaultPoints} 分
+        </span>
+      )}
     </div>
   );
 }
