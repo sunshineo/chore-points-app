@@ -198,24 +198,14 @@ function ChoreSection({
   isWeekly?: boolean;
   bonus?: BonusStatus;
 }) {
-  if (chores.length === 0) return null;
-
-  const completedCount = bonus?.completed ?? 0;
-  const totalCount = bonus?.total ?? chores.length;
-  const allDone = completedCount === totalCount;
+  if (chores.length === 0) return (
+    <div className="flex items-center justify-center h-full text-gray-400 text-lg">
+      No chores in this category
+    </div>
+  );
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <h2 className="text-lg font-bold text-gray-700">{label}</h2>
-        <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${
-          allDone
-            ? "bg-emerald-100 text-emerald-700"
-            : "bg-gray-100 text-gray-500"
-        }`}>
-          {completedCount}/{totalCount}
-        </span>
-      </div>
+    <div>
       <div className="flex flex-wrap gap-3">
         {chores.map((chore) => (
           <ChoreTile
@@ -353,12 +343,21 @@ function PinEntry({ onSuccess }: { onSuccess: (token: string) => void }) {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
+type TabKey = "morning" | "evening" | "weekly";
+
+const TABS: { key: TabKey; label: string; emoji: string }[] = [
+  { key: "morning", label: "早上", emoji: "🌅" },
+  { key: "evening", label: "晚上", emoji: "🌙" },
+  { key: "weekly", label: "每周", emoji: "📅" },
+];
+
 export default function KioskView({ kidId }: { kidId: string }) {
   const [token, setToken] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [data, setData] = useState<KioskData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>("morning");
 
   // Animation state
   const [showEmoji, setShowEmoji] = useState(false);
@@ -599,22 +598,42 @@ export default function KioskView({ kidId }: { kidId: string }) {
             </div>
           )}
 
-          <div className="h-full px-6 py-4 overflow-y-auto">
+          {/* Tab buttons */}
+          <div className="flex px-4 pt-3 pb-1 gap-2">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              const chores = data.chores[tab.key];
+              const bonus = data.bonuses?.[tab.key];
+              const completed = bonus?.completed ?? 0;
+              const total = bonus?.total ?? chores.length;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 py-2.5 rounded-xl text-base font-bold transition-all duration-200 ${
+                    isActive
+                      ? "bg-indigo-600 text-white shadow-md"
+                      : "bg-white text-gray-500 border-2 border-gray-200"
+                  }`}
+                >
+                  {tab.emoji} {tab.label}
+                  <span className={`ml-1.5 text-sm font-bold px-1.5 py-0.5 rounded-full ${
+                    isActive ? "bg-white/20" : "bg-gray-100"
+                  }`}>
+                    {completed}/{total}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active tab content */}
+          <div className="flex-1 px-6 py-4 overflow-y-auto">
             <ChoreSection
-              label="🌅 早上"
-              chores={data.chores.morning}
-              bonus={data.bonuses?.morning}
-            />
-            <ChoreSection
-              label="🌙 晚上"
-              chores={data.chores.evening}
-              bonus={data.bonuses?.evening}
-            />
-            <ChoreSection
-              label="📅 每周"
-              chores={data.chores.weekly}
-              isWeekly
-              bonus={data.bonuses?.weekly}
+              label=""
+              chores={data.chores[activeTab]}
+              isWeekly={activeTab === "weekly"}
+              bonus={data.bonuses?.[activeTab]}
             />
           </div>
         </div>
