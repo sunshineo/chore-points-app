@@ -266,6 +266,7 @@
     "update": "更新",
     "saving": "保存中...",
     "pointsNonNegative": "积分必须是非负数",
+    "iconRequired": "请为此任务选择一个图标",
     "pendingRedemptions": "待审批的兑换申请",
     "confirmApprove": "批准这个兑换申请？积分将被扣除。",
     "confirmDeny": "拒绝这个兑换申请？",

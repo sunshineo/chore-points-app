@@ -45,30 +45,12 @@ type KioskData = {
 
 // ── Emoji fallback map ─────────────────────────────────────────────────────
 
-const CHORE_EMOJI_MAP: Record<string, string> = {
-  上厕所: "🚽",
-  自己穿衣服: "👔",
-  穿鞋: "👟",
-  安全带: "🚗",
-  回家先洗手: "🧼",
-  "9点前睡觉": "🕘",
-  自己睡: "😴",
-  中文课: "📖",
-  武术课: "🥋",
-  体操课: "🤸",
-  刷牙: "🪥",
-  洗澡: "🛁",
-  "7:45前起床": "⏰",
-  "8:15前出门": "🚪",
-  "8点前上楼": "⬆️",
-};
-
 function getChoreEmoji(chore: ChoreItem): string {
+  // Use icon from DB (set via chore form), or extract from title text
   if (chore.emoji) return chore.emoji;
-  // Try prefix match in fallback map
-  for (const [key, emoji] of Object.entries(CHORE_EMOJI_MAP)) {
-    if (chore.title.startsWith(key) || chore.title.includes(key)) return emoji;
-  }
+  const emojiRegex = /(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+  const match = chore.title.match(emojiRegex);
+  if (match?.[0]) return match[0];
   return "⭐";
 }
 
@@ -413,11 +395,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
             const emojiRegex = /(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
             const matches = choreTitle.match(emojiRegex);
             if (matches?.[0]) emoji = matches[0];
-            else {
-              for (const [key, e] of Object.entries(CHORE_EMOJI_MAP)) {
-                if (choreTitle.startsWith(key) || choreTitle.includes(key)) { emoji = e; break; }
-              }
-            }
           }
         } else if (note) {
           // No chore linked (ad-hoc award) — try extracting emoji from note

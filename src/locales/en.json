@@ -256,6 +256,7 @@
     "update": "Update",
     "saving": "Saving...",
     "pointsNonNegative": "Points must be a non-negative number",
+    "iconRequired": "Please pick an icon for this chore",
     "pendingRedemptions": "Pending Redemption Requests",
     "confirmApprove": "Approve this redemption? Points will be deducted.",
     "confirmDeny": "Deny this redemption request?",
