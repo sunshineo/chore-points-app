@@ -103,59 +103,65 @@ function RainParticle({
   );
 }
 
-// ── Chore tile ─────────────────────────────────────────────────────────────
+// ── Flashcard-style chore tile ─────────────────────────────────────────────
 
-/** Strip emoji characters from title to get clean text label */
-function getChoreLabel(title: string): string {
-  return title
-    .replace(/(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu, "")
-    .trim();
-}
+// Color palette matching ChoreFlashcards on the kid view
+const TILE_COLORS = [
+  "from-pink-400 to-pink-500",
+  "from-purple-400 to-purple-500",
+  "from-indigo-400 to-indigo-500",
+  "from-blue-400 to-blue-500",
+  "from-cyan-400 to-cyan-500",
+  "from-teal-400 to-teal-500",
+  "from-green-400 to-green-500",
+  "from-yellow-400 to-yellow-500",
+  "from-orange-400 to-orange-500",
+  "from-red-400 to-red-500",
+];
 
-function ChoreTile({ chore, done }: { chore: ChoreItem; done: boolean }) {
+function ChoreTile({ chore, done, colorIndex }: { chore: ChoreItem; done: boolean; colorIndex: number }) {
   const emoji = getChoreEmoji(chore);
-  const label = getChoreLabel(chore.title);
   const inactive = chore.activeToday === false;
+  const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
 
   return (
     <div
-      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-md transition-all duration-500 select-none
+      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white
         ${inactive
-          ? "bg-gray-50 border-2 border-dashed border-gray-200 opacity-40"
+          ? "bg-gray-200 opacity-40"
           : done
-            ? "bg-emerald-50 border-2 border-emerald-300"
-            : "bg-white border-2 border-gray-100"
+            ? `bg-gradient-to-br ${gradient} opacity-60`
+            : `bg-gradient-to-br ${gradient}`
         }`}
       style={{ width: 165, height: 165 }}
     >
-      {/* Status badge — hide for inactive chores */}
-      {!inactive && (
-        <div
-          className={`absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold
-            ${done ? "bg-emerald-400 text-white" : "bg-red-400 text-white"}`}
-        >
-          {done ? "✓" : "!"}
+      {/* Done checkmark overlay */}
+      {!inactive && done && (
+        <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-base font-bold">
+          ✓
         </div>
       )}
 
       {/* Emoji */}
-      <span style={{ fontSize: 54, lineHeight: 1 }}>{emoji}</span>
+      <span className="text-5xl mb-2" style={{ lineHeight: 1 }}>{emoji}</span>
 
-      {/* Text label */}
-      <span className={`mt-1.5 text-base font-bold text-center leading-tight px-1.5 ${inactive ? "text-gray-400" : done ? "text-emerald-700" : "text-gray-600"}`}
+      {/* Title */}
+      <h3 className={`font-bold text-sm leading-tight text-center px-2 ${inactive ? "text-gray-500" : "text-white"}`}
         style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
       >
-        {label}
-      </span>
+        {chore.title}
+      </h3>
 
-      {/* Points or weekend label */}
-      {inactive ? (
-        <span className="text-base font-bold text-gray-300">周一~五</span>
-      ) : (
-        <span className={`text-base font-black ${done ? "text-emerald-600" : "text-gray-400"}`}>
-          {chore.defaultPoints}分
-        </span>
-      )}
+      {/* Points badge */}
+      <div className="mt-auto mb-2">
+        {inactive ? (
+          <span className="text-xs font-bold text-gray-400">周一~五</span>
+        ) : (
+          <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${done ? "bg-white/30" : "bg-white/20"}`}>
+            +{chore.defaultPoints} 分
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -165,24 +171,29 @@ function ChoreTile({ chore, done }: { chore: ChoreItem; done: boolean }) {
 function BonusTile({ awarded }: { awarded: boolean }) {
   return (
     <div
-      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-md transition-all duration-500 select-none
+      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white
         ${awarded
-          ? "bg-yellow-50 border-2 border-yellow-400"
-          : "bg-gray-50 border-2 border-dashed border-gray-200"
+          ? "bg-gradient-to-br from-yellow-400 to-amber-500"
+          : "bg-gray-200 opacity-40"
         }`}
       style={{ width: 165, height: 165 }}
     >
       {awarded && (
-        <div className="absolute top-2 right-2 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold bg-yellow-400 text-white">
+        <div className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-base font-bold">
           ✓
         </div>
       )}
-      <span style={{ fontSize: awarded ? 66 : 54, lineHeight: 1, opacity: awarded ? 1 : 0.3 }}>
+      <span className="text-5xl mb-2" style={{ lineHeight: 1, opacity: awarded ? 1 : 0.3 }}>
         🌟
       </span>
-      <span className={`mt-2 text-base font-bold ${awarded ? "text-yellow-600" : "text-gray-300"}`}>
-        +5 全勤
-      </span>
+      <h3 className={`font-bold text-sm ${awarded ? "text-white" : "text-gray-400"}`}>
+        全勤奖
+      </h3>
+      <div className="mt-auto mb-2">
+        <span className={`rounded-full px-3 py-0.5 text-xs font-semibold ${awarded ? "bg-white/20" : "bg-gray-300/50 text-gray-500"}`}>
+          +5 分
+        </span>
+      </div>
     </div>
   );
 }
@@ -192,11 +203,13 @@ function ChoreSection({
   chores,
   isWeekly,
   bonus,
+  colorOffset,
 }: {
   label: string;
   chores: ChoreItem[];
   isWeekly?: boolean;
   bonus?: BonusStatus;
+  colorOffset?: number;
 }) {
   if (chores.length === 0) return (
     <div className="flex items-center justify-center h-full text-gray-400 text-lg">
@@ -204,14 +217,17 @@ function ChoreSection({
     </div>
   );
 
+  const offset = colorOffset ?? 0;
+
   return (
     <div>
       <div className="flex flex-wrap gap-3">
-        {chores.map((chore) => (
+        {chores.map((chore, i) => (
           <ChoreTile
             key={chore.id}
             chore={chore}
             done={isWeekly ? !!chore.completedThisWeek : !!chore.completedToday}
+            colorIndex={offset + i}
           />
         ))}
         {bonus && (
@@ -635,6 +651,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
               chores={data.chores[activeTab]}
               isWeekly={activeTab === "weekly"}
               bonus={data.bonuses?.[activeTab]}
+              colorOffset={activeTab === "morning" ? 0 : activeTab === "evening" ? 3 : 6}
             />
           </div>
         </div>
