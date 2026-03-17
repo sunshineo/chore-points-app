@@ -86,6 +86,12 @@ export async function GET(
   });
   const totalPoints = totalPointsResult._sum.points ?? 0;
 
+  // Lifetime stats
+  const kidStats = await prisma.kidStats.findUnique({
+    where: { kidId },
+    select: { totalEarned: true, totalSpent: true },
+  });
+
   // Latest point entry for animation detection (use createdAt, not date — some entries like redemptions may have future dates)
   const latestEntry = await prisma.pointEntry.findFirst({
     where: { kidId },
@@ -167,6 +173,7 @@ export async function GET(
   return NextResponse.json({
     kid: { id: kid.id, name: kid.name },
     totalPoints,
+    totalEarned: kidStats?.totalEarned ?? 0,
     chores: { morning, evening, weekly },
     bonuses,
     latestEntry: latestEntry

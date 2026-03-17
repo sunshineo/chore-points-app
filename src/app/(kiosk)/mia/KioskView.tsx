@@ -24,6 +24,7 @@ type BonusStatus = {
 type KioskData = {
   kid: { id: string; name: string | null };
   totalPoints: number;
+  totalEarned: number;
   chores: {
     morning: ChoreItem[];
     evening: ChoreItem[];
@@ -567,6 +568,9 @@ export default function KioskView({ kidId }: { kidId: string }) {
           </div>
 
           <p className="text-sm font-medium text-white/60 mt-1">积分</p>
+          {data.totalEarned > 0 && (
+            <p className="text-xs text-white/40 mt-0.5">🏆 历史总获得: {data.totalEarned} 分</p>
+          )}
         </div>
 
         {/* ── Board ── */}
