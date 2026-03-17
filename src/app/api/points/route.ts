@@ -64,8 +64,15 @@ export async function GET(req: Request) {
     // Calculate total points for kid
     const totalPoints = entries.reduce((sum: number, entry: { points: number }) => sum + entry.points, 0);
 
+    // Get lifetime stats
+    const kidStats = await prisma.kidStats.findUnique({
+      where: { kidId: targetKidId },
+    });
+
     return NextResponse.json({
       totalPoints,
+      totalEarned: kidStats?.totalEarned ?? entries.filter((e: { points: number }) => e.points > 0).reduce((s: number, e: { points: number }) => s + e.points, 0),
+      totalSpent: kidStats?.totalSpent ?? entries.filter((e: { points: number }) => e.points < 0).reduce((s: number, e: { points: number }) => s + Math.abs(e.points), 0),
       entries,
       kid: {
         id: kid.id,
@@ -159,6 +166,35 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Update KidStats running totals
+    if (points > 0) {
+      await prisma.kidStats.upsert({
+        where: { kidId },
+        create: {
+          kidId,
+          familyId: session.user.familyId!,
+          totalEarned: points,
+          totalSpent: 0,
+        },
+        update: {
+          totalEarned: { increment: points },
+        },
+      });
+    } else if (points < 0) {
+      await prisma.kidStats.upsert({
+        where: { kidId },
+        create: {
+          kidId,
+          familyId: session.user.familyId!,
+          totalEarned: 0,
+          totalSpent: Math.abs(points),
+        },
+        update: {
+          totalSpent: { increment: Math.abs(points) },
+        },
+      });
+    }
 
     // Update badge if this is a chore completion (positive points with choreId)
     let badgeLevelUp = null;
@@ -314,6 +350,20 @@ export async function POST(req: Request) {
                 date: new Date(),
                 createdById: session.user.id,
                 updatedById: session.user.id,
+              },
+            });
+
+            // Update KidStats for the bonus
+            await prisma.kidStats.upsert({
+              where: { kidId },
+              create: {
+                kidId,
+                familyId: session.user.familyId!,
+                totalEarned: BONUS_POINTS,
+                totalSpent: 0,
+              },
+              update: {
+                totalEarned: { increment: BONUS_POINTS },
               },
             });
 

@@ -67,6 +67,7 @@ function RainParticle({ index, type, emoji }: { index: number; type: "gain" | "l
 
 export default function KidPointsView({ kidId, readOnly = false }: KidPointsViewProps) {
   const [totalPoints, setTotalPoints] = useState(0);
+  const [totalEarned, setTotalEarned] = useState(0);
   const [entries, setEntries] = useState<PointEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [animationType, setAnimationType] = useState<"gain" | "lose" | null>(null);
@@ -85,6 +86,7 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
       if (response.ok) {
         const newTotal = data.totalPoints;
         const newEntries: PointEntry[] = data.entries || [];
+        if (data.totalEarned !== undefined) setTotalEarned(data.totalEarned);
         const prev = prevTotalRef.current;
 
         if (prev !== null && newTotal !== prev) {
@@ -264,7 +266,13 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
               {t("myPoints")}
             </p>
 
-            <p className="text-sm mt-3 text-white/60">
+            {totalEarned > 0 && (
+              <p className="text-sm mt-2 text-white/50">
+                🏆 {t("lifetimeEarned", { count: totalEarned })}
+              </p>
+            )}
+
+            <p className="text-sm mt-1 text-white/60">
               {t("keepUpGreatWork")}
             </p>
 
