@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import ChoreFlashcards from "@/components/chores/ChoreFlashcards";
@@ -78,6 +78,26 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
   const t = useTranslations("points");
   const tCommon = useTranslations("common");
   const tBadges = useTranslations("badges");
+
+  // Compute today's date and current week range (Mon-Sun) in PT
+  const { todayFormatted, weekRangeFormatted } = useMemo(() => {
+    const now = new Date();
+    const ptNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    const month = ptNow.getMonth() + 1;
+    const date = ptNow.getDate();
+    const day = ptNow.getDay(); // 0=Sun
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(ptNow);
+    monday.setDate(ptNow.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+    return {
+      todayFormatted: `${month}/${date}`,
+      weekRangeFormatted: `${fmt(monday)} - ${fmt(sunday)}`,
+    };
+  }, []);
 
   const fetchPoints = useCallback(async () => {
     try {
@@ -245,36 +265,70 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
             </div>
           )}
 
-          <div className="text-center relative z-10">
-            {/* Gem icon */}
-            <div className="inline-flex items-center justify-center w-20 h-20 mb-2">
-              <div className="relative w-16 h-16 animate-spin-slow">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
-                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
-                <div className="absolute top-2 left-3 w-4 h-6 bg-yellow-200 rounded-full opacity-60 blur-[1px]" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-yellow-900 font-bold text-2xl opacity-70">&#x2605;</span>
+          <div className="relative z-10">
+            {/* 3-column layout: lifetime | points | date/week */}
+            <div className="flex items-center justify-between gap-2">
+              {/* Left: Lifetime Earned */}
+              <div className="flex-1 text-left hidden sm:block">
+                {totalEarned > 0 && (
+                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 inline-block">
+                    <p className="text-xs text-white/60 mb-0.5">🏆 {t("lifetimeLabel")}</p>
+                    <p className="text-2xl font-bold font-mono">{totalEarned}</p>
+                    <p className="text-xs text-white/50">{t("pts")}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Center: Gem + Points Counter */}
+              <div className="text-center flex-shrink-0">
+                {/* Gem icon */}
+                <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-1">
+                  <div className="relative w-12 h-12 sm:w-16 sm:h-16 animate-spin-slow">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
+                    <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
+                    <div className="absolute top-2 left-3 w-4 h-6 bg-yellow-200 rounded-full opacity-60 blur-[1px]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-yellow-900 font-bold text-2xl opacity-70">&#x2605;</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Points counter */}
+                <div className={`text-7xl sm:text-8xl font-black font-mono tracking-tight ${animationType ? "counter-bump" : ""}`}>
+                  {displayedPoints}
+                </div>
+                <p className="text-lg font-medium text-white/80 mt-1">
+                  {t("myPoints")}
+                </p>
+                <p className="text-sm mt-1 text-white/60">
+                  {t("keepUpGreatWork")}
+                </p>
+              </div>
+
+              {/* Right: Today's Date + Week Range */}
+              <div className="flex-1 text-right hidden sm:block">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 inline-block">
+                  <p className="text-xs text-white/60 mb-0.5">📅 {t("todayLabel")}</p>
+                  <p className="text-sm font-semibold">{todayFormatted}</p>
+                  <div className="mt-2 pt-2 border-t border-white/20">
+                    <p className="text-xs text-white/60 mb-0.5">🌟 {t("weekRangeLabel")}</p>
+                    <p className="text-sm font-semibold">{weekRangeFormatted}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Points counter */}
-            <div className={`text-7xl sm:text-8xl font-black font-mono tracking-tight ${animationType ? "counter-bump" : ""}`}>
-              {displayedPoints}
+            {/* Mobile: show lifetime + date in a row below the counter */}
+            <div className="flex items-center justify-center gap-3 mt-3 sm:hidden text-xs">
+              {totalEarned > 0 && (
+                <span className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1">
+                  🏆 {totalEarned} {t("pts")}
+                </span>
+              )}
+              <span className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1">
+                📅 {weekRangeFormatted}
+              </span>
             </div>
-            <p className="text-lg font-medium text-white/80 mt-1">
-              {t("myPoints")}
-            </p>
-
-            {totalEarned > 0 && (
-              <p className="text-sm mt-2 text-white/50">
-                🏆 {t("lifetimeEarned", { count: totalEarned })}
-              </p>
-            )}
-
-            <p className="text-sm mt-1 text-white/60">
-              {t("keepUpGreatWork")}
-            </p>
 
             <div className="flex items-center justify-center gap-3 mt-5">
               <Link

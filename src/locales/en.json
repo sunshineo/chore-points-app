@@ -59,7 +59,11 @@
     "recentActivity": "Recent Activity",
     "earnedPoints": "Earned points",
     "spentPoints": "Points spent",
-    "lifetimeEarned": "Lifetime earned: {count} pts"
+    "lifetimeEarned": "Lifetime earned: {count} pts",
+    "lifetimeLabel": "Lifetime",
+    "pts": "pts",
+    "todayLabel": "Today",
+    "weekRangeLabel": "This Week"
   },
   "calendar": {
     "weekdays": [

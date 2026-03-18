@@ -59,7 +59,11 @@
     "recentActivity": "最近活动",
     "earnedPoints": "获得积分",
     "spentPoints": "使用积分",
-    "lifetimeEarned": "历史总获得: {count} 分"
+    "lifetimeEarned": "历史总获得: {count} 分",
+    "lifetimeLabel": "历史总积分",
+    "pts": "分",
+    "todayLabel": "今天",
+    "weekRangeLabel": "本周全勤"
   },
   "calendar": {
     "weekdays": [
