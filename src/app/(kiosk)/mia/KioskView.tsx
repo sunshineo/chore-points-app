@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -351,6 +351,26 @@ export default function KioskView({ kidId }: { kidId: string }) {
   const prevEntryIdRef = useRef<string | null>(null);
   const prevTotalRef = useRef<number | null>(null);
 
+  // Compute today's date and current week range (Mon-Sun) in PT
+  const { todayFormatted, weekRangeFormatted } = useMemo(() => {
+    const now = new Date();
+    const ptNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    const month = ptNow.getMonth() + 1;
+    const date = ptNow.getDate();
+    const day = ptNow.getDay(); // 0=Sun
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const monday = new Date(ptNow);
+    monday.setDate(ptNow.getDate() + diffToMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+    return {
+      todayFormatted: `${month}月${date}日`,
+      weekRangeFormatted: `${fmt(monday)} - ${fmt(sunday)}`,
+    };
+  }, []);
+
   // Check for saved token on mount
   useEffect(() => {
     const saved = localStorage.getItem("kiosk_token");
@@ -532,7 +552,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
       >
         {/* ── Points Hero (centered, ~25% height) ── */}
-        <div className="flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white flex-shrink-0 relative overflow-hidden" style={{ height: "22vh" }}>
+        <div className="flex items-center justify-between bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white flex-shrink-0 relative overflow-hidden px-6" style={{ height: "22vh" }}>
           {/* Phase 2 rain */}
           {showRain && (
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -542,35 +562,58 @@ export default function KioskView({ kidId }: { kidId: string }) {
             </div>
           )}
 
-          {/* Kid name */}
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl font-bold text-white/80">
-              {data.kid.name ?? "宝贝"}
-            </span>
-            <span className="text-xl">✨</span>
+          {/* Left: Lifetime Earned */}
+          <div className="flex-1 z-10">
+            {data.totalEarned > 0 && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 inline-block">
+                <p className="text-xs text-white/60 mb-0.5">🏆 历史总积分</p>
+                <p className="text-3xl font-bold font-mono">{data.totalEarned}</p>
+                <p className="text-xs text-white/50">分</p>
+              </div>
+            )}
           </div>
 
-          {/* Coin + points */}
-          <div className="flex items-center gap-4">
-            <div className="relative w-14 h-14 kiosk-spin-slow flex-shrink-0">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
-              <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
-              <div className="absolute top-2 left-3 w-4 h-5 bg-yellow-200 rounded-full opacity-60 blur-[1px]" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-yellow-900 font-bold text-xl opacity-70">★</span>
+          {/* Center: Kid name + Coin + Points */}
+          <div className="flex flex-col items-center flex-shrink-0 z-10">
+            {/* Kid name */}
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl font-bold text-white/80">
+                {data.kid.name ?? "宝贝"}
+              </span>
+              <span className="text-xl">✨</span>
+            </div>
+
+            {/* Coin + points */}
+            <div className="flex items-center gap-4">
+              <div className="relative w-14 h-14 kiosk-spin-slow flex-shrink-0">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
+                <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
+                <div className="absolute top-2 left-3 w-4 h-5 bg-yellow-200 rounded-full opacity-60 blur-[1px]" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-yellow-900 font-bold text-xl opacity-70">★</span>
+                </div>
+              </div>
+              <span
+                className={`text-8xl font-black font-mono tracking-tight ${showRain ? "kiosk-counter-bump" : ""}`}
+              >
+                {displayedPoints}
+              </span>
+            </div>
+
+            <p className="text-sm font-medium text-white/60 mt-1">积分</p>
+          </div>
+
+          {/* Right: Today's Date + Week Range */}
+          <div className="flex-1 flex justify-end z-10">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 inline-block text-right">
+              <p className="text-xs text-white/60 mb-0.5">📅 今天</p>
+              <p className="text-lg font-semibold">{todayFormatted}</p>
+              <div className="mt-1.5 pt-1.5 border-t border-white/20">
+                <p className="text-xs text-white/60 mb-0.5">🌟 本周全勤</p>
+                <p className="text-lg font-semibold">{weekRangeFormatted}</p>
               </div>
             </div>
-            <span
-              className={`text-8xl font-black font-mono tracking-tight ${showRain ? "kiosk-counter-bump" : ""}`}
-            >
-              {displayedPoints}
-            </span>
           </div>
-
-          <p className="text-sm font-medium text-white/60 mt-1">积分</p>
-          {data.totalEarned > 0 && (
-            <p className="text-xs text-white/40 mt-0.5">🏆 历史总获得: {data.totalEarned} 分</p>
-          )}
         </div>
 
         {/* ── Board ── */}
