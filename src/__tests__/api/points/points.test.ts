@@ -27,10 +27,23 @@ vi.mock('@/lib/db', () => {
       },
       chore: {
         findUnique: vi.fn(),
+        findMany: vi.fn(),
       },
       pointEntry: {
         findMany: vi.fn(),
+        findFirst: vi.fn(),
         create: vi.fn(),
+      },
+      kidStats: {
+        findUnique: vi.fn(),
+        upsert: vi.fn(),
+      },
+      badge: {
+        findUnique: vi.fn(),
+        upsert: vi.fn(),
+      },
+      schoolOff: {
+        findFirst: vi.fn(),
       },
     }
   }

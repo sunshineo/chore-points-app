@@ -152,12 +152,12 @@ describe('Chores API', () => {
         },
       }
 
-      const request = createMockRequest('POST', { defaultPoints: 5 })
+      const request = createMockRequest('POST', { defaultPoints: 5, icon: 'broom' })
       const response = await POST(request)
       const { status, data } = await parseResponse(response)
 
       expect(status).toBe(400)
-      expect(data).toHaveProperty('error', 'Title and defaultPoints are required')
+      expect(data).toHaveProperty('error', 'Title, icon, and defaultPoints are required')
     })
 
     it('should return 400 if defaultPoints is missing', async () => {
@@ -170,12 +170,12 @@ describe('Chores API', () => {
         },
       }
 
-      const request = createMockRequest('POST', { title: 'Clean room' })
+      const request = createMockRequest('POST', { title: 'Clean room', icon: 'broom' })
       const response = await POST(request)
       const { status, data } = await parseResponse(response)
 
       expect(status).toBe(400)
-      expect(data).toHaveProperty('error', 'Title and defaultPoints are required')
+      expect(data).toHaveProperty('error', 'Title, icon, and defaultPoints are required')
     })
 
     it('should return 400 if defaultPoints is negative', async () => {
@@ -188,7 +188,7 @@ describe('Chores API', () => {
         },
       }
 
-      const request = createMockRequest('POST', { title: 'Clean room', defaultPoints: -5 })
+      const request = createMockRequest('POST', { title: 'Clean room', defaultPoints: -5, icon: 'broom' })
       const response = await POST(request)
       const { status, data } = await parseResponse(response)
 
@@ -206,7 +206,7 @@ describe('Chores API', () => {
         },
       }
 
-      const request = createMockRequest('POST', { title: 'Clean room', defaultPoints: 'five' })
+      const request = createMockRequest('POST', { title: 'Clean room', defaultPoints: 'five', icon: 'broom' })
       const response = await POST(request)
       const { status, data } = await parseResponse(response)
 
@@ -227,7 +227,7 @@ describe('Chores API', () => {
       mockPrisma.chore.create.mockResolvedValue({
         id: 'new-chore-id',
         title: 'Clean room',
-        icon: null,
+        icon: 'broom',
         defaultPoints: 5,
         isActive: true,
         familyId: 'family-1',
@@ -237,7 +237,7 @@ describe('Chores API', () => {
         updatedBy: { name: 'Parent', email: 'test@example.com' },
       })
 
-      const request = createMockRequest('POST', { title: 'Clean room', defaultPoints: 5 })
+      const request = createMockRequest('POST', { title: 'Clean room', defaultPoints: 5, icon: 'broom' })
       const response = await POST(request)
       const { status, data } = await parseResponse<{ chore: { id: string; title: string; defaultPoints: number } }>(response)
 
@@ -291,7 +291,7 @@ describe('Chores API', () => {
       mockPrisma.chore.create.mockResolvedValue({
         id: 'new-chore-id',
         title: 'Brush teeth',
-        icon: null,
+        icon: 'toothbrush',
         defaultPoints: 0,
         isActive: true,
         familyId: 'family-1',
@@ -301,7 +301,7 @@ describe('Chores API', () => {
         updatedBy: { name: 'Parent', email: 'test@example.com' },
       })
 
-      const request = createMockRequest('POST', { title: 'Brush teeth', defaultPoints: 0 })
+      const request = createMockRequest('POST', { title: 'Brush teeth', defaultPoints: 0, icon: 'toothbrush' })
       const response = await POST(request)
       const { status, data } = await parseResponse<{ chore: { defaultPoints: number } }>(response)
 

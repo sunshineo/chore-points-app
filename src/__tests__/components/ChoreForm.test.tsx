@@ -19,6 +19,7 @@ vi.mock('next-intl', () => ({
       defaultPoints: 'Default Points',
       pointsAwarded: 'Points awarded when completed',
       pointsNonNegative: 'Points must be a non-negative number',
+      iconRequired: 'Please pick an icon for this chore',
       saving: 'Saving...',
       update: 'Update',
       create: 'Create',
@@ -38,6 +39,11 @@ describe('ChoreForm', () => {
     vi.clearAllMocks()
     ;(global.fetch as ReturnType<typeof vi.fn>).mockReset()
   })
+
+  const pickIcon = async () => {
+    await userEvent.click(screen.getByText('➕'))
+    await userEvent.click(screen.getByText('🧹'))
+  }
 
   it('should render the form with correct title for new chore', () => {
     render(<ChoreForm onClose={mockOnClose} onSuccess={mockOnSuccess} />)
@@ -102,7 +108,7 @@ describe('ChoreForm', () => {
     const newChore = {
       id: 'new-chore',
       title: 'New Chore',
-      icon: null,
+      icon: '🧹',
       defaultPoints: 5,
       isActive: true,
       createdAt: '2024-01-01',
@@ -122,6 +128,7 @@ describe('ChoreForm', () => {
     const pointsInput = screen.getByLabelText('Default Points')
 
     await userEvent.type(titleInput, 'New Chore')
+    await pickIcon()
     await userEvent.clear(pointsInput)
     await userEvent.type(pointsInput, '5')
 
@@ -137,7 +144,7 @@ describe('ChoreForm', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: 'New Chore',
-        icon: null,
+        icon: '🧹',
         defaultPoints: 5,
       }),
     })
@@ -195,6 +202,7 @@ describe('ChoreForm', () => {
     const pointsInput = screen.getByLabelText('Default Points')
 
     await userEvent.type(titleInput, 'Test Chore')
+    await pickIcon()
     await userEvent.clear(pointsInput)
     await userEvent.type(pointsInput, '5')
 
