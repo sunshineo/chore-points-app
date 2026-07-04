@@ -27,6 +27,23 @@ export async function PUT(req: Request, context: RouteContext) {
       return NextResponse.json({ error: "Question not found" }, { status: 404 });
     }
 
+    // Validate mutable fields so raw body values can't reassign the question to
+    // another family's kid or crash Prisma's Int coercion on a bad answer.
+    if (data.answer !== undefined && (typeof data.answer !== "number" || !Number.isInteger(data.answer))) {
+      return NextResponse.json({ error: "answer must be an integer" }, { status: 400 });
+    }
+    if (data.question !== undefined && (typeof data.question !== "string" || !data.question.trim())) {
+      return NextResponse.json({ error: "question must be a non-empty string" }, { status: 400 });
+    }
+    if (data.kidId) {
+      const kid = await prisma.user.findFirst({
+        where: { id: data.kidId, familyId: session.user.familyId!, role: "KID" },
+      });
+      if (!kid) {
+        return NextResponse.json({ error: "Kid is not in your family" }, { status: 400 });
+      }
+    }
+
     const question = await prisma.customMathQuestion.update({
       where: { id },
       data: {

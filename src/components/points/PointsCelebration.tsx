@@ -23,6 +23,8 @@ export default function PointsCelebration({
   const [hasInteracted, setHasInteracted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasStartedRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playSound = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -60,7 +62,7 @@ export default function PointsCelebration({
     const stepDuration = duration / steps;
 
     let currentStep = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       currentStep++;
       setDisplayPoints(fromPoints + currentStep);
 
@@ -74,9 +76,10 @@ export default function PointsCelebration({
       }
 
       if (currentStep >= steps) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = null;
         fireConfetti();
-        setTimeout(onComplete, 800);
+        completeTimeoutRef.current = setTimeout(onComplete, 800);
       }
     }, stepDuration);
   }, [fromPoints, toPoints, fireConfetti, playSound, onComplete]);
@@ -86,7 +89,14 @@ export default function PointsCelebration({
       startCelebration();
     }, 100);
 
-    return () => clearTimeout(timer);
+    // Clear the startup timer AND any running count-up interval / completion
+    // timeout so navigating away mid-celebration doesn't keep firing
+    // setState/confetti on an unmounted component or call onComplete late.
+    return () => {
+      clearTimeout(timer);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (completeTimeoutRef.current) clearTimeout(completeTimeoutRef.current);
+    };
   }, [startCelebration]);
 
   const handleInteraction = useCallback(() => {

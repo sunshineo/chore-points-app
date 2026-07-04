@@ -23,7 +23,10 @@ function toISOWithOffset(localDateTimeStr: string, timeZone: string): string {
   // Parse the local datetime components
   const [datePart, timePart] = localDateTimeStr.split("T");
   const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute, second = 0] = timePart.split(":").map(Number);
+  // Guard a date-only value so an undefined timePart doesn't throw on .split.
+  const [hour, minute, second = 0] = (timePart || "00:00:00")
+    .split(":")
+    .map(Number);
 
   // Create a date in the specified timezone and get the offset
   const date = new Date(year, month - 1, day, hour, minute, second);

@@ -8,7 +8,9 @@ export async function GET(req: Request) {
   try {
     const session = await requireFamily();
     const url = new URL(req.url);
-    const days = parseInt(url.searchParams.get("days") || "7", 10);
+    const parsedDays = parseInt(url.searchParams.get("days") || "7", 10);
+    // Guard against NaN/negative so setDate() doesn't produce an Invalid Date.
+    const days = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 7;
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -108,6 +110,21 @@ export async function POST(req: Request) {
         { error: "Dish not found" },
         { status: 404 }
       );
+    }
+
+    // If a cook is named, verify they belong to this family — otherwise any
+    // user id in the database could be attached and their name/email leaked via
+    // the GET include (and a bad id would surface as a raw FK 500).
+    if (cookedById) {
+      const cook = await prisma.user.findFirst({
+        where: { id: cookedById, familyId: session.user.familyId! },
+      });
+      if (!cook) {
+        return NextResponse.json(
+          { error: "Cook is not in your family" },
+          { status: 400 }
+        );
+      }
     }
 
     // Parse date as local noon to avoid UTC midnight timezone issues

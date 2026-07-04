@@ -403,7 +403,7 @@ export default function PointEntryForm({
             <div>
               <label
                 htmlFor="chore"
-                className="block text-sm font-medium ${theme.label} mb-1"
+                className={`block text-sm font-medium ${theme.label} mb-1`}
               >
                 {t("selectChore")}
               </label>
@@ -412,7 +412,7 @@ export default function PointEntryForm({
                 value={choreId}
                 onChange={(e) => handleChoreSelect(e.target.value)}
                 required
-                className="w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none"
+                className={`w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none`}
               >
                 <option value="">{t("chooseChore")}</option>
                 {chores.map((chore) => (
@@ -434,7 +434,7 @@ export default function PointEntryForm({
               )}
 
               {chores.length === 0 && (
-                <p className="mt-2 text-sm ${theme.muted}">
+                <p className={`mt-2 text-sm ${theme.muted}`}>
                   {t("noChoresDefinedYet")}
                 </p>
               )}
@@ -444,7 +444,7 @@ export default function PointEntryForm({
             <div>
               <label
                 htmlFor="points"
-                className="block text-sm font-medium ${theme.label} mb-1"
+                className={`block text-sm font-medium ${theme.label} mb-1`}
               >
                 {tCommon("points")}
               </label>
@@ -455,9 +455,9 @@ export default function PointEntryForm({
                 value={customPoints}
                 onChange={(e) => setCustomPoints(e.target.value)}
                 placeholder={t("pointsPlaceholder")}
-                className="w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none"
+                className={`w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none`}
               />
-              <p className="mt-1 text-sm ${theme.muted}">
+              <p className={`mt-1 text-sm ${theme.muted}`}>
                 {t("pointsHint")}
               </p>
             </div>
@@ -466,7 +466,7 @@ export default function PointEntryForm({
           <div>
             <label
               htmlFor="note"
-              className="block text-sm font-medium ${theme.label} mb-1"
+              className={`block text-sm font-medium ${theme.label} mb-1`}
             >
               {t("note")} {mode === "custom" && <span className="text-red-500">*</span>}
             </label>
@@ -481,7 +481,7 @@ export default function PointEntryForm({
                   ? t("noteOptionalPlaceholder")
                   : t("noteRequiredPlaceholder")
               }
-              className="w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none`}
             />
           </div>
 
@@ -505,7 +505,7 @@ export default function PointEntryForm({
           <div>
             <label
               htmlFor="date"
-              className="block text-sm font-medium ${theme.label} mb-1"
+              className={`block text-sm font-medium ${theme.label} mb-1`}
             >
               {t("date")}
             </label>
@@ -515,14 +515,14 @@ export default function PointEntryForm({
               required
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none`}
             />
           </div>
 
           {!photosDisabled && (
           <div>
-            <label className="block text-sm font-medium ${theme.label} mb-1">
-              {tPhotos("photo")} <span className="${theme.muted}">({tPhotos("optional")})</span>
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
+              {tPhotos("photo")} <span className={`${theme.muted}`}>({tPhotos("optional")})</span>
             </label>
 
             {photoPreview ? (
@@ -543,7 +543,7 @@ export default function PointEntryForm({
             ) : (
               <label className={`flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed ${theme.photoBorder} rounded-lg cursor-pointer transition-colors`}>
                 <svg
-                  className="w-8 h-8 ${theme.muted}"
+                  className={`w-8 h-8 ${theme.muted}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -555,7 +555,7 @@ export default function PointEntryForm({
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <span className="mt-1 text-sm ${theme.muted}">{tPhotos("addPhoto")}</span>
+                <span className={`mt-1 text-sm ${theme.muted}`}>{tPhotos("addPhoto")}</span>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/gif,image/webp"

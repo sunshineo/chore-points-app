@@ -23,6 +23,13 @@ interface RateLimitConfig {
   keyGenerator?: (request: Request) => string;
   /** Custom message when rate limited */
   message?: string;
+  /**
+   * Namespace for this limiter's store keys. Every limiter shares one global
+   * store, so without a distinct namespace two limiters would collide on the
+   * same IP-keyed bucket and consume each other's quota. Defaults to a unique
+   * auto-generated value per rateLimit() call.
+   */
+  name?: string;
 }
 
 interface RateLimitEntry {
@@ -91,12 +98,15 @@ function getClientIp(request: Request): string {
 /**
  * Create a rate limiter with the specified configuration
  */
+let limiterCounter = 0;
+
 export function rateLimit(config: RateLimitConfig) {
   const {
     limit,
     windowMs,
     keyGenerator = getClientIp,
     message = "Too many requests, please try again later",
+    name = `limiter_${limiterCounter++}`,
   } = config;
 
   return {
@@ -106,7 +116,8 @@ export function rateLimit(config: RateLimitConfig) {
     check(request: Request): RateLimitResult {
       cleanupExpiredEntries();
 
-      const key = keyGenerator(request);
+      // Namespace the key by limiter so different limiters don't share buckets.
+      const key = `${name}:${keyGenerator(request)}`;
       const now = Date.now();
       const entry = rateLimitStore.get(key);
 
@@ -170,6 +181,7 @@ export function rateLimit(config: RateLimitConfig) {
 // Strict limiter for auth endpoints (signup, login attempts)
 // 5 requests per minute per IP
 export const authRateLimiter = rateLimit({
+  name: "auth",
   limit: parseInt(process.env.RATE_LIMIT_AUTH_MAX || "5", 10),
   windowMs: parseInt(process.env.RATE_LIMIT_AUTH_WINDOW || "60", 10) * 1000,
   message: "Too many authentication attempts. Please wait before trying again.",
@@ -178,6 +190,7 @@ export const authRateLimiter = rateLimit({
 // Moderate limiter for sensitive operations (family join, password reset)
 // 10 requests per minute per IP
 export const sensitiveRateLimiter = rateLimit({
+  name: "sensitive",
   limit: 10,
   windowMs: 60 * 1000,
   message: "Too many requests. Please wait before trying again.",
@@ -186,6 +199,7 @@ export const sensitiveRateLimiter = rateLimit({
 // General API limiter
 // 100 requests per minute per IP
 export const apiRateLimiter = rateLimit({
+  name: "api",
   limit: parseInt(process.env.RATE_LIMIT_API_MAX || "100", 10),
   windowMs: parseInt(process.env.RATE_LIMIT_API_WINDOW || "60", 10) * 1000,
   message: "Rate limit exceeded. Please slow down your requests.",

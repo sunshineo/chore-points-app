@@ -112,8 +112,8 @@ export default function WeeklyCalendar({ onDayClick }: WeeklyCalendarProps) {
       const startStr = toDateString(weekStart);
       const endStr = toDateString(weekEnd);
       const response = await fetch(`/api/daily-meals?start=${startStr}&end=${endStr}`);
-      const data = await response.json();
       if (response.ok) {
+        const data = await response.json();
         setLogs(data.logs || []);
       }
     } catch (err) {
@@ -273,7 +273,7 @@ export default function WeeklyCalendar({ onDayClick }: WeeklyCalendarProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="relative bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* Header with navigation */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b">
         <button

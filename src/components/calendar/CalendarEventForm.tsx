@@ -425,7 +425,7 @@ export default function CalendarEventForm({
 
           {/* Event Title */}
           <div>
-            <label className="block text-sm font-medium ${theme.label} mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("eventTitle")}
             </label>
             <input
@@ -433,7 +433,7 @@ export default function CalendarEventForm({
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               placeholder="Untitled"
-              className="w-full px-3 py-2 border ${theme.input} rounded-lg"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-lg`}
             />
           </div>
 
@@ -464,7 +464,7 @@ export default function CalendarEventForm({
           {/* Start Date/Time */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium ${theme.label} mb-1">
+              <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                 {t("startDate")} *
               </label>
               <input
@@ -472,19 +472,19 @@ export default function CalendarEventForm({
                 value={startDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
                 required
-                className="w-full h-11 px-3 border ${theme.input} rounded-lg bg-white"
+                className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
               />
             </div>
             {!allDay && (
               <div>
-                <label className="block text-sm font-medium ${theme.label} mb-1">
+                <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                   {t("startTime")} *
                 </label>
                 <select
                   value={startTime}
                   onChange={(e) => handleStartTimeChange(e.target.value)}
                   required
-                  className="w-full h-11 px-3 border ${theme.input} rounded-lg bg-white"
+                  className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
                 >
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
@@ -499,7 +499,7 @@ export default function CalendarEventForm({
           {/* End Date/Time */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium ${theme.label} mb-1">
+              <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                 {t("endDate")} *
               </label>
               <input
@@ -507,19 +507,19 @@ export default function CalendarEventForm({
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
-                className="w-full h-11 px-3 border ${theme.input} rounded-lg bg-white"
+                className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
               />
             </div>
             {!allDay && (
               <div>
-                <label className="block text-sm font-medium ${theme.label} mb-1">
+                <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                   {t("endTime")} *
                 </label>
                 <select
                   value={endTime}
                   onChange={(e) => handleEndTimeChange(e.target.value)}
                   required
-                  className="w-full h-11 px-3 border ${theme.input} rounded-lg bg-white"
+                  className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
                 >
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
@@ -533,28 +533,28 @@ export default function CalendarEventForm({
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-medium ${theme.label} mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("location")}
             </label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-3 py-2 border ${theme.input} rounded-lg"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-lg`}
               placeholder={t("locationPlaceholder")}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium ${theme.label} mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("description")}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border ${theme.input} rounded-lg"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-lg`}
               placeholder={t("descriptionPlaceholder")}
             />
           </div>

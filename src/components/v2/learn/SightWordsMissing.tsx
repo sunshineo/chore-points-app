@@ -25,8 +25,14 @@ export default function SightWordsMissing({ word, onCorrect, onWrong }: SightWor
 
   const { hiddenIndex, letters } = useMemo(() => {
     const w = word.word.toLowerCase();
-    // Pick a random index (not the first letter)
-    const validIndices = Array.from({ length: w.length - 1 }, (_, i) => i + 1);
+    // Pick a random index to hide, preferring not the first letter. Single-letter
+    // words (e.g. "a", "I" — both common sight words) have no non-first index, so
+    // fall back to hiding index 0; otherwise validIndices is empty, idx is
+    // undefined, and getRandomLetters(undefined) crashes the whole session.
+    const validIndices =
+      w.length > 1
+        ? Array.from({ length: w.length - 1 }, (_, i) => i + 1)
+        : [0];
     const idx = validIndices[Math.floor(Math.random() * validIndices.length)];
     const correctLetter = w[idx];
 

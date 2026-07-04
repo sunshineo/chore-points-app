@@ -94,10 +94,12 @@ export default function PointsLedger() {
   const fetchKids = async () => {
     try {
       const response = await fetch("/api/family/kids");
-      const data = await response.json();
-      if (response.ok && data.kids.length > 0) {
-        setKids(data.kids);
-        setSelectedKid(data.kids[0]);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.kids.length > 0) {
+          setKids(data.kids);
+          setSelectedKid(data.kids[0]);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch kids:", error);
@@ -109,8 +111,8 @@ export default function PointsLedger() {
   const fetchPoints = async (kidId: string) => {
     try {
       const response = await fetch(`/api/points?kidId=${kidId}`);
-      const data = await response.json();
       if (response.ok) {
+        const data = await response.json();
         setEntries(data.entries);
         setTotalPoints(data.totalPoints);
       }
@@ -206,25 +208,25 @@ export default function PointsLedger() {
           <table className={`min-w-full divide-y ${theme.tableDivide}`}>
             <thead className={theme.tableHead}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider`}>
                   {t("date")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider`}>
                   {tHistory("chore")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider`}>
                   {tCommon("points")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider`}>
                   {t("note")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider`}>
                   {tPhotos("photo")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider">
+                <th className={`px-6 py-3 text-left text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider`}>
                   {t("addedBy")}
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider">
+                <th className={`px-6 py-3 text-right text-xs font-medium ${theme.tableHeadText} uppercase tracking-wider`}>
                   {t("actions")}
                 </th>
               </tr>
@@ -232,10 +234,10 @@ export default function PointsLedger() {
             <tbody className={`bg-white divide-y ${theme.tableDivide}`}>
               {entries.map((entry) => (
                 <tr key={entry.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm ${theme.cellText}">
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme.cellText}`}>
                     {new Date(entry.date).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm ${theme.cellText}">
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${theme.cellText}`}>
                     {entry.chore?.title || (entry.points > 0 ? tHistory("custom") : "-")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

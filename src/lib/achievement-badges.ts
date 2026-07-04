@@ -1,5 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 
+// App-wide default timezone for bucketing point entries into calendar days and
+// weeks. PointEntry.date stores a UTC instant, but the UI groups by local day
+// (and the dashboard's weekly total uses Sunday-start weeks). Evaluating badges
+// in UTC / ISO-Monday weeks would disagree with what the kid sees — e.g. an
+// evening entry (PT) would shift to the next UTC day and break a streak. This
+// matches the default timezone used elsewhere (math / sight-words); if a
+// per-family timezone is ever added, thread it through here.
+const APP_TIME_ZONE = "America/Los_Angeles";
+
 // Context passed to badge evaluation functions
 export type BadgeEvaluationContext = {
   prisma: PrismaClient;
@@ -461,13 +470,13 @@ async function evaluateStreakBadge(
   const dailyPoints = await ctx.prisma.$queryRaw<
     { date: Date; total: bigint }[]
   >`
-    SELECT DATE(date) as date, SUM(points) as total
+    SELECT DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) as date, SUM(points) as total
     FROM "PointEntry"
     WHERE "kidId" = ${ctx.kidId}
       AND "familyId" = ${ctx.familyId}
       AND points > 0
-    GROUP BY DATE(date)
-    ORDER BY DATE(date) DESC
+    GROUP BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE})
+    ORDER BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) DESC
   `;
 
   if (dailyPoints.length < requiredDays) {
@@ -536,10 +545,14 @@ async function evaluateTotalPointsMilestone(
   ctx: BadgeEvaluationContext,
   requiredPoints: number
 ): Promise<BadgeEvaluationResult> {
+  // Count only points *earned* — exclude negative redemption entries — so this
+  // measures lifetime points earned, not current balance. Otherwise a kid who
+  // redeems rewards could be locked out of a milestone they've clearly passed.
   const result = await ctx.prisma.pointEntry.aggregate({
     where: {
       kidId: ctx.kidId,
       familyId: ctx.familyId,
+      points: { gt: 0 },
     },
     _sum: {
       points: true,
@@ -593,12 +606,12 @@ async function evaluateWeeklyPointsBadge(
   const weeklyPoints = await ctx.prisma.$queryRaw<
     { week: Date; total: bigint }[]
   >`
-    SELECT DATE_TRUNC('week', date) as week, SUM(points) as total
+    SELECT DATE_TRUNC('week', (date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE} + interval '1 day') - interval '1 day' as week, SUM(points) as total
     FROM "PointEntry"
     WHERE "kidId" = ${ctx.kidId}
       AND "familyId" = ${ctx.familyId}
       AND points > 0
-    GROUP BY DATE_TRUNC('week', date)
+    GROUP BY DATE_TRUNC('week', (date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE} + interval '1 day') - interval '1 day'
     HAVING SUM(points) >= ${requiredPoints}
     LIMIT 1
   `;
@@ -626,15 +639,15 @@ async function evaluateComboDayBadge(
   const rows = await ctx.prisma.$queryRaw<
     { date: Date; chore_count: bigint }[]
   >`
-    SELECT DATE(date) as date, COUNT(DISTINCT "choreId") as chore_count
+    SELECT DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) as date, COUNT(DISTINCT "choreId") as chore_count
     FROM "PointEntry"
     WHERE "kidId" = ${ctx.kidId}
       AND "familyId" = ${ctx.familyId}
       AND points > 0
       AND "choreId" IS NOT NULL
-    GROUP BY DATE(date)
+    GROUP BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE})
     HAVING COUNT(DISTINCT "choreId") >= ${requiredChores}
-    ORDER BY DATE(date) DESC
+    ORDER BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) DESC
     LIMIT 1
   `;
 

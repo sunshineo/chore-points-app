@@ -96,6 +96,12 @@ const defaultSettings: MathSettings = {
  * Generate a random number in range [min, max] using provided random function
  */
 function randomInRange(random: () => number, min: number, max: number): number {
+  // Guard against an inverted range (min > max), which would otherwise yield a
+  // negative span and produce out-of-range / nonsensical values. Fall back to
+  // treating min as the sole valid value.
+  if (min > max) {
+    return min;
+  }
   return Math.floor(random() * (max - min + 1)) + min;
 }
 

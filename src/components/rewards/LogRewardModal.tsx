@@ -157,13 +157,13 @@ export default function LogRewardModal({ onClose, onSuccess }: Props) {
 
           {kids.length > 1 && (
             <div>
-              <label className="block text-sm font-medium ${theme.label} mb-1">
+              <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                 {t("kid")}
               </label>
               <select
                 value={kidId}
                 onChange={(e) => setKidId(e.target.value)}
-                className="w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none"
+                className={`w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none`}
                 required
               >
                 <option value="">{t("selectKid")}</option>
@@ -177,7 +177,7 @@ export default function LogRewardModal({ onClose, onSuccess }: Props) {
           )}
 
           <div>
-            <label htmlFor="note" className="block text-sm font-medium ${theme.label} mb-1">
+            <label htmlFor="note" className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("note")}
             </label>
             <input
@@ -187,14 +187,14 @@ export default function LogRewardModal({ onClose, onSuccess }: Props) {
               onChange={(e) => setNote(e.target.value)}
               placeholder={t("notePlaceholder")}
               maxLength={100}
-              className="w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none`}
               required
               autoFocus
             />
           </div>
 
           <div>
-            <label htmlFor="points" className="block text-sm font-medium ${theme.label} mb-1">
+            <label htmlFor="points" className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("points")}
             </label>
             <input
@@ -206,13 +206,13 @@ export default function LogRewardModal({ onClose, onSuccess }: Props) {
               min={1}
               max={999}
               placeholder="10"
-              className="w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-md shadow-sm focus:outline-none`}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium ${theme.label} mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("photo")}
             </label>
             {photoUrl ? (
@@ -234,11 +234,11 @@ export default function LogRewardModal({ onClose, onSuccess }: Props) {
             ) : (
               <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed ${theme.photoBorder} rounded-lg cursor-pointer transition-colors`}>
                 {uploading ? (
-                  <span className="text-sm ${theme.photoText}">{t("uploading")}</span>
+                  <span className={`text-sm ${theme.photoText}`}>{t("uploading")}</span>
                 ) : (
                   <>
                     <span className="text-3xl mb-1">📸</span>
-                    <span className="text-sm ${theme.photoText}">{t("photoHint")}</span>
+                    <span className={`text-sm ${theme.photoText}`}>{t("photoHint")}</span>
                   </>
                 )}
                 <input

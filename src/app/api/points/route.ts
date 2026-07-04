@@ -15,8 +15,11 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const kidId = searchParams.get("kidId");
 
-    // If no kidId specified and user is a kid, use their own ID
-    const targetKidId = kidId || (session.user.role === "KID" ? session.user.id : null);
+    // Kids may only ever read their own ledger — ignore any kidId they pass so
+    // a kid can't enumerate a sibling's history via ?kidId=<sibling>. Parents
+    // may request a specific kid (still family-scoped by the check below).
+    const targetKidId =
+      session.user.role === "KID" ? session.user.id : kidId;
 
     if (!targetKidId) {
       return NextResponse.json(

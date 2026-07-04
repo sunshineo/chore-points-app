@@ -11,7 +11,13 @@ export async function POST(req: Request) {
     const session = await requireParentInFamily();
     const { packId } = await req.json();
 
-    const pack = STARTER_PACKS[packId];
+    // Use hasOwnProperty so inherited keys like "constructor"/"__proto__" don't
+    // resolve to a truthy prototype value (which would then throw on pack.words).
+    const pack =
+      typeof packId === "string" &&
+      Object.prototype.hasOwnProperty.call(STARTER_PACKS, packId)
+        ? STARTER_PACKS[packId]
+        : undefined;
     if (!pack) {
       return NextResponse.json({ error: "Unknown starter pack" }, { status: 400 });
     }

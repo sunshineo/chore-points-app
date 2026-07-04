@@ -117,11 +117,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      if (trigger === "update" && session) {
-        if (session.familyId !== undefined) token.familyId = session.familyId;
-        if (session.role !== undefined) token.role = session.role;
-        if (session.photoProvider !== undefined) {
-          token.photoProvider = session.photoProvider;
+      // On an explicit session.update() from the client, re-derive the
+      // security-sensitive claims from the database rather than trusting the
+      // caller-supplied payload. The client can request a refresh (e.g. after
+      // joining a family) but cannot dictate role/familyId — otherwise any
+      // authenticated user could self-promote to PARENT or pivot into an
+      // arbitrary family via useSession().update({ role, familyId }).
+      if (trigger === "update" && token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: {
+            role: true,
+            familyId: true,
+            family: { select: { photoProvider: true } },
+          },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.familyId = dbUser.familyId;
+          token.photoProvider = dbUser.family?.photoProvider ?? "NONE";
         }
       }
 

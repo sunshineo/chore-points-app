@@ -13,7 +13,15 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const kidId = searchParams.get("kidId");
-    const days = parseInt(searchParams.get("days") || "30");
+    const parsedDays = parseInt(searchParams.get("days") || "30");
+    // Guard against NaN/nonpositive so the date math below stays valid.
+    const days = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 30;
+    // MathProgress.date is stored as a local "YYYY-MM-DD" string; compute the
+    // streak's reference dates in the same timezone (default matches the rest of
+    // the math flow) so an evening entry doesn't break the streak at day 0.
+    const timezone = searchParams.get("timezone") || "America/Los_Angeles";
+    const localDateStr = (d: Date) =>
+      d.toLocaleDateString("en-CA", { timeZone: timezone });
 
     if (!kidId) {
       return NextResponse.json({ error: "kidId required" }, { status: 400 });
@@ -73,11 +81,11 @@ export async function GET(req: Request) {
     });
 
     let streak = 0;
-    const today = new Date().toISOString().split("T")[0];
+    const today = localDateStr(new Date());
     for (let i = 0; i < dailyProgress.length; i++) {
       const expectedDate = new Date();
       expectedDate.setDate(expectedDate.getDate() - i);
-      const expected = expectedDate.toISOString().split("T")[0];
+      const expected = localDateStr(expectedDate);
       if (dailyProgress[i].date === expected || (i === 0 && dailyProgress[i].date === today)) {
         streak++;
       } else {

@@ -50,6 +50,9 @@ export function buildMonthCells(year: number, month: number): MonthCell[] {
       dateStr: `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
     });
   }
-  if (cells.slice(35).every((c) => !c.inMonth)) return cells.slice(0, 35);
-  return cells;
+  // Trim to exactly the number of weeks the month spans so we never render a
+  // trailing week made entirely of next-month filler (e.g. Feb starting Sunday
+  // spans 4 weeks — the old code only trimmed row 6, leaving a junk row 5).
+  const neededRows = Math.ceil((firstDay + daysInMonth) / 7);
+  return cells.slice(0, neededRows * 7);
 }

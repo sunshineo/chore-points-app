@@ -302,7 +302,7 @@ export default function BadgeDetailModal(props: BadgeDetailModalProps) {
             {/* Progress to next level */}
             {props.badge.nextLevelAt && (
               <div className="w-full mb-4">
-                <div className="flex justify-between text-xs ${theme.progress} mb-1">
+                <div className={`flex justify-between text-xs ${theme.progress} mb-1`}>
                   <span>{t("progress")}</span>
                   <span>
                     {props.badge.count}/{props.badge.nextLevelAt} {locale === "zh" ? "次" : ""}
