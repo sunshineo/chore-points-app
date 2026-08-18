@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireParentInFamily } from "@/lib/permissions";
 import OpenAI from "openai";
 
-const openai = new OpenAI();
+const isOpenAIDisabled = () => !process.env.OPENAI_API_KEY;
 
 type Message = {
   role: "user" | "assistant";
@@ -166,6 +166,17 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    if (isOpenAIDisabled()) {
+      return NextResponse.json(
+        {
+          error: "AI chat is currently disabled because OPENAI_API_KEY is not configured.",
+        },
+        { status: 503 }
+      );
+    }
+
+    const openai = new OpenAI();
 
     const systemPrompt = `You are GemSteps Assistant, a helpful AI for managing kids' chore points. You help parents award and track points for their children.
 
