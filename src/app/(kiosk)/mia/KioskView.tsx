@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KioskData,
   KioskTask,
@@ -10,15 +10,22 @@ import {
   ensureKioskState,
   saveKioskState,
   KioskMutationResult,
+  getDayEarnedPoints,
+  getDaySpentPoints,
+  getDayNetPoints,
+  getTotalNetPoints,
+  getTasksForDate,
 } from "@/lib/kiosk/local-kiosk-store";
 
 const OFFLINE_LABEL = "离线模式";
+const PACIFIC_TIMEZONE = "America/Los_Angeles";
 
 type ChoreTileProps = {
   task: KioskTask;
   done: boolean;
   colorIndex: number;
   onTap: () => void;
+  readOnly: boolean;
 };
 
 type KioskDataWithReward = KioskData;
@@ -43,6 +50,31 @@ const TILE_COLORS = [
   "from-red-400 to-red-500",
 ];
 
+const QUICK_DAY_OFFSETS = [0, -1, -2] as const;
+
+function getDateInPacific(now = new Date()): Date {
+  const text = now.toLocaleString("en-US", { timeZone: PACIFIC_TIMEZONE });
+  const localeDate = new Date(text);
+  return new Date(localeDate.getFullYear(), localeDate.getMonth(), localeDate.getDate());
+}
+
+function getDateKeyPT(date: Date): string {
+  return date.toLocaleDateString("en-CA", { timeZone: PACIFIC_TIMEZONE });
+}
+
+function dateLabelFromKey(dateKey: string): string {
+  const parts = dateKey.split("-");
+  if (parts.length !== 3) return dateKey;
+  const month = Number.parseInt(parts[1], 10);
+  const day = Number.parseInt(parts[2], 10);
+  return `${month}月${day}日`;
+}
+
+function getDateSummaryLabel(offset: number): string {
+  if (offset === 0) return "今天";
+  return `${Math.abs(offset)} 天前`;
+}
+
 function getChoreEmoji(task: { emoji: string | null; title: string }): string {
   if (task.emoji) return task.emoji;
   const emojiRegex = /(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
@@ -51,25 +83,7 @@ function getChoreEmoji(task: { emoji: string | null; title: string }): string {
   return "⭐";
 }
 
-function normalizeDate(now = new Date()): { todayFormatted: string; weekRangeFormatted: string } {
-  const nowPt = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-  const month = nowPt.getMonth() + 1;
-  const date = nowPt.getDate();
-  const day = nowPt.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(nowPt);
-  monday.setDate(nowPt.getDate() + diffToMonday);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
-  return {
-    todayFormatted: `${month}月${date}日`,
-    weekRangeFormatted: `${fmt(monday)} - ${fmt(sunday)}`,
-  };
-}
-
-function ChoreTile({ task, done, colorIndex, onTap }: ChoreTileProps) {
+function ChoreTile({ task, done, colorIndex, onTap, readOnly }: ChoreTileProps) {
   const emoji = getChoreEmoji(task);
   const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
 
@@ -77,17 +91,17 @@ function ChoreTile({ task, done, colorIndex, onTap }: ChoreTileProps) {
     <button
       type="button"
       onClick={onTap}
-      disabled={done}
+      disabled={done || readOnly}
       className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white overflow-hidden bg-gradient-to-br ${gradient}`}
-      style={{ width: 165, height: 165, opacity: done ? 0.55 : 1 }}
+      style={{ width: 165, height: 165, opacity: done || readOnly ? 0.55 : 1 }}
     >
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
       <div
         className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow ${
-          done ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+          done ? "bg-emerald-500 text-white" : readOnly ? "bg-sky-500 text-white" : "bg-red-500 text-white"
         }`}
       >
-        {done ? "✓" : "!"}
+        {readOnly ? (done ? "✓" : "锁") : done ? "✓" : "!"}
       </div>
 
       {task.kind === "learn" ? (
@@ -115,7 +129,7 @@ function ChoreTile({ task, done, colorIndex, onTap }: ChoreTileProps) {
   );
 }
 
-function TaskSection({ tasks, onTap }: { tasks: KioskTask[]; onTap: (id: string) => void }) {
+function TaskSection({ tasks, onTap, readOnly }: { tasks: KioskTask[]; onTap: (id: string) => void; readOnly: boolean }) {
   if (tasks.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400 text-lg">
@@ -129,8 +143,8 @@ function TaskSection({ tasks, onTap }: { tasks: KioskTask[]; onTap: (id: string)
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-500 px-1">
-        {pending.length > 0 ? `今天还有 ${pending.length} 项未完成` : "今天任务已完成"}
+      <div className="text-sm text-gray-600 px-1">
+        {readOnly ? "历史日期只读查看" : pending.length > 0 ? `今天还有 ${pending.length} 项未完成` : "今天任务已完成"}
       </div>
       <div className="flex flex-wrap gap-3">
         {pending.map((task, i) => (
@@ -139,6 +153,7 @@ function TaskSection({ tasks, onTap }: { tasks: KioskTask[]; onTap: (id: string)
             task={task}
             done={false}
             colorIndex={i}
+            readOnly={readOnly}
             onTap={() => onTap(task.id)}
           />
         ))}
@@ -151,6 +166,7 @@ function TaskSection({ tasks, onTap }: { tasks: KioskTask[]; onTap: (id: string)
             task={task}
             done
             colorIndex={pending.length + i}
+            readOnly={readOnly}
             onTap={() => onTap(task.id)}
           />
         ))}
@@ -234,6 +250,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
   const [data, setData] = useState<KioskDataWithReward | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
+  const [selectedDateOffset, setSelectedDateOffset] = useState(0);
 
   const [showEmoji, setShowEmoji] = useState(false);
   const [showRain, setShowRain] = useState(false);
@@ -243,14 +260,34 @@ export default function KioskView({ kidId }: { kidId: string }) {
 
   const prevTotalRef = useRef<number | null>(null);
   const prevEntryIdRef = useRef<string | null>(null);
-  const dates = useMemo(() => normalizeDate(), []);
+
+  const selectedDate = useMemo(() => {
+    const today = getDateInPacific();
+    const target = new Date(today);
+    target.setDate(today.getDate() + selectedDateOffset);
+    return target;
+  }, [selectedDateOffset]);
+
+  const selectedDateKey = useMemo(() => getDateKeyPT(selectedDate), [selectedDate]);
+  const selectedDateLabel = useMemo(() => dateLabelFromKey(selectedDateKey), [selectedDateKey]);
+  const selectedDateSummary = useMemo(() => getDateSummaryLabel(selectedDateOffset), [selectedDateOffset]);
+  const selectedDateTasks = useMemo(() => (data ? getTasksForDate(data, selectedDateKey) : []), [data, selectedDateKey]);
+  const selectedDayEarned = useMemo(() => (data ? getDayEarnedPoints(data, selectedDateKey) : 0), [data, selectedDateKey]);
+  const selectedDaySpent = useMemo(() => (data ? getDaySpentPoints(data, selectedDateKey) : 0), [data, selectedDateKey]);
+  const selectedDayNet = useMemo(() => (data ? getDayNetPoints(data, selectedDateKey) : 0), [data, selectedDateKey]);
+  const isTodayView = selectedDateOffset === 0;
+
+  const totalNetPoints = data ? getTotalNetPoints(data) : 0;
+  const totalSpent = data?.totalSpent ?? 0;
+  const totalEarned = data?.totalEarned ?? 0;
 
   useEffect(() => {
     const initial = ensureKioskState(kidId, "宝贝");
+    const initialNet = getTotalNetPoints(initial);
     setData(initial);
-    setTotalPoints(initial.totalPoints);
-    setDisplayedPoints(initial.totalPoints);
-    prevTotalRef.current = initial.totalPoints;
+    setTotalPoints(initialNet);
+    setDisplayedPoints(initialNet);
+    prevTotalRef.current = initialNet;
     prevEntryIdRef.current = initial.latestEntry?.id ?? null;
     setLoading(false);
   }, [kidId]);
@@ -294,7 +331,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
 
     saveKioskState(mutation.state);
     const previous = prevTotalRef.current;
-    const incomingTotal = mutation.state.totalPoints;
+    const incomingTotal = getTotalNetPoints(mutation.state);
     const shouldCelebrate = previous !== null && incomingTotal > previous;
 
     if (shouldCelebrate) {
@@ -310,7 +347,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
   };
 
   const handleTaskTap = (taskId: string) => {
-    if (!data) return;
+    if (!data || !isTodayView) return;
     const mutation = completeTaskMutator(data, taskId);
     handleLocalMutation(mutation);
   };
@@ -321,12 +358,23 @@ export default function KioskView({ kidId }: { kidId: string }) {
     handleLocalMutation(mutation);
   };
 
+  const handleGoPrevDay = () => {
+    setSelectedDateOffset((offset) => offset - 1);
+  };
+
+  const handleGoNextDay = () => {
+    setSelectedDateOffset((offset) => Math.min(offset + 1, 0));
+  };
+
+  const handleJumpToOffset = (offset: number) => {
+    setSelectedDateOffset(offset);
+  };
+
   const taskSummary = useMemo(() => {
-    if (!data) return { countDone: 0, countTotal: 0 };
-    const countTotal = data.tasks.length;
-    const countDone = data.tasks.filter((item) => item.completedToday).length;
+    const countTotal = selectedDateTasks.length;
+    const countDone = selectedDateTasks.filter((item) => item.completedToday).length;
     return { countDone, countTotal };
-  }, [data]);
+  }, [selectedDateTasks]);
 
   if (loading || !data) {
     return (
@@ -376,13 +424,10 @@ export default function KioskView({ kidId }: { kidId: string }) {
           )}
 
           <div className="flex-1 z-10">
-            {data.totalEarned > 0 && (
-              <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block">
-                <p className="text-xs text-white/60 mb-0.5">🏆 累计得分</p>
-                <p className="text-3xl font-bold font-mono">{data.totalEarned}</p>
-                <p className="text-xs text-white/50">分</p>
-              </div>
-            )}
+            <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block">
+              <p className="text-xs text-white/60 mb-0.5">🎯 当前总净积分（可兑）</p>
+              <p className="text-3xl font-bold font-mono">{totalNetPoints}</p>
+            </div>
           </div>
 
           <div className="flex flex-col items-center flex-shrink-0 z-10">
@@ -405,17 +450,73 @@ export default function KioskView({ kidId }: { kidId: string }) {
               </span>
             </div>
 
-            <p className="text-sm font-medium text-white/60 mt-1">积分</p>
+            <p className="text-sm font-medium text-white/60 mt-1">总净积分（可兑换）</p>
             <p className="text-xs text-yellow-200 mt-1">{OFFLINE_LABEL}（无需网络）</p>
           </div>
 
-          <div className="flex-1 flex justify-end z-10">
-            <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block text-right">
-              <p className="text-xs text-white/60 mb-0.5">📅 今天</p>
-              <p className="text-lg font-semibold">{dates.todayFormatted}</p>
+          <div className="flex-1 flex flex-col items-end justify-center z-10">
+            <div className="bg-white/10 rounded-2xl px-4 py-3 inline-block text-right w-full max-w-[230px]">
+              <div className="text-xs text-white/80 mb-1">📅 {selectedDateSummary}</div>
+              <div className="text-lg font-semibold">{selectedDateLabel}</div>
               <div className="mt-1.5 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/60 mb-0.5">🌟 本周</p>
-                <p className="text-lg font-semibold">{dates.weekRangeFormatted}</p>
+                <p className="text-xs text-white/70">🌟 这一天得分</p>
+                <p className="text-lg font-semibold">{selectedDayEarned}</p>
+              </div>
+              <div className="mt-1 pt-1.5 border-t border-white/20">
+                <p className="text-xs text-white/70">💸 这一天花费</p>
+                <p className="text-lg font-semibold">{selectedDaySpent}</p>
+              </div>
+              <div className="mt-1 pt-1.5 border-t border-white/20">
+                <p className="text-xs text-white/70">📊 这一天净变化</p>
+                <p className="text-lg font-semibold">{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
+              </div>
+              <div className="mt-1 pt-1.5 border-t border-white/20">
+                <p className="text-xs text-white/70">🏆 总共得分</p>
+                <p className="text-lg font-semibold">{totalEarned}</p>
+              </div>
+              <div className="mt-1 pt-1.5 border-t border-white/20">
+                <p className="text-xs text-white/70">🧾 总共花费</p>
+                <p className="text-lg font-semibold">{totalSpent}</p>
+              </div>
+              <div className="mt-2 flex items-center justify-end gap-1 text-xs">
+                <button
+                  type="button"
+                  onClick={handleGoPrevDay}
+                  className="px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25"
+                >
+                  前一天
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGoNextDay}
+                  disabled={selectedDateOffset >= 0}
+                  className="px-2 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25"
+                >
+                  后一天
+                </button>
+              </div>
+              <div className="mt-2 flex items-center justify-end gap-1.5 text-[11px]">
+                {QUICK_DAY_OFFSETS.map((offset) => {
+                  const label =
+                    offset === 0
+                      ? "今天"
+                      : offset === -1
+                        ? "昨天"
+                        : `${Math.abs(offset)}天前`;
+                  const active = offset === selectedDateOffset;
+                  return (
+                    <button
+                      key={offset}
+                      type="button"
+                      onClick={() => handleJumpToOffset(offset)}
+                      className={`px-2 py-1 rounded-full border ${
+                        active ? "bg-white/35 border-white/80" : "bg-white/10 border-white/30"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -464,13 +565,14 @@ export default function KioskView({ kidId }: { kidId: string }) {
             {activeTab === "rewards" ? (
               <RewardSection
                 rewards={data.rewards}
-                currentPoints={data.totalPoints}
+                currentPoints={totalNetPoints}
                 onRedeem={handleRewardRedeem}
               />
             ) : (
               <TaskSection
-                tasks={data.tasks}
+                tasks={selectedDateTasks}
                 onTap={handleTaskTap}
+                readOnly={!isTodayView}
               />
             )}
           </div>
