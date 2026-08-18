@@ -28,6 +28,7 @@ type KioskTileProps = {
   onTap: () => void;
   colorIndex: number;
   disabled: boolean;
+  completed: boolean;
 };
 
 type RewardTileProps = {
@@ -85,44 +86,69 @@ function dateLabelFromDate(date: Date): string {
 }
 
 function TaskTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
-  const tileState = disabled
-    ? task.completed
-      ? "已完成"
-      : "待完成"
-    : "点我完成";
+  const tileState = task.completed ? "已完成" : disabled ? "锁定" : "点我完成";
+  const statusStyle = task.completed
+    ? "bg-emerald-500 text-white"
+    : disabled
+      ? "bg-sky-500 text-white"
+      : "bg-rose-500 text-white";
 
   return (
     <button
       type="button"
       onClick={onTap}
       disabled={disabled}
-      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg p-3 min-h-[130px] transition-all duration-200 overflow-hidden bg-gradient-to-br ${TILE_COLORS[colorIndex % TILE_COLORS.length]} ${disabled ? "opacity-55" : ""}`}
+      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-300 select-none text-white overflow-hidden bg-gradient-to-br ${TILE_COLORS[colorIndex % TILE_COLORS.length]} ${disabled ? "opacity-55" : ""}`}
+      style={{ width: 165, height: 165, opacity: disabled || task.completed ? 0.55 : 1 }}
     >
       <div className="absolute inset-0 bg-white/25 pointer-events-none" />
-      <span className="relative z-10 text-3xl">{task.emoji}</span>
-      <h3 className="relative z-10 mt-2 text-sm text-white font-bold text-center">{task.title}</h3>
-      <p className="relative z-10 text-xs text-white/85 mt-1">+{task.defaultPoints} 分</p>
-      <p className="relative z-10 mt-2 text-xs text-white/90">{tileState}</p>
-      {task.completed ? <span className="absolute top-2 right-2 text-white text-lg font-black">✓</span> : null}
+      <div className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow ${statusStyle}`}>
+        {task.completed ? "✓" : disabled ? "锁" : "!"}
+      </div>
+      <span className="relative z-10 text-5xl leading-none" role="img" aria-label={task.title}>
+        {task.emoji}
+      </span>
+      <h3
+        className="relative z-10 mt-2 text-sm font-bold leading-tight text-center px-2 text-white"
+        style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+      >
+        {task.title}
+      </h3>
+      <span className="relative z-10 mt-2 rounded-full px-3 py-1 text-sm font-bold bg-white/35">
+        +{task.defaultPoints} 分
+      </span>
+      <p className="relative z-10 mt-2 text-[11px] text-white/85">{tileState}</p>
     </button>
   );
 }
 
 function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
+  const statusStyle = enough ? "bg-rose-500 text-white" : "bg-gray-500 text-white";
+
   return (
     <button
       type="button"
       onClick={onRedeem}
       disabled={disabled}
-      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg p-3 min-h-[130px] transition-all duration-200 overflow-hidden bg-gradient-to-br ${disabled ? "from-gray-400 to-gray-500" : TILE_COLORS[2]} ${disabled ? "opacity-55" : ""}`}
+      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-300 select-none text-white overflow-hidden bg-gradient-to-br ${disabled ? "from-gray-400 to-gray-500" : TILE_COLORS[2]} ${disabled ? "opacity-55" : ""}`}
+      style={{ width: 165, height: 165, opacity: disabled ? 0.55 : 1 }}
     >
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
-      <span className="relative z-10 text-3xl">{reward.emoji}</span>
-      <h3 className="relative z-10 mt-2 text-sm text-white font-bold text-center">{reward.title}</h3>
-      <p className="relative z-10 text-xs text-white/80 text-center px-2">{reward.description}</p>
-      <span className="relative z-10 mt-2 text-sm text-white">-{reward.cost} 分</span>
+      <div className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow ${statusStyle}`}>
+        {reward.stock === null ? "∞" : reward.stock}
+      </div>
+      <span className="relative z-10 text-5xl leading-none" role="img" aria-label={reward.title}>
+        {reward.emoji}
+      </span>
+      <h3
+        className="relative z-10 mt-2 text-sm font-bold leading-tight text-center px-2 text-white"
+        style={{ overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+      >
+        {reward.title}
+      </h3>
+      <p className="relative z-10 text-xs text-white/80 text-center px-2 mt-1">{reward.description}</p>
+      <span className="relative z-10 mt-2 text-sm font-bold">-{reward.cost} 分</span>
       <span className="relative z-10 mt-1 text-xs text-white/85">{enough ? "可兑换" : "积分不足"}</span>
-      {reward.stock !== null ? <span className="relative z-10 text-xs text-white/90">库存 {reward.stock}</span> : null}
     </button>
   );
 }
@@ -307,7 +333,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-100 px-4 py-4">
+    <div className="fixed inset-0 z-50 grid grid-rows-[auto_1fr] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <style>{`
         .day-scroll {
           -webkit-overflow-scrolling: touch;
@@ -316,56 +342,69 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         }
       `}</style>
 
-      <div className="mx-auto max-w-4xl space-y-4">
-        <div className="rounded-2xl bg-white/90 backdrop-blur shadow p-4">
-          <div className="flex items-center justify-between gap-2">
+      <div className="text-white flex-shrink-0 relative overflow-hidden px-6 py-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
+        <div className="relative z-20 flex flex-col gap-3 max-w-5xl mx-auto w-full">
+          <div className="flex items-center justify-center gap-3">
             <button
               type="button"
               onClick={handlePrevDay}
-              className="rounded-lg bg-indigo-100 px-3 py-1 text-sm font-semibold"
+              className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-sm"
             >
               前一天
             </button>
-            <div className="text-sm font-semibold">{selectedDateLabel}</div>
+            <p className="text-sm font-semibold text-white/95">{selectedDateLabel}</p>
             <button
               type="button"
               onClick={handleNextDay}
               disabled={selectedDateOffset >= 0}
-              className="rounded-lg bg-indigo-100 px-3 py-1 text-sm font-semibold disabled:opacity-40"
+              className="px-3 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-sm"
             >
               后一天
             </button>
           </div>
 
-          <div className="mt-3 rounded-xl bg-indigo-700 text-white p-4 space-y-3">
-            <div className="text-center">
-              <p className="text-xs opacity-90">总得分 - 总兑换 = 当前可用积分</p>
-              <p className="mt-1 text-4xl font-black leading-none tracking-wide">
-                {data.totals.totalEarned} - {data.totals.totalSpent} = {data.totals.totalNet}
-              </p>
-              <p className="mt-2 grid grid-cols-3 text-xs opacity-85">
-                <span>总得分</span>
-                <span>总兑换</span>
-                <span>当前可用积分</span>
-              </p>
+          <div className="flex items-start justify-start gap-3">
+            <div className="flex-1">
+              <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block min-w-[260px]">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <p className="text-xs text-white/60">🧾 总兑换</p>
+                    <p className="text-lg font-bold font-mono">{data.totals.totalSpent}</p>
+                  </div>
+                  <div className="text-right flex-1">
+                    <p className="text-xs text-white/60">🏆 总得分</p>
+                    <p className="text-lg font-bold font-mono">{data.totals.totalEarned}</p>
+                  </div>
+                </div>
+                <div className="mt-2 pt-1.5 border-t border-white/20">
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      <p className="text-xs text-white/60">💸 今日兑换</p>
+                      <p className="text-lg font-semibold font-mono">{data.selectedDay.spent}</p>
+                    </div>
+                    <div className="text-right flex-1">
+                      <p className="text-xs text-white/60">🌟 今日得分</p>
+                      <p className="text-lg font-semibold font-mono">{data.selectedDay.earned}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="border-t border-white/30 pt-2 text-center">
-              <p className="text-lg opacity-95">今日得分 - 今日兑换 = 今日净变化</p>
-              <p className="mt-1 text-3xl font-black leading-none tracking-wide">
-                {data.selectedDay.earned} - {data.selectedDay.spent} = {data.selectedDay.net >= 0 ? "+" : ""}
+            <div className="flex flex-col items-center flex-shrink-0 z-10">
+              <p className="text-xs text-white/80">当前可用积分</p>
+              <span className="text-6xl leading-none font-black tracking-tight font-mono">{data.totals.totalNet}</span>
+              <p className="text-xs text-white/80">
+                今日净变化：{data.selectedDay.net >= 0 ? "+" : ""}
                 {data.selectedDay.net}
-              </p>
-              <p className="mt-2 grid grid-cols-3 text-xs opacity-85">
-                <span>今日得分</span>
-                <span>今日兑换</span>
-                <span>今日变化</span>
               </p>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-2">
+      <div className="min-h-0 overflow-hidden relative flex flex-col">
+        <div className="flex px-4 pt-3 pb-1 gap-2 max-w-5xl mx-auto w-full">
           {TABS.map((tab) => {
             const active = activeTab === tab.key;
             return (
@@ -373,45 +412,55 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`rounded-xl px-3 py-2 font-bold ${active ? "bg-indigo-600 text-white" : "bg-white text-slate-600"}`}
+                className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-200 ${
+                  active ? "bg-indigo-600 text-white shadow-md" : "bg-white text-gray-500 border-2 border-gray-200"
+                }`}
               >
-                {tab.label}
-                {tab.key === "tasks" ? `（${taskSummary}）` : ""}
+                <span className="text-xl">{tab.label === "任务" ? "✅" : "🎁"}</span>
+                <span className="ml-1 text-lg">{tab.label}</span>
+                {tab.key === "tasks" ? (
+                  <span className={`ml-1.5 text-base font-bold px-2 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-gray-100"}`}>
+                    {taskSummary}
+                  </span>
+                ) : null}
               </button>
             );
           })}
         </div>
 
-        <div className="rounded-2xl bg-white/90 shadow p-3 min-h-[55vh] day-scroll overflow-y-auto">
-          {activeTab === "tasks" ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {data.tasks.map((task, index) => (
-                <TaskTile
-                  key={task.id}
-                  task={task}
-                  onTap={() => handleTaskTap(task)}
-                  colorIndex={index}
-                  disabled={!isToday || task.completed}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {data.rewards.map((reward) => {
-                const enough = data.totals.totalNet >= reward.cost;
-                const disabled = saving || reward.stock === 0 || !enough;
-                return (
-                  <RewardTile
-                    key={reward.id}
-                    reward={reward}
-                    onRedeem={() => handleRewardRedeem(reward)}
-                    disabled={disabled}
-                    enough={enough}
+        <div className="flex-1 min-h-0 px-4 py-4 overflow-y-auto overflow-x-hidden pt-0 pb-6 day-scroll">
+          <div className="max-w-5xl mx-auto">
+            {activeTab === "tasks" ? (
+              <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+                {data.tasks.map((task, index) => (
+                  <TaskTile
+                    key={task.id}
+                    task={task}
+                    onTap={() => handleTaskTap(task)}
+                    colorIndex={index}
+                    disabled={!isToday || task.completed}
+                    completed={task.completed}
                   />
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+                {data.rewards.map((reward) => {
+                  const enough = data.totals.totalNet >= reward.cost;
+                  const disabled = saving || reward.stock === 0 || !enough;
+                  return (
+                    <RewardTile
+                      key={reward.id}
+                      reward={reward}
+                      onRedeem={() => handleRewardRedeem(reward)}
+                      disabled={disabled}
+                      enough={enough}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
