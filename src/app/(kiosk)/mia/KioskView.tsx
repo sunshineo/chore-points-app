@@ -114,12 +114,15 @@ function getDateKeyPT(date: Date): string {
   return date.toLocaleDateString("en-CA", { timeZone: PACIFIC_TIMEZONE });
 }
 
-function dateLabelFromKey(dateKey: string): string {
-  const parts = dateKey.split("-");
-  if (parts.length !== 3) return dateKey;
-  const month = Number.parseInt(parts[1], 10);
-  const day = Number.parseInt(parts[2], 10);
-  return `${month}月${day}日`;
+function dateLabelFromDate(date: Date): string {
+  const resolved = getDateInPacific(date);
+  const month = resolved.getMonth() + 1;
+  const day = resolved.getDate();
+  const weekday = resolved.toLocaleDateString("zh-CN", {
+    timeZone: PACIFIC_TIMEZONE,
+    weekday: "long",
+  });
+  return `${month}月${day}日 ${weekday}`;
 }
 
 function getChoreEmoji(task: { emoji: string | null; title: string }): string {
@@ -327,7 +330,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
   }, [selectedDateOffset]);
 
   const selectedDateKey = useMemo(() => getDateKeyPT(selectedDate), [selectedDate]);
-  const selectedDateLabel = useMemo(() => dateLabelFromKey(selectedDateKey), [selectedDateKey]);
+  const selectedDateLabel = useMemo(() => dateLabelFromDate(selectedDate), [selectedDate]);
   const selectedDateTasks = useMemo(() => (data ? getTasksForDate(data, selectedDateKey) : []), [data, selectedDateKey]);
   const selectedDayEarned = useMemo(() => (data ? getDayEarnedPoints(data, selectedDateKey) : 0), [data, selectedDateKey]);
   const selectedDaySpent = useMemo(() => (data ? getDaySpentPoints(data, selectedDateKey) : 0), [data, selectedDateKey]);
@@ -526,26 +529,25 @@ export default function KioskView({ kidId }: { kidId: string }) {
         className="fixed inset-0 z-50 grid grid-rows-[auto_1fr] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50"
         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
       >
-        <div className="flex items-center justify-between bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white flex-shrink-0 relative overflow-hidden px-6 py-2">
-          <div className="absolute top-2 left-0 right-0 z-20 flex justify-center">
-            <div className="flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={handleGoPrevDay}
-                className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-sm"
-              >
-                前一天
-              </button>
-              <p className="text-sm font-semibold text-white/95">{selectedDateLabel}</p>
-              <button
-                type="button"
-                onClick={handleGoNextDay}
-                disabled={selectedDateOffset >= 0}
-                className="px-3 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-sm"
-              >
-                后一天
-              </button>
-            </div>
+        <div className="text-white flex-shrink-0 relative overflow-hidden px-6 py-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
+          <div className="relative z-20 flex flex-col gap-3">
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={handleGoPrevDay}
+              className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-sm"
+            >
+              前一天
+            </button>
+            <p className="text-sm font-semibold text-white/95">{selectedDateLabel}</p>
+            <button
+              type="button"
+              onClick={handleGoNextDay}
+              disabled={selectedDateOffset >= 0}
+              className="px-3 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-sm"
+            >
+              后一天
+            </button>
           </div>
 
           {showRain && (
@@ -556,15 +558,30 @@ export default function KioskView({ kidId }: { kidId: string }) {
             </div>
           )}
 
-          <div className="flex-1 z-10">
-            <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block">
-              <div>
-                <p className="text-xs text-white/60 mb-0.5">🏆 总得分</p>
-                <p className="text-2xl font-bold font-mono">{totalEarned}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 z-10">
+            <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block min-w-[260px]">
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  <p className="text-xs text-white/60">🧾 总兑换</p>
+                  <p className="text-lg font-bold font-mono">{totalSpent}</p>
+                </div>
+                <div className="text-right flex-1">
+                  <p className="text-xs text-white/60">🏆 总得分</p>
+                  <p className="text-lg font-bold font-mono">{totalEarned}</p>
+                </div>
               </div>
               <div className="mt-2 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/60">🌟 今天得分</p>
-                <p className="text-xl font-semibold font-mono">{selectedDayEarned}</p>
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <p className="text-xs text-white/60">💸 今日兑换</p>
+                    <p className="text-lg font-semibold font-mono">{selectedDaySpent}</p>
+                  </div>
+                  <div className="text-right flex-1">
+                    <p className="text-xs text-white/60">🌟 今日得分</p>
+                    <p className="text-lg font-semibold font-mono">{selectedDayEarned}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -579,7 +596,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
                   <span className="text-yellow-900 font-bold text-xl opacity-70">★</span>
                 </div>
               </div>
-              <span className={`text-8xl font-black font-mono tracking-tight ${showRain ? "kiosk-counter-bump" : ""}`}>
+              <span className={`text-8xl leading-none font-black font-mono tracking-tight ${showRain ? "kiosk-counter-bump" : ""}`}>
                 {displayedPoints}
               </span>
             </div>
@@ -587,33 +604,25 @@ export default function KioskView({ kidId }: { kidId: string }) {
             <p className="text-xs text-white/80 mt-1">今日净变化：{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
           </div>
 
-          <div className="flex-1 flex flex-col items-end justify-center z-10">
-            <div className="bg-white/10 rounded-2xl px-4 py-3 inline-block text-right w-full max-w-[230px]">
-              <div>
-                <p className="text-xs text-white/80 mb-0.5">🧾 总兑换</p>
-                <p className="text-2xl font-bold font-mono">{totalSpent}</p>
-              </div>
-              <div className="mt-2 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/70">💸 今天兑换</p>
-                <p className="text-xl font-semibold font-mono">{selectedDaySpent}</p>
-              </div>
-              <div className="mt-3 flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={handleExport}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white/20 text-white"
-                >
-                  导出
-                </button>
-                <button
-                  type="button"
-                  onClick={triggerImport}
-                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white/20 text-white"
-                >
-                  导入
-                </button>
-              </div>
+          <div className="flex flex-col items-end justify-center z-10">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleExport}
+                className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white/20 text-white shadow-sm"
+              >
+                导出
+              </button>
+              <button
+                type="button"
+                onClick={triggerImport}
+                className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white/20 text-white shadow-sm"
+              >
+                导入
+              </button>
             </div>
+          </div>
+          </div>
           </div>
         </div>
 
