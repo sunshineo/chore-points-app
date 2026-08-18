@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KioskData,
   KioskTask,
@@ -56,6 +56,53 @@ const TILE_COLORS = [
   "from-orange-400 to-orange-500",
   "from-red-400 to-red-500",
 ];
+
+type KioskBackupFile = {
+  app: "chore-kiosk-local";
+  version: "1.0";
+  exportedAt: string;
+  data: KioskData;
+};
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object");
+}
+
+function parseBackupPayload(raw: string): KioskData | null {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isObject(parsed)) return null;
+
+    const container = isObject(parsed.data) ? (parsed.data as unknown) : parsed;
+    if (!isObject(container)) return null;
+
+    const candidate = container as Partial<KioskData>;
+    if (
+      !isObject(candidate.kid) ||
+      typeof candidate.kid.id !== "string" ||
+      !Array.isArray(candidate.tasks) ||
+      !Array.isArray(candidate.rewards) ||
+      !isObject(candidate.taskHistory) ||
+      typeof candidate.totalPoints !== "number" ||
+      typeof candidate.totalEarned !== "number" ||
+      typeof candidate.totalSpent !== "number"
+    ) {
+      return null;
+    }
+
+    if (!candidate._meta) {
+      candidate._meta = {
+        lastDate: "",
+        updatedAt: new Date().toISOString(),
+        seedVersion: 4,
+      };
+    }
+
+    return candidate as KioskData;
+  } catch {
+    return null;
+  }
+}
 
 function getDateInPacific(now = new Date()): Date {
   const text = now.toLocaleString("en-US", { timeZone: PACIFIC_TIMEZONE });
@@ -267,6 +314,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
   const [celebEmoji, setCelebEmoji] = useState("⭐");
   const [displayedPoints, setDisplayedPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const prevTotalRef = useRef<number | null>(null);
   const prevEntryIdRef = useRef<string | null>(null);
@@ -300,6 +348,64 @@ export default function KioskView({ kidId }: { kidId: string }) {
     prevEntryIdRef.current = initial.latestEntry?.id ?? null;
     setLoading(false);
   }, [kidId]);
+
+  const handleExport = useCallback(() => {
+    if (!data) return;
+
+    const payload: KioskBackupFile = {
+      app: "chore-kiosk-local",
+      version: "1.0",
+      exportedAt: new Date().toISOString(),
+      data,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    const date = new Date().toLocaleString("en-CA").replace(/[,:\s]/g, "-");
+
+    link.href = url;
+    link.download = `chore-kiosk-local-backup-${date}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [data]);
+
+  const restoreFromBackup = useCallback((payload: KioskData) => {
+    saveKioskState(payload);
+    const restored = ensureKioskState(payload.kid.id, payload.kid.name);
+
+    setData(restored);
+    const currentTotal = getTotalNetPoints(restored);
+    setTotalPoints(currentTotal);
+    setDisplayedPoints(currentTotal);
+    prevTotalRef.current = currentTotal;
+    prevEntryIdRef.current = restored.latestEntry?.id ?? null;
+  }, []);
+
+  const handleImport = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = parseBackupPayload(text);
+      if (!parsed) {
+        alert("备份文件不正确，请重新导出最新文件再导入。");
+        return;
+      }
+
+      restoreFromBackup(parsed);
+    } catch {
+      alert("导入失败，请确认文件内容是否完整。");
+    } finally {
+      event.target.value = "";
+    }
+  }, [restoreFromBackup]);
+
+  const triggerImport = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   const runCelebration = useCallback((entryEmoji: string, nextTotal: number) => {
     setCelebEmoji(entryEmoji);
@@ -491,9 +597,33 @@ export default function KioskView({ kidId }: { kidId: string }) {
                 <p className="text-xs text-white/70">💸 今天兑换</p>
                 <p className="text-xl font-semibold font-mono">{selectedDaySpent}</p>
               </div>
+              <div className="mt-3 flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white/20 text-white"
+                >
+                  导出
+                </button>
+                <button
+                  type="button"
+                  onClick={triggerImport}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white/20 text-white"
+                >
+                  导入
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json"
+          className="hidden"
+          onChange={handleImport}
+        />
 
         <div className="min-h-0 overflow-hidden relative flex flex-col">
           {showEmoji && (
