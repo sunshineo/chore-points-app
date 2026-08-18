@@ -35,7 +35,6 @@ type RewardTileProps = {
   reward: KioskApiResponse["rewards"][number];
   onRedeem: () => void;
   disabled: boolean;
-  enough: boolean;
 };
 
 const TABS: { key: TabKey; label: string; emoji: string }[] = [
@@ -111,7 +110,7 @@ function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
   );
 }
 
-function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
+function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
   const gradient = TILE_COLORS[Math.abs(reward.id.length) % TILE_COLORS.length];
   const redeemedCount = Number(reward.redeemedCount ?? 0);
 
@@ -147,9 +146,6 @@ function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
       >
         -{reward.cost} 分
       </span>
-      <span className="relative z-10 mt-2 text-xs text-white/85">今日兑换 {redeemedCount} 次</span>
-      {!enough ? <span className="relative z-10 mt-1 text-[11px] text-white/80">积分不足</span> : null}
-      <span className="relative z-10 mt-2 text-sm font-bold">兑换</span>
     </button>
   );
 }
@@ -193,7 +189,6 @@ function RewardSection({ rewards, onRedeem, currentPoints }: { rewards: KioskApi
               key={reward.id + i}
               reward={reward}
               disabled={disabled}
-              enough={enough}
               onRedeem={() => onRedeem(reward.id)}
             />
           );

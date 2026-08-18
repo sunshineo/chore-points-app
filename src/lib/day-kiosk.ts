@@ -110,7 +110,7 @@ export const DEFAULT_DAY_REWARDS: DayReward[] = [
   {
     id: "reward-sweet",
     title: "甜点",
-    description: "可兑换15分钟甜点时间",
+    description: "甜食",
     emoji: "🍰",
     cost: 15,
     stock: null,
@@ -118,7 +118,7 @@ export const DEFAULT_DAY_REWARDS: DayReward[] = [
   {
     id: "reward-tv",
     title: "15分钟看电视",
-    description: "可兑换15分钟看电视时间",
+    description: "看电视时间",
     emoji: "📺",
     cost: 15,
     stock: null,
@@ -126,7 +126,7 @@ export const DEFAULT_DAY_REWARDS: DayReward[] = [
   {
     id: "reward-car-tv",
     title: "在车上看电视",
-    description: "可兑换在车上看电视15分钟",
+    description: "在车上看电视",
     emoji: "🚗",
     cost: 15,
     stock: null,
@@ -134,7 +134,7 @@ export const DEFAULT_DAY_REWARDS: DayReward[] = [
   {
     id: "reward-game",
     title: "15分钟游戏",
-    description: "可兑换15分钟游戏时间",
+    description: "游戏时间",
     emoji: "🎮",
     cost: 15,
     stock: null,
