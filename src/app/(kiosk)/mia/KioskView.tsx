@@ -396,6 +396,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
         .kiosk-gem-rain { animation: kiosk-gem-rain-fall 2s ease-in forwards; }
         .kiosk-counter-bump { animation: kiosk-counter-bump 0.4s ease-out; }
         .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out infinite; }
+        .kiosk-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
       `}</style>
 
       <div
@@ -484,7 +485,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 min-h-0 overflow-hidden relative">
           {showEmoji && (
             <div
               className="absolute inset-0 z-20 flex items-center justify-center"
@@ -523,7 +524,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
             })}
           </div>
 
-          <div className="flex-1 px-6 py-4 overflow-y-auto">
+          <div className="flex-1 min-h-0 px-6 py-4 overflow-y-auto overflow-x-hidden pt-0 pb-6 kiosk-scroll">
             {activeTab === "rewards" ? (
               <RewardSection
                 rewards={data.rewards}
