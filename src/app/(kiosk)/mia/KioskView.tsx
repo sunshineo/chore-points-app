@@ -50,8 +50,6 @@ const TILE_COLORS = [
   "from-red-400 to-red-500",
 ];
 
-const QUICK_DAY_OFFSETS = [0, -1, -2] as const;
-
 function getDateInPacific(now = new Date()): Date {
   const text = now.toLocaleString("en-US", { timeZone: PACIFIC_TIMEZONE });
   const localeDate = new Date(text);
@@ -68,11 +66,6 @@ function dateLabelFromKey(dateKey: string): string {
   const month = Number.parseInt(parts[1], 10);
   const day = Number.parseInt(parts[2], 10);
   return `${month}月${day}日`;
-}
-
-function getDateSummaryLabel(offset: number): string {
-  if (offset === 0) return "今天";
-  return `${Math.abs(offset)} 天前`;
 }
 
 function getChoreEmoji(task: { emoji: string | null; title: string }): string {
@@ -270,7 +263,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
 
   const selectedDateKey = useMemo(() => getDateKeyPT(selectedDate), [selectedDate]);
   const selectedDateLabel = useMemo(() => dateLabelFromKey(selectedDateKey), [selectedDateKey]);
-  const selectedDateSummary = useMemo(() => getDateSummaryLabel(selectedDateOffset), [selectedDateOffset]);
   const selectedDateTasks = useMemo(() => (data ? getTasksForDate(data, selectedDateKey) : []), [data, selectedDateKey]);
   const selectedDayEarned = useMemo(() => (data ? getDayEarnedPoints(data, selectedDateKey) : 0), [data, selectedDateKey]);
   const selectedDaySpent = useMemo(() => (data ? getDaySpentPoints(data, selectedDateKey) : 0), [data, selectedDateKey]);
@@ -366,10 +358,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
     setSelectedDateOffset((offset) => Math.min(offset + 1, 0));
   };
 
-  const handleJumpToOffset = (offset: number) => {
-    setSelectedDateOffset(offset);
-  };
-
   const taskSummary = useMemo(() => {
     const countTotal = selectedDateTasks.length;
     const countDone = selectedDateTasks.filter((item) => item.completedToday).length;
@@ -415,6 +403,27 @@ export default function KioskView({ kidId }: { kidId: string }) {
         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
       >
         <div className="flex items-center justify-between bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white flex-shrink-0 relative overflow-hidden px-6" style={{ height: "22vh" }}>
+          <div className="absolute top-2 left-0 right-0 z-20 flex justify-center">
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={handleGoPrevDay}
+                className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-sm"
+              >
+                前一天
+              </button>
+              <p className="text-sm font-semibold text-white/95">{selectedDateLabel}</p>
+              <button
+                type="button"
+                onClick={handleGoNextDay}
+                disabled={selectedDateOffset >= 0}
+                className="px-3 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-sm"
+              >
+                后一天
+              </button>
+            </div>
+          </div>
+
           {showRain && (
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
               {Array.from({ length: 14 }).map((_, i) => (
@@ -470,50 +479,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
               <div className="mt-2 pt-1.5 border-t border-white/20">
                 <p className="text-xs text-white/70">💸 今天兑换</p>
                 <p className="text-xl font-semibold font-mono">{selectedDaySpent}</p>
-              </div>
-              <div className="mt-2 text-right">
-                <p className="text-xs text-white/80">📅 {selectedDateSummary}</p>
-                <p className="text-sm font-semibold">{selectedDateLabel}</p>
-              </div>
-              <div className="mt-2 flex items-center justify-end gap-1 text-xs">
-                <button
-                  type="button"
-                  onClick={handleGoPrevDay}
-                  className="px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25"
-                >
-                  前一天
-                </button>
-                <button
-                  type="button"
-                  onClick={handleGoNextDay}
-                  disabled={selectedDateOffset >= 0}
-                  className="px-2 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25"
-                >
-                  后一天
-                </button>
-              </div>
-              <div className="mt-2 flex items-center justify-end gap-1.5 text-[11px]">
-                {QUICK_DAY_OFFSETS.map((offset) => {
-                  const label =
-                    offset === 0
-                      ? "今天"
-                      : offset === -1
-                        ? "昨天"
-                        : `${Math.abs(offset)}天前`;
-                  const active = offset === selectedDateOffset;
-                  return (
-                    <button
-                      key={offset}
-                      type="button"
-                      onClick={() => handleJumpToOffset(offset)}
-                      className={`px-2 py-1 rounded-full border ${
-                        active ? "bg-white/35 border-white/80" : "bg-white/10 border-white/30"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
               </div>
             </div>
           </div>
