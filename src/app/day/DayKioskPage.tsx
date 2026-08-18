@@ -115,6 +115,7 @@ function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
 
 function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
   const gradient = TILE_COLORS[Math.abs(reward.id.length) % TILE_COLORS.length];
+  const redeemedCount = Number(reward.redeemedCount ?? 0);
 
   return (
     <button
@@ -130,7 +131,7 @@ function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
           disabled ? "bg-gray-500 text-white" : "bg-rose-500 text-white"
         }`}
       >
-        {reward.stock === null ? "∞" : reward.stock}
+        {redeemedCount}
       </div>
 
       <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>{reward.emoji}</span>
@@ -148,6 +149,7 @@ function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
       >
         -{reward.cost} 分
       </span>
+      <span className="relative z-10 mt-2 text-xs text-white/85">今日兑换 {redeemedCount} 次</span>
       {!enough ? <span className="relative z-10 mt-1 text-[11px] text-white/80">积分不足</span> : null}
       <span className="relative z-10 mt-2 text-sm font-bold">兑换</span>
     </button>

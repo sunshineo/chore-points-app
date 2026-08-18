@@ -14,6 +14,7 @@ export type DayReward = {
   emoji: string;
   cost: number;
   stock: number | null;
+  redeemedCount?: number;
 };
 
 export type DayApiTask = DayTask & {
