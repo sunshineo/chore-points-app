@@ -8,6 +8,8 @@ import {
   rewardMarker,
   taskMarker,
   DaySyncEvent,
+  parseDateFromNote,
+  parseMarker,
 } from "@/lib/day-kiosk";
 import { verifyDayToken } from "@/lib/day-auth";
 
@@ -68,7 +70,35 @@ export async function POST(
     const response = await prisma.$transaction(async (tx) => {
       const allEntries = await tx.pointEntry.findMany({
         where: { kidId },
-        select: { points: true },
+        select: { points: true, note: true },
+      });
+
+      const taskPointsByDate = new Map<string, number>();
+      const rewardPointsByDate = new Map<string, number>();
+
+      allEntries.forEach((entry) => {
+        const points = Number(entry.points);
+        if (!Number.isFinite(points) || !entry.note) {
+          return;
+        }
+
+        const dateKey = parseDateFromNote(entry.note);
+        if (!dateKey) {
+          return;
+        }
+
+        const taskId = parseMarker("task", entry.note);
+        if (taskId) {
+          const key = `${dateKey}|${taskId}`;
+          taskPointsByDate.set(key, (taskPointsByDate.get(key) ?? 0) + points);
+          return;
+        }
+
+        const rewardId = parseMarker("reward", entry.note);
+        if (rewardId) {
+          const key = `${dateKey}|${rewardId}`;
+          rewardPointsByDate.set(key, (rewardPointsByDate.get(key) ?? 0) + points);
+        }
       });
 
       let runningNet = allEntries.reduce((sum, entry) => sum + Number(entry.points), 0);
@@ -118,16 +148,55 @@ export async function POST(
           continue;
         }
 
-        if (event.type === "task" && (event.points <= 0 || !TASK_IDS.has(event.itemId))) {
-          result.failedEvents.push(eventId);
-          result.failed.push(eventId);
-          continue;
+        const taskDefaults = new Map(DEFAULT_DAY_TASKS.map((task) => [task.id, task.defaultPoints]));
+        const rewardDefaults = new Map(DEFAULT_DAY_REWARDS.map((reward) => [reward.id, reward.cost]));
+
+        if (event.type === "task") {
+          if (!TASK_IDS.has(event.itemId) || !Number.isFinite(event.points) || event.points === 0) {
+            result.failedEvents.push(eventId);
+            result.failed.push(eventId);
+            continue;
+          }
+
+          const expectedPoints = taskDefaults.get(event.itemId);
+          if (!Number.isFinite(expectedPoints) || expectedPoints <= 0 || Math.abs(event.points) !== expectedPoints) {
+            result.failedEvents.push(eventId);
+            result.failed.push(eventId);
+            continue;
+          }
+
+          const key = `${eventDateKey}|${event.itemId}`;
+          const projectedTask = (taskPointsByDate.get(key) ?? 0) + event.points;
+          if (projectedTask < 0) {
+            result.failedEvents.push(eventId);
+            result.failed.push(eventId);
+            continue;
+          }
+          taskPointsByDate.set(key, projectedTask);
         }
 
-        if (event.type === "reward" && (event.points >= 0 || !REWARD_IDS.has(event.itemId))) {
-          result.failedEvents.push(eventId);
-          result.failed.push(eventId);
-          continue;
+        if (event.type === "reward") {
+          if (!REWARD_IDS.has(event.itemId) || !Number.isFinite(event.points) || event.points === 0) {
+            result.failedEvents.push(eventId);
+            result.failed.push(eventId);
+            continue;
+          }
+
+          const rewardCost = rewardDefaults.get(event.itemId);
+          if (!Number.isFinite(rewardCost) || rewardCost <= 0 || Math.abs(event.points) !== rewardCost) {
+            result.failedEvents.push(eventId);
+            result.failed.push(eventId);
+            continue;
+          }
+
+          const key = `${eventDateKey}|${event.itemId}`;
+          const projectedReward = (rewardPointsByDate.get(key) ?? 0) + event.points;
+          if (projectedReward > 0) {
+            result.failedEvents.push(eventId);
+            result.failed.push(eventId);
+            continue;
+          }
+          rewardPointsByDate.set(key, projectedReward);
         }
 
         const projectedNet = runningNet + event.points;
@@ -165,7 +234,7 @@ export async function POST(
     if (response.failed.length > 0) {
       return NextResponse.json(
         {
-          error: "积分不足，无法完成兑换",
+          error: "无法应用这次操作，请重试",
           failedEvents: response.failedEvents,
           failed: response.failed,
           skipped: response.skipped,

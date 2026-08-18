@@ -86,30 +86,35 @@ export async function GET(
       { earned: 0, spent: 0, net: 0 },
     );
 
-    const completedTaskIds = new Set<string>();
-    selectedEntries.forEach((entry) => {
-      const taskId = parseMarker("task", entry.note ?? null);
-      if (taskId) completedTaskIds.add(taskId);
-    });
+    const taskNetById = new Map<string, number>();
+    const rewardNetById = new Map<string, number>();
 
-    const completedRewardIds = new Set<string>();
-    const rewardRedeemCounts = new Map<string, number>();
     selectedEntries.forEach((entry) => {
+      const points = Number(entry.points);
+      if (!Number.isFinite(points)) return;
+
+      const taskId = parseMarker("task", entry.note ?? null);
+      if (taskId) {
+        taskNetById.set(taskId, (taskNetById.get(taskId) ?? 0) + points);
+      }
+
       const rewardId = parseMarker("reward", entry.note ?? null);
-      if (!rewardId) return;
-      completedRewardIds.add(rewardId);
-      rewardRedeemCounts.set(rewardId, (rewardRedeemCounts.get(rewardId) ?? 0) + 1);
+      if (rewardId) {
+        rewardNetById.set(rewardId, (rewardNetById.get(rewardId) ?? 0) + points);
+      }
     });
 
     const tasks = DEFAULT_DAY_TASKS.map((task) => ({
       ...task,
-      completed: completedTaskIds.has(task.id),
+      completed: (taskNetById.get(task.id) ?? 0) > 0,
     }));
 
     const rewards = DEFAULT_DAY_REWARDS.map((reward) => ({
       ...reward,
-      completed: completedRewardIds.has(reward.id),
-      redeemedCount: rewardRedeemCounts.get(reward.id) ?? 0,
+      redeemedCount: Math.max(
+        0,
+        Math.round(-(rewardNetById.get(reward.id) ?? 0) / reward.cost),
+      ),
     }));
 
     return NextResponse.json({
