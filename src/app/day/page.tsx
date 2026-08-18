@@ -1,16 +1,49 @@
+import { Role } from "@prisma/client";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { getDefaultDayToken } from "@/lib/day-auth";
 import DayKioskPage from "./DayKioskPage";
 
-export default function DayPage() {
-  const kidId = process.env.NEXT_PUBLIC_DAY_KID_ID || process.env.NEXT_PUBLIC_KIOSK_KID_ID;
-  const token = process.env.NEXT_PUBLIC_DAY_TOKEN || process.env.NEXT_PUBLIC_KIOSK_TOKEN;
+async function getDefaultKidId() {
+  const configuredKidId = process.env.NEXT_PUBLIC_DAY_KID_ID || process.env.NEXT_PUBLIC_KIOSK_KID_ID;
+  if (configuredKidId) {
+    return configuredKidId;
+  }
 
-  if (!kidId || !token) {
+  const session = await auth();
+  if (session?.user?.familyId) {
+    const familyKid = await prisma.user.findFirst({
+      where: {
+        familyId: session.user.familyId,
+        role: Role.KID,
+      },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (familyKid?.id) {
+      return familyKid.id;
+    }
+  }
+
+  const globalKid = await prisma.user.findFirst({
+    where: { role: Role.KID },
+    select: { id: true },
+    orderBy: { createdAt: "asc" },
+  });
+  return globalKid?.id ?? null;
+}
+
+export default async function DayPage() {
+  const kidId = await getDefaultKidId();
+  const token = process.env.NEXT_PUBLIC_DAY_TOKEN || process.env.NEXT_PUBLIC_KIOSK_TOKEN || getDefaultDayToken();
+
+  if (!kidId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
         <div className="max-w-xl text-center bg-white rounded-2xl border p-6 shadow-sm">
-          <h1 className="text-xl font-bold mb-2">配置缺失</h1>
+          <h1 className="text-xl font-bold mb-2">未找到可用孩子</h1>
           <p className="text-sm text-slate-600">
-            请先在环境变量配置 KID_ID 和 TOKEN（例如 NEXT_PUBLIC_DAY_KID_ID / NEXT_PUBLIC_DAY_TOKEN）。
+            系统里还没有创建 KID 账号。请先用管理员账号创建孩子后再访问 /day。
           </p>
         </div>
       </div>

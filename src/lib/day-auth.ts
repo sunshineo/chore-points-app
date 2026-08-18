@@ -7,6 +7,10 @@ function generateToken(): string {
   return createHmac("sha256", SECRET).update(`day-kiosk:${KIOSK_PIN}`).digest("hex").slice(0, 32);
 }
 
+export function getDefaultDayToken(): string {
+  return generateToken();
+}
+
 export function verifyDayToken(token: string): boolean {
   return token === generateToken();
 }
