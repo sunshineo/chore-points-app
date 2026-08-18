@@ -538,16 +538,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
             <div className="flex items-start justify-start gap-3">
               <div className="flex-1 z-10">
-                <p className="text-sm text-white/85 flex items-center gap-2">
-                  余额
-                  <span className="text-yellow-300 text-lg">🪙</span>
-                </p>
-                <div
-                  className={`text-8xl leading-none font-black font-mono tracking-tight mt-1 ${
-                    showRain ? "kiosk-counter-bump" : ""
-                  }`}
-                >
-                  {displayedPoints}
+                <div className="flex items-center gap-2 text-8xl leading-none font-black font-mono tracking-tight">
+                  <span className="text-yellow-300 text-2xl">🪙</span>
+                  <div className={showRain ? "kiosk-counter-bump" : ""}>{displayedPoints}</div>
                 </div>
                 <p
                   className={`mt-1 text-base font-semibold ${
@@ -558,8 +551,8 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                         : "text-white"
                   }`}
                 >
-                  今日变化：{selectedDayNet > 0 ? "+" : ""}
-                  {selectedDayNet}
+                  ({selectedDayNet > 0 ? "+" : ""}
+                  {selectedDayNet})
                 </p>
               </div>
 
