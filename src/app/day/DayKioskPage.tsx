@@ -138,7 +138,6 @@ function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
       >
         {reward.title}
       </h3>
-      <p className="relative z-10 mt-1 text-[11px] text-white/80 px-2 text-center opacity-90">{reward.description}</p>
       <span
         className={`relative z-10 mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${
           disabled ? "bg-white/20" : "bg-white/35"
