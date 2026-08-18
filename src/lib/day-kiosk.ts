@@ -88,6 +88,7 @@ export const DEFAULT_DAY_TASKS: DayTask[] = [
   { id: "seed-task-grandma-bye", title: "跟姥姥再见", emoji: "🙋", defaultPoints: 3 },
   { id: "seed-task-seatbelt", title: "自己上车系安全带", emoji: "🚗", defaultPoints: 1 },
   { id: "seed-task-snack", title: "在学校吃完零食", emoji: "🥡", defaultPoints: 3 },
+  { id: "seed-task-ice-stick", title: "吃冰棍", emoji: "🍦", defaultPoints: 5 },
   { id: "seed-task-after-school", title: "放学后进屋换鞋", emoji: "🩴", defaultPoints: 1 },
   { id: "seed-task-handwash", title: "洗手", emoji: "🧼", defaultPoints: 2 },
   { id: "seed-task-grandma-hi", title: "跟姥姥问好", emoji: "🙋", defaultPoints: 3 },
