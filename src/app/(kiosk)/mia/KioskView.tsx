@@ -558,7 +558,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
             </div>
           )}
 
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-start gap-3">
             <div className="flex-1 z-10">
             <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block min-w-[260px]">
               <div className="flex justify-between items-center">
@@ -605,7 +605,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
           </div>
 
           <div className="flex flex-col items-end justify-center z-10">
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <button
                 type="button"
                 onClick={handleExport}
