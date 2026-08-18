@@ -92,12 +92,12 @@ type KioskStoragePayload = {
 
 const STORAGE_PREFIX = "kiosk-mvp-local-v3";
 const STORAGE_VERSION = 4;
+const REMOVED_TASK_IDS = new Set(["seed-task-milk"]);
 
 const DEFAULT_TASKS: KioskTask[] = [
   { id: "seed-task-morning-toilet", title: "起床后上厕所", emoji: "🚽", defaultPoints: 1, kind: "chore" },
   { id: "seed-task-face", title: "洗脸", emoji: "🚿", defaultPoints: 2, kind: "chore" },
   { id: "seed-task-clothes", title: "自己穿衣服", emoji: "👕", defaultPoints: 5, kind: "chore" },
-  { id: "seed-task-milk", title: "把牛奶喝干净", emoji: "🥛", defaultPoints: 2, kind: "chore" },
   { id: "seed-task-breakfast", title: "把早饭吃干净", emoji: "🍽️", defaultPoints: 5, kind: "chore" },
   { id: "seed-task-shoes", title: "自己穿鞋", emoji: "👟", defaultPoints: 1, kind: "chore" },
   { id: "seed-task-bag", title: "自己装书包", emoji: "🎒", defaultPoints: 5, kind: "chore" },
@@ -257,8 +257,9 @@ function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[
 
   if (Array.isArray(payload.data.tasks)) {
     const mapped = payload.data.tasks.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
+    const filtered = mapped.filter((task) => !REMOVED_TASK_IDS.has(task.id));
     if (mapped.length > 0) {
-      return mapped;
+      return filtered;
     }
   }
 
@@ -278,7 +279,7 @@ function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[
     })));
     const mappedLegacy = legacy.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
     if (mappedLegacy.length > 0) {
-      return mappedLegacy;
+      return mappedLegacy.filter((task) => !REMOVED_TASK_IDS.has(task.id));
     }
   }
 
@@ -327,7 +328,7 @@ function buildSeed(kidId: string, kidName: string | null): KioskData {
     totalPoints: 0,
     totalEarned: 0,
     totalSpent: 0,
-    tasks: DEFAULT_TASKS.map((task) => ({
+    tasks: DEFAULT_TASKS.filter((task) => !REMOVED_TASK_IDS.has(task.id)).map((task) => ({
       ...clone(task),
       completedToday: false,
     })),

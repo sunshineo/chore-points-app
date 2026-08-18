@@ -28,6 +28,14 @@ type ChoreTileProps = {
   readOnly: boolean;
 };
 
+type RewardTileProps = {
+  reward: KioskReward;
+  colorIndex: number;
+  onRedeem: () => void;
+  canUse: boolean;
+  enough: boolean;
+};
+
 type KioskDataWithReward = KioskData;
 
 type TabKey = "tasks" | "rewards";
@@ -168,6 +176,47 @@ function TaskSection({ tasks, onTap, readOnly }: { tasks: KioskTask[]; onTap: (i
   );
 }
 
+function RewardTile({ reward, colorIndex, onRedeem, canUse, enough }: RewardTileProps) {
+  const disabled = !canUse || !enough;
+  const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
+
+  return (
+    <button
+      type="button"
+      onClick={onRedeem}
+      disabled={disabled}
+      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white overflow-hidden bg-gradient-to-br ${gradient}`}
+      style={{ width: 165, height: 165, opacity: disabled ? 0.55 : 1 }}
+    >
+      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+      <div
+        className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow ${
+          disabled ? "bg-gray-500 text-white" : "bg-rose-500 text-white"
+        }`}
+      >
+        {reward.stock === null ? "∞" : reward.stock}
+      </div>
+
+      <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>{reward.emoji}</span>
+      <h3
+        className="relative z-10 mt-2 font-bold text-sm leading-tight text-center px-2 text-white"
+        style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+      >
+        {reward.title}
+      </h3>
+      <p className="relative z-10 mt-1 text-[11px] text-white/80 px-2 text-center opacity-90">{reward.description}</p>
+      <span
+        className={`relative z-10 mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${disabled ? "bg-white/20" : "bg-white/35"}`}
+      >
+        -{reward.cost} 分
+      </span>
+      {!enough ? <span className="relative z-10 mt-1 text-[11px] text-white/80">积分不足</span> : null}
+      {!canUse ? <span className="relative z-10 mt-0.5 text-[11px] text-white/80">库存不足</span> : null}
+      <span className="relative z-10 mt-2 text-sm font-bold">兑换</span>
+    </button>
+  );
+}
+
 function RewardSection({ rewards, onRedeem, currentPoints }: { rewards: KioskReward[]; onRedeem: (id: string) => void; currentPoints: number }) {
   if (rewards.length === 0) {
     return (
@@ -179,37 +228,19 @@ function RewardSection({ rewards, onRedeem, currentPoints }: { rewards: KioskRew
 
   return (
     <div className="overflow-y-auto h-full pr-1">
-      <div className="grid gap-3">
-        {rewards.map((reward) => {
+      <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
+        {rewards.map((reward, i) => {
           const canUse = reward.stock === null ? true : reward.stock > 0;
           const enough = currentPoints >= reward.cost;
           return (
-            <div
+            <RewardTile
               key={reward.id}
-              className="rounded-2xl bg-white/70 backdrop-blur-sm border border-rose-100 p-4 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-bold text-lg">
-                    {reward.emoji} {reward.title}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">{reward.description}</p>
-                </div>
-                <p className="font-bold text-sm text-indigo-700">-{reward.cost} 分</p>
-              </div>
-              <div className="mt-3 flex items-center justify-between">
-                <p className="text-xs text-gray-500">
-                  {reward.stock === null ? "不限次" : `${reward.stock} 次可用`}
-                </p>
-                <button
-                  onClick={() => onRedeem(reward.id)}
-                  disabled={!canUse || !enough}
-                  className="px-3 py-2 rounded-xl font-bold text-sm bg-indigo-600 text-white disabled:bg-gray-300 disabled:text-gray-500"
-                >
-                  兑换
-                </button>
-              </div>
-            </div>
+              reward={reward}
+              canUse={canUse}
+              enough={enough}
+              colorIndex={i}
+              onRedeem={() => onRedeem(reward.id)}
+            />
           );
         })}
       </div>
