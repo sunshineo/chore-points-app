@@ -124,6 +124,7 @@ function TaskTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
 
 function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
   const statusStyle = enough ? "bg-rose-500 text-white" : "bg-gray-500 text-white";
+  const redeemedCount = reward.redeemedCount ?? 0;
 
   return (
     <button
@@ -135,7 +136,7 @@ function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
     >
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
       <div className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow ${statusStyle}`}>
-        {reward.stock === null ? "∞" : reward.stock}
+        {redeemedCount}
       </div>
       <span className="relative z-10 text-5xl leading-none" role="img" aria-label={reward.title}>
         {reward.emoji}
@@ -148,7 +149,7 @@ function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
       </h3>
       <p className="relative z-10 text-xs text-white/80 text-center px-2 mt-1">{reward.description}</p>
       <span className="relative z-10 mt-2 text-sm font-bold">-{reward.cost} 分</span>
-      <span className="relative z-10 mt-1 text-xs text-white/85">今日兑换 {reward.redeemedCount ?? 0} 次</span>
+      <span className="relative z-10 mt-1 text-xs text-white/85">今日兑换 {redeemedCount} 次</span>
       <span className="relative z-10 mt-1 text-xs text-white/85">{enough ? "可兑换" : "积分不足"}</span>
     </button>
   );
