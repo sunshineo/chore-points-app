@@ -478,11 +478,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
           </div>
 
           <div className="flex flex-col items-center flex-shrink-0 z-10">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xl font-bold text-white/80">{data.kid.name ?? "宝贝"}</span>
-              <span className="text-xl">✨</span>
-            </div>
-
             <div className="flex items-center gap-4">
               <div className="relative w-14 h-14 kiosk-spin-slow flex-shrink-0">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
