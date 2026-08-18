@@ -538,29 +538,29 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
             <div className="flex items-start justify-start gap-3">
               <div className="flex-1 z-10">
-                <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block min-w-[260px]">
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-[11px] text-white/75 tracking-wide">总得分 - 总兑换 = 余额</p>
-                      <p className="text-lg font-bold font-mono text-white">
-                        {totalEarned} - {totalSpent} = <span className="font-black">{totalNetPoints}</span>
-                      </p>
-                    </div>
-                    <div className="border-t border-white/20 pt-1.5">
-                      <p className="text-[11px] text-white/75 tracking-wide">今日得分 - 今日兑换 = 今日变化</p>
-                      <p className="text-lg font-bold font-mono text-white">
-                        {selectedDayEarned} - {selectedDaySpent} ={" "}
-                        <span className="font-black">{selectedDayNet >= 0 ? "+" : ""}{selectedDayNet}</span>
-                      </p>
-                    </div>
-                  </div>
+                <p className="text-sm text-white/85 flex items-center gap-2">
+                  余额
+                  <span className="text-yellow-300 text-lg">🪙</span>
+                </p>
+                <div
+                  className={`text-8xl leading-none font-black font-mono tracking-tight mt-1 ${
+                    showRain ? "kiosk-counter-bump" : ""
+                  }`}
+                >
+                  {displayedPoints}
                 </div>
-              </div>
-
-              <div className="flex-shrink-0 z-10 flex flex-col items-center text-center min-w-[200px]">
-                <div className={`text-8xl leading-none font-black font-mono tracking-tight ${
-                  showRain ? "kiosk-counter-bump" : ""
-                }`}>{displayedPoints}</div>
+                <p
+                  className={`mt-1 text-base font-semibold ${
+                    selectedDayNet > 0
+                      ? "text-emerald-300"
+                      : selectedDayNet < 0
+                        ? "text-rose-300"
+                        : "text-white"
+                  }`}
+                >
+                  今日变化：{selectedDayNet > 0 ? "+" : ""}
+                  {selectedDayNet}
+                </p>
               </div>
 
               <div className="flex-shrink-0 z-10 flex flex-col items-end text-right gap-1">
