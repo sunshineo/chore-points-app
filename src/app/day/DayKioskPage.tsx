@@ -161,23 +161,18 @@ function TaskSection({ tasks, onTap, readOnly }: { tasks: DayTask[]; onTap: (id:
     return <div className="flex items-center justify-center h-full text-gray-400 text-lg">这组还没有任务</div>;
   }
 
-  const pending = tasks.filter((item) => !item.completed);
-
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600 px-1">
-        {readOnly ? "历史日期只读查看" : pending.length === 0 ? "今天任务已完成" : `今天还有 ${pending.length} 项未完成`}
-      </div>
       <div className="flex flex-wrap gap-3">
         {tasks.map((task, i) => (
           <ChoreTile
             key={task.id}
             task={task}
             colorIndex={i}
-            disabled={readOnly || task.completed}
-            onTap={() => onTap(task.id)}
-          />
-        ))}
+                disabled={readOnly || task.completed}
+                onTap={() => onTap(task.id)}
+              />
+            ))}
       </div>
     </div>
   );
@@ -480,12 +475,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     setSelectedDateOffset((offset) => Math.min(offset + 1, 0));
   }, []);
 
-  const taskSummary = useMemo(() => {
-    const countTotal = selectedDateTasks.length;
-    const countDone = selectedDateTasks.filter((item) => item.completed).length;
-    return { countTotal, countDone };
-  }, [selectedDateTasks]);
-
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
@@ -610,25 +599,18 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
             {TABS.map((tab) => {
               const isActive = activeTab === tab.key;
               return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-200 ${
-                    isActive ? "bg-indigo-600 text-white shadow-md" : "bg-white text-gray-500 border-2 border-gray-200"
-                  }`}
-                >
-                  <span style={{ fontSize: 22 }}>{tab.emoji}</span>
-                  <span className="ml-1 text-lg">{tab.label}</span>
-                  {tab.key === "tasks" && taskSummary.countTotal > 0 ? (
-                    <span className={`ml-1.5 text-base font-bold px-2 py-0.5 rounded-full ${
-                      isActive ? "bg-white/20" : "bg-gray-100"
-                    }`}>
-                      {taskSummary.countDone}/{taskSummary.countTotal}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 py-3.5 rounded-xl font-bold transition-all duration-200 ${
+                isActive ? "bg-indigo-600 text-white shadow-md" : "bg-white text-gray-500 border-2 border-gray-200"
+              }`}
+            >
+              <span style={{ fontSize: 22 }}>{tab.emoji}</span>
+              <span className="ml-1 text-lg">{tab.label}</span>
+            </button>
+          );
+        })}
           </div>
 
           <div className="flex-1 min-h-0 px-6 py-4 overflow-y-auto overflow-x-hidden pt-0 pb-6 kiosk-scroll">
