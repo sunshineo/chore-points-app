@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   KioskData,
   KioskTask,
@@ -15,6 +15,11 @@ import {
   getDayNetPoints,
   getTotalNetPoints,
   getTasksForDate,
+  hydrateFromRemote,
+  getPendingSyncEvents,
+  addPendingSyncEvent,
+  removePendingSyncEvents,
+  KioskSyncEvent,
 } from "@/lib/kiosk/local-kiosk-store";
 
 const PACIFIC_TIMEZONE = "America/Los_Angeles";
@@ -57,52 +62,10 @@ const TILE_COLORS = [
   "from-red-400 to-red-500",
 ];
 
-type KioskBackupFile = {
-  app: "chore-kiosk-local";
-  version: "1.0";
-  exportedAt: string;
-  data: KioskData;
+type KioskRemoteConfig = {
+  remoteKidId?: string;
+  remoteToken?: string;
 };
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object");
-}
-
-function parseBackupPayload(raw: string): KioskData | null {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!isObject(parsed)) return null;
-
-    const container = isObject(parsed.data) ? (parsed.data as unknown) : parsed;
-    if (!isObject(container)) return null;
-
-    const candidate = container as Partial<KioskData>;
-    if (
-      !isObject(candidate.kid) ||
-      typeof candidate.kid.id !== "string" ||
-      !Array.isArray(candidate.tasks) ||
-      !Array.isArray(candidate.rewards) ||
-      !isObject(candidate.taskHistory) ||
-      typeof candidate.totalPoints !== "number" ||
-      typeof candidate.totalEarned !== "number" ||
-      typeof candidate.totalSpent !== "number"
-    ) {
-      return null;
-    }
-
-    if (!candidate._meta) {
-      candidate._meta = {
-        lastDate: "",
-        updatedAt: new Date().toISOString(),
-        seedVersion: 4,
-      };
-    }
-
-    return candidate as KioskData;
-  } catch {
-    return null;
-  }
-}
 
 function getDateInPacific(now = new Date()): Date {
   const text = now.toLocaleString("en-US", { timeZone: PACIFIC_TIMEZONE });
@@ -306,7 +269,7 @@ function RainParticle({ emoji }: { emoji: string }) {
   );
 }
 
-export default function KioskView({ kidId }: { kidId: string }) {
+export default function KioskView({ kidId, remoteKidId, remoteToken }: { kidId: string } & KioskRemoteConfig) {
   const [data, setData] = useState<KioskDataWithReward | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
@@ -317,10 +280,17 @@ export default function KioskView({ kidId }: { kidId: string }) {
   const [celebEmoji, setCelebEmoji] = useState("⭐");
   const [displayedPoints, setDisplayedPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const prevTotalRef = useRef<number | null>(null);
-  const prevEntryIdRef = useRef<string | null>(null);
+  const syncingRef = useRef(false);
+
+  const remoteConfig = useMemo(() => {
+    if (!remoteKidId || !remoteToken) return null;
+    return {
+      kidId: remoteKidId,
+      token: remoteToken,
+    };
+  }, [remoteKidId, remoteToken]);
 
   const selectedDate = useMemo(() => {
     const today = getDateInPacific();
@@ -340,6 +310,75 @@ export default function KioskView({ kidId }: { kidId: string }) {
   const totalNetPoints = data ? getTotalNetPoints(data) : 0;
   const totalSpent = data?.totalSpent ?? 0;
   const totalEarned = data?.totalEarned ?? 0;
+  const syncWithRemote = useCallback(async () => {
+    if (!remoteConfig) return;
+    if (syncingRef.current) return;
+    if (!navigator.onLine) return;
+
+    syncingRef.current = true;
+    try {
+      const pending = getPendingSyncEvents(kidId);
+      if (pending.length > 0) {
+        const postResponse = await fetch(
+          `/api/kiosk/sync/${encodeURIComponent(remoteConfig.kidId)}?token=${encodeURIComponent(remoteConfig.token)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ events: pending }),
+          },
+        );
+        if (postResponse.ok) {
+          const result = (await postResponse.json()) as {
+            appliedEventIds?: string[];
+            skippedEventIds?: string[];
+          };
+          const idsToClear = [
+            ...(result.appliedEventIds ?? []),
+            ...(result.skippedEventIds ?? []),
+          ];
+          removePendingSyncEvents(kidId, idsToClear);
+        }
+      }
+
+      const response = await fetch(
+        `/api/kiosk/${encodeURIComponent(remoteConfig.kidId)}?token=${encodeURIComponent(remoteConfig.token)}`,
+        { cache: "no-store" },
+      );
+      if (!response.ok) return;
+
+      const remote = (await response.json()) as Parameters<typeof hydrateFromRemote>[1];
+      const hydrated = hydrateFromRemote(kidId, remote);
+      saveKioskState(hydrated);
+      setData(hydrated);
+
+      const incomingNet = getTotalNetPoints(hydrated);
+      setTotalPoints(incomingNet);
+      setDisplayedPoints(incomingNet);
+      prevTotalRef.current = incomingNet;
+      setLoading(false);
+    } catch {
+      // Keep local data on sync failures.
+    } finally {
+      syncingRef.current = false;
+    }
+  }, [kidId, remoteConfig]);
+
+  const queueSyncEvent = useCallback(
+    (latestEntry: KioskData["latestEntry"]) => {
+      if (!remoteConfig || !latestEntry) return;
+
+      const syncEvent: KioskSyncEvent = {
+        id: latestEntry.id,
+        points: latestEntry.points,
+        note: latestEntry.note ?? "",
+        choreTitle: latestEntry.choreTitle,
+        date: latestEntry.date,
+      };
+
+      addPendingSyncEvent(kidId, syncEvent);
+    },
+    [kidId, remoteConfig],
+  );
 
   useEffect(() => {
     const initial = ensureKioskState(kidId, "宝贝");
@@ -348,67 +387,21 @@ export default function KioskView({ kidId }: { kidId: string }) {
     setTotalPoints(initialNet);
     setDisplayedPoints(initialNet);
     prevTotalRef.current = initialNet;
-    prevEntryIdRef.current = initial.latestEntry?.id ?? null;
     setLoading(false);
-  }, [kidId]);
 
-  const handleExport = useCallback(() => {
-    if (!data) return;
+    void syncWithRemote();
+  }, [kidId, syncWithRemote]);
 
-    const payload: KioskBackupFile = {
-      app: "chore-kiosk-local",
-      version: "1.0",
-      exportedAt: new Date().toISOString(),
-      data,
+  useEffect(() => {
+    if (!remoteConfig || typeof window === "undefined") return;
+
+    const handleOnline = () => {
+      void syncWithRemote();
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    const date = new Date().toLocaleString("en-CA").replace(/[,:\s]/g, "-");
 
-    link.href = url;
-    link.download = `chore-kiosk-local-backup-${date}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [data]);
-
-  const restoreFromBackup = useCallback((payload: KioskData) => {
-    saveKioskState(payload);
-    const restored = ensureKioskState(payload.kid.id, payload.kid.name);
-
-    setData(restored);
-    const currentTotal = getTotalNetPoints(restored);
-    setTotalPoints(currentTotal);
-    setDisplayedPoints(currentTotal);
-    prevTotalRef.current = currentTotal;
-    prevEntryIdRef.current = restored.latestEntry?.id ?? null;
-  }, []);
-
-  const handleImport = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const parsed = parseBackupPayload(text);
-      if (!parsed) {
-        alert("备份文件不正确，请重新导出最新文件再导入。");
-        return;
-      }
-
-      restoreFromBackup(parsed);
-    } catch {
-      alert("导入失败，请确认文件内容是否完整。");
-    } finally {
-      event.target.value = "";
-    }
-  }, [restoreFromBackup]);
-
-  const triggerImport = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [remoteConfig, syncWithRemote]);
 
   const runCelebration = useCallback((entryEmoji: string, nextTotal: number) => {
     setCelebEmoji(entryEmoji);
@@ -448,6 +441,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
     }
 
     saveKioskState(mutation.state);
+    queueSyncEvent(mutation.state.latestEntry);
     const previous = prevTotalRef.current;
     const incomingTotal = getTotalNetPoints(mutation.state);
     const shouldCelebrate = previous !== null && incomingTotal > previous;
@@ -457,11 +451,11 @@ export default function KioskView({ kidId }: { kidId: string }) {
     }
 
     prevTotalRef.current = incomingTotal;
-    prevEntryIdRef.current = mutation.state.latestEntry?.id ?? null;
-
     setData(mutation.state);
     setTotalPoints(incomingTotal);
     setDisplayedPoints(incomingTotal);
+
+    void syncWithRemote();
   };
 
   const handleTaskTap = (taskId: string) => {
@@ -558,7 +552,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
             </div>
           )}
 
-          <div className="flex items-start justify-start gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex-1 z-10">
             <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block min-w-[260px]">
               <div className="flex justify-between items-center">
@@ -604,35 +598,9 @@ export default function KioskView({ kidId }: { kidId: string }) {
             <p className="text-xs text-white/80 mt-1">今日净变化：{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
           </div>
 
-          <div className="flex flex-col items-end justify-center z-10">
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={handleExport}
-                className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white/20 text-white shadow-sm"
-              >
-                导出
-              </button>
-              <button
-                type="button"
-                onClick={triggerImport}
-                className="px-5 py-2.5 rounded-lg text-sm font-bold bg-white/20 text-white shadow-sm"
-              >
-                导入
-              </button>
-            </div>
-          </div>
           </div>
           </div>
         </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          className="hidden"
-          onChange={handleImport}
-        />
 
         <div className="min-h-0 overflow-hidden relative flex flex-col">
           {showEmoji && (

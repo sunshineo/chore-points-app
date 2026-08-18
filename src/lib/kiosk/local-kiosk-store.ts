@@ -25,6 +25,14 @@ export type KioskEntry = {
   date: string;
 };
 
+export type KioskSyncEvent = {
+  id: string;
+  points: number;
+  note: string;
+  choreTitle: string | null;
+  date: string;
+};
+
 type KioskDaySummary = {
   completedTaskIds: string[];
   earned: number;
@@ -92,6 +100,7 @@ type KioskStoragePayload = {
 
 const STORAGE_PREFIX = "kiosk-mvp-local-v3";
 const STORAGE_VERSION = 4;
+const SYNC_QUEUE_VERSION = 1;
 const REMOVED_TASK_IDS = new Set(["seed-task-milk"]);
 
 const DEFAULT_TASKS: KioskTask[] = [
@@ -178,6 +187,10 @@ function clone<T>(value: T): T {
 
 function storageKey(kidId: string): string {
   return `${STORAGE_PREFIX}:${kidId}`;
+}
+
+function syncQueueKey(kidId: string): string {
+  return `${storageKey(kidId)}:sync-events-v${SYNC_QUEUE_VERSION}`;
 }
 
 function nextId(prefix: string): string {
@@ -418,6 +431,52 @@ function writeStorage(payload: Omit<KioskData, "_meta">, kidId: string) {
   localStorage.setItem(storageKey(kidId), JSON.stringify(wrapper));
 }
 
+function readSyncQueue(raw: string | null): KioskSyncEvent[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return [];
+
+    const container = parsed as { version?: unknown; events?: unknown };
+    if (!Array.isArray(container.events)) return [];
+
+    const events = container.events.filter((item): item is KioskSyncEvent => {
+      return Boolean(
+        item &&
+          typeof item === "object" &&
+          typeof (item as { id?: unknown }).id === "string" &&
+          typeof (item as { points?: unknown }).points === "number" &&
+          typeof (item as { note?: unknown }).note === "string" &&
+          (item as { choreTitle?: unknown }).choreTitle !== undefined &&
+          typeof (item as { date?: unknown }).date === "string",
+      );
+    });
+
+    return events.map((event) => ({
+      ...event,
+      choreTitle: typeof event.choreTitle === "string" ? event.choreTitle : null,
+      note: event.note ?? "",
+      date: event.date,
+      id: event.id,
+      points: Number.isFinite(event.points) ? event.points : 0,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function writeSyncQueue(kidId: string, events: KioskSyncEvent[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(
+    syncQueueKey(kidId),
+    JSON.stringify({
+      version: SYNC_QUEUE_VERSION,
+      savedAt: nowIso(),
+      events,
+    }),
+  );
+}
+
 function buildSeed(kidId: string, kidName: string | null): KioskData {
   const now = new Date();
   return {
@@ -538,6 +597,41 @@ export function saveKioskState(state: KioskData): void {
   if (typeof window === "undefined") return;
   const { _meta: _unusedMeta, ...rest } = state;
   writeStorage(rest, state.kid.id);
+}
+
+export function getPendingSyncEvents(kidId: string): KioskSyncEvent[] {
+  if (typeof window === "undefined") return [];
+  return readSyncQueue(localStorage.getItem(syncQueueKey(kidId)));
+}
+
+export function addPendingSyncEvent(kidId: string, event: KioskSyncEvent): void {
+  if (typeof window === "undefined") return;
+  if (!event?.id) return;
+
+  const existing = getPendingSyncEvents(kidId);
+  if (existing.some((item) => item.id === event.id)) return;
+
+  const sanitized: KioskSyncEvent = {
+    id: event.id,
+    points: getSafeNumber(event.points, 0),
+    note: typeof event.note === "string" ? event.note : "",
+    choreTitle: event.choreTitle ?? null,
+    date: typeof event.date === "string" ? event.date : nowIso(),
+  };
+
+  writeSyncQueue(kidId, [...existing, sanitized]);
+}
+
+export function clearPendingSyncEvents(kidId: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(syncQueueKey(kidId));
+}
+
+export function removePendingSyncEvents(kidId: string, eventIds: string[]): void {
+  if (typeof window === "undefined") return;
+  if (!Array.isArray(eventIds) || eventIds.length === 0) return;
+  const keep = getPendingSyncEvents(kidId).filter((item) => !eventIds.includes(item.id));
+  writeSyncQueue(kidId, keep);
 }
 
 export function clearKioskState(kidId: string): void {
