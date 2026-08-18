@@ -159,7 +159,12 @@ export async function POST(
           }
 
           const expectedPoints = taskDefaults.get(event.itemId);
-          if (!Number.isFinite(expectedPoints) || expectedPoints <= 0 || Math.abs(event.points) !== expectedPoints) {
+          if (
+            expectedPoints == null ||
+            !Number.isFinite(expectedPoints) ||
+            expectedPoints <= 0 ||
+            Math.abs(event.points) !== expectedPoints
+          ) {
             result.failedEvents.push(eventId);
             result.failed.push(eventId);
             continue;
@@ -183,7 +188,12 @@ export async function POST(
           }
 
           const rewardCost = rewardDefaults.get(event.itemId);
-          if (!Number.isFinite(rewardCost) || rewardCost <= 0 || Math.abs(event.points) !== rewardCost) {
+          if (
+            rewardCost == null ||
+            !Number.isFinite(rewardCost) ||
+            rewardCost <= 0 ||
+            Math.abs(event.points) !== rewardCost
+          ) {
             result.failedEvents.push(eventId);
             result.failed.push(eventId);
             continue;
