@@ -17,20 +17,28 @@ vi.mock('@/lib/week-utils', () => ({
 }))
 
 vi.mock('@/lib/db', () => {
-  return {
-    prisma: {
-      weeklyVote: {
-        findMany: vi.fn(),
-        create: vi.fn(),
-        findFirst: vi.fn(),
-        delete: vi.fn(),
-      },
-      dish: {
-        findFirst: vi.fn(),
-        update: vi.fn(),
-      },
-    }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const prisma: any = {
+    weeklyVote: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    dish: {
+      findFirst: vi.fn(),
+      update: vi.fn(),
+    },
   }
+  // Interactive transactions run the callback with the same mock client; a
+  // batch array resolves via Promise.all.
+  prisma.$transaction = vi.fn((arg: unknown) =>
+    typeof arg === 'function'
+      ? (arg as (tx: unknown) => unknown)(prisma)
+      : Promise.all(arg as Promise<unknown>[])
+  )
+  return { prisma }
 })
 
 import { prisma } from '@/lib/db'
@@ -233,17 +241,9 @@ describe('Votes API', () => {
         updatedAt: new Date(),
       })
 
-      // Simulate existing vote
-      mockPrisma.weeklyVote.findFirst.mockResolvedValue({
-        id: 'vote-1',
-        familyId: 'family-1',
-        dishId: 'dish-1',
-        suggestedDishName: null,
-        voterId: 'user-1',
-        weekStart: new Date('2026-01-26'),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+      // Duplicate is now enforced by the unique constraint: the create rejects
+      // with a Prisma P2002, which the route maps to a 400.
+      mockPrisma.weeklyVote.create.mockRejectedValue({ code: 'P2002' })
 
       const request = createMockRequest('POST', { dishId: 'dish-1' })
       const response = await POST(request)
@@ -298,16 +298,7 @@ describe('Votes API', () => {
         updatedAt: new Date(),
       })
 
-      mockPrisma.weeklyVote.delete.mockResolvedValue({
-        id: 'vote-1',
-        familyId: 'family-1',
-        dishId: null,
-        suggestedDishName: 'Sushi Night',
-        voterId: 'user-1',
-        weekStart: new Date('2026-01-26'),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+      mockPrisma.weeklyVote.deleteMany.mockResolvedValue({ count: 1 })
 
       const request = new Request('http://localhost/api/votes/vote-1', {
         method: 'DELETE',
@@ -317,8 +308,8 @@ describe('Votes API', () => {
 
       expect(status).toBe(200)
       expect(data.success).toBe(true)
-      expect(mockPrisma.weeklyVote.delete).toHaveBeenCalledWith({
-        where: { id: 'vote-1' },
+      expect(mockPrisma.weeklyVote.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'vote-1', familyId: 'family-1', voterId: 'user-1' },
       })
     })
 
@@ -354,16 +345,7 @@ describe('Votes API', () => {
         updatedAt: new Date(),
       })
 
-      mockPrisma.weeklyVote.delete.mockResolvedValue({
-        id: 'vote-1',
-        familyId: 'family-1',
-        dishId: 'dish-1',
-        suggestedDishName: null,
-        voterId: 'user-1',
-        weekStart: new Date('2026-01-26'),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+      mockPrisma.weeklyVote.deleteMany.mockResolvedValue({ count: 1 })
 
       const request = new Request('http://localhost/api/votes/vote-1', {
         method: 'DELETE',

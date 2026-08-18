@@ -127,7 +127,8 @@ export async function POST(req: Request) {
       });
     }
 
-    // Get or create progress record
+    // Get progress record (informational fast-path for the common non-award
+    // responses; the actual award decision is made atomically below).
     const existingProgress = await prisma.mathProgress.findUnique({
       where: {
         kidId_date: {
@@ -162,29 +163,44 @@ export async function POST(req: Request) {
     // Award 1 point per correct answer for both custom and auto-generated
     const pointNote = isCustom ? "Math: custom question" : "Math: daily practice";
 
-    const updatedProgress = await prisma.$transaction(async (tx) => {
-      const progress = await tx.mathProgress.upsert({
+    // Ensure the progress row exists (Prisma upsert compiles to an atomic
+    // INSERT ... ON CONFLICT on Postgres, so concurrent callers don't collide).
+    await prisma.mathProgress.upsert({
+      where: {
+        kidId_date: { kidId: targetKidId, date: todayStr },
+      },
+      create: {
+        kidId: targetKidId,
+        date: todayStr,
+        questionsCompleted: 0,
+        questionsTarget,
+        pointAwarded: false,
+      },
+      update: {},
+    });
+
+    // Compare-and-swap: only the request that advances questionsCompleted from
+    // exactly `questionIndex` to `newCompleted` awards the point. A duplicate
+    // submission of the same index (double-click / retry) matches zero rows on
+    // the second attempt because Postgres re-checks the WHERE against the
+    // latest committed value after taking the row lock — so it never
+    // double-awards.
+    const awarded = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.mathProgress.updateMany({
         where: {
-          kidId_date: {
-            kidId: targetKidId,
-            date: todayStr,
-          },
-        },
-        create: {
           kidId: targetKidId,
           date: todayStr,
-          questionsCompleted: 1,
-          questionsTarget,
-          pointAwarded: allComplete,
+          questionsCompleted: questionIndex,
         },
-        update: {
+        data: {
           questionsCompleted: newCompleted,
           questionsTarget,
-          pointAwarded: allComplete ? true : undefined,
+          ...(allComplete ? { pointAwarded: true } : {}),
         },
       });
 
-      // Award 1 point for each correct answer
+      if (count === 0) return false;
+
       await tx.pointEntry.create({
         data: {
           familyId: session.user.familyId!,
@@ -196,13 +212,21 @@ export async function POST(req: Request) {
         },
       });
 
-      return progress;
+      return true;
     });
+
+    if (!awarded) {
+      return NextResponse.json({
+        correct: true,
+        pointAwarded: false,
+        message: "alreadyCompleted",
+      });
+    }
 
     return NextResponse.json({
       correct: true,
       pointAwarded: true,
-      questionsCompleted: updatedProgress.questionsCompleted,
+      questionsCompleted: newCompleted,
       questionsTarget,
       allComplete,
     });

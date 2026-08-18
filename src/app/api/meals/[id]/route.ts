@@ -36,6 +36,20 @@ export async function PATCH(
       );
     }
 
+    // If reassigning the cook, verify the new cook belongs to this family so an
+    // arbitrary user id can't be attached (and leaked via the GET include).
+    if (cookedById) {
+      const cook = await prisma.user.findFirst({
+        where: { id: cookedById, familyId: session.user.familyId! },
+      });
+      if (!cook) {
+        return NextResponse.json(
+          { error: "Cook is not in your family" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Parse date as local noon to avoid UTC midnight timezone issues
     const parsedDate = date ? new Date(`${date}T12:00:00`) : undefined;
 

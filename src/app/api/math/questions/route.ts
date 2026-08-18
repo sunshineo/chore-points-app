@@ -70,29 +70,71 @@ export async function POST(req: Request) {
     // Support single question or array for bulk import
     const questionsInput = Array.isArray(body) ? body : [body];
 
-    // Validate scheduledDate: must be today or future
-    const firstScheduledDate = questionsInput[0]?.scheduledDate;
-    if (firstScheduledDate) {
-      const todayStr = getLocalDateString(new Date(), "America/Los_Angeles");
-      if (firstScheduledDate < todayStr) {
+    const todayStr = getLocalDateString(new Date(), "America/Los_Angeles");
+
+    // Validate EVERY entry (not just the first). Skip entries that are entirely
+    // empty, but reject the whole request on a malformed answer or a past date
+    // so we never do a partial import or crash mid-loop on Prisma Int coercion.
+    const valid: typeof questionsInput = [];
+    for (const q of questionsInput) {
+      if (q.question === undefined && q.answer === undefined) {
+        continue; // empty placeholder row — skip
+      }
+      if (!q.question || typeof q.answer !== "number" || !Number.isInteger(q.answer)) {
+        return NextResponse.json(
+          { error: "Each question requires a non-empty question and an integer answer" },
+          { status: 400 }
+        );
+      }
+      if (q.scheduledDate && q.scheduledDate < todayStr) {
         return NextResponse.json(
           { error: "Cannot schedule questions for past dates" },
           { status: 400 }
         );
       }
+      valid.push(q);
     }
 
-    // Validate max 10 questions per kid per day
-    const firstKidId = questionsInput[0]?.kidId;
-    if (firstScheduledDate && firstKidId) {
+    // Verify every referenced kid belongs to this family.
+    const kidIds = Array.from(
+      new Set(valid.map((q) => q.kidId).filter((id): id is string => Boolean(id)))
+    );
+    if (kidIds.length > 0) {
+      const validKidCount = await prisma.user.count({
+        where: {
+          id: { in: kidIds },
+          familyId: session.user.familyId!,
+          role: "KID",
+        },
+      });
+      if (validKidCount !== kidIds.length) {
+        return NextResponse.json(
+          { error: "One or more kids are not in your family" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Enforce max 10 questions per kid per scheduled day, accounting for every
+    // (kid, date) group in this batch — not just the first entry's.
+    const groups = new Map<string, { kidId: string; date: string; count: number }>();
+    for (const q of valid) {
+      if (q.kidId && q.scheduledDate) {
+        const key = `${q.kidId}|${q.scheduledDate}`;
+        const g = groups.get(key) ?? { kidId: q.kidId, date: q.scheduledDate, count: 0 };
+        g.count += 1;
+        groups.set(key, g);
+      }
+    }
+    for (const g of groups.values()) {
       const existingCount = await prisma.customMathQuestion.count({
         where: {
           familyId: session.user.familyId!,
-          kidId: firstKidId,
-          scheduledDate: firstScheduledDate,
+          kidId: g.kidId,
+          scheduledDate: g.date,
         },
       });
-      if (existingCount + questionsInput.length > 10) {
+      if (existingCount + g.count > 10) {
         return NextResponse.json(
           { error: "Maximum 10 questions per kid per day" },
           { status: 400 }
@@ -100,28 +142,25 @@ export async function POST(req: Request) {
       }
     }
 
-    const created = [];
-    for (const q of questionsInput) {
-      if (!q.question || typeof q.answer !== "number") {
-        continue; // Skip invalid entries in bulk import
-      }
-
-      const question = await prisma.customMathQuestion.create({
-        data: {
-          familyId: session.user.familyId!,
-          createdById: session.user.id,
-          question: q.question,
-          answer: q.answer,
-          questionType: q.questionType || "custom",
-          tags: q.tags || [],
-          isActive: q.isActive !== false,
-          sortOrder: q.sortOrder || 0,
-          scheduledDate: q.scheduledDate || null,
-          kidId: q.kidId || null,
-        },
-      });
-      created.push(question);
-    }
+    // Create all questions atomically so a failure can't leave a partial import.
+    const created = await prisma.$transaction(
+      valid.map((q) =>
+        prisma.customMathQuestion.create({
+          data: {
+            familyId: session.user.familyId!,
+            createdById: session.user.id,
+            question: q.question,
+            answer: q.answer,
+            questionType: q.questionType || "custom",
+            tags: q.tags || [],
+            isActive: q.isActive !== false,
+            sortOrder: q.sortOrder || 0,
+            scheduledDate: q.scheduledDate || null,
+            kidId: q.kidId || null,
+          },
+        })
+      )
+    );
 
     return NextResponse.json({
       questions: created,

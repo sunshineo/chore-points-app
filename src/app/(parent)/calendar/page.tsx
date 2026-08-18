@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/permissions";
-import CalendarView from "@/components/calendar/CalendarView";
+import ParentCalendar from "@/components/v2/parent/ParentCalendar";
 
 export default async function CalendarPage() {
   const session = await getSession();
@@ -17,9 +17,5 @@ export default async function CalendarPage() {
     redirect("/dashboard");
   }
 
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      <CalendarView />
-    </div>
-  );
+  return <ParentCalendar />;
 }

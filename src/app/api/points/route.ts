@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireFamily } from "@/lib/permissions";
 import { calculateLevel, getLevelInfo } from "@/lib/badges";
 import { evaluateAndAwardBadges } from "@/lib/badge-evaluator";
-import { getPeriodStartPT, buildBonusNote, getBaseSchedule, isSchoolDayBasic, getTodayStringPT } from "@/lib/date-utils";
+import {
+  customAwardBadgeIdFor,
+  generateAndStoreBadgeImage,
+} from "@/lib/custom-award-badge";
+import { getTodayStringPT, getPeriodStartPT, getBaseSchedule, buildBonusNote, isSchoolDayBasic } from "@/lib/date-utils";
 
 // GET /api/points - Get kid's total points and ledger history
 export async function GET(req: Request) {
@@ -12,8 +16,11 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const kidId = searchParams.get("kidId");
 
-    // If no kidId specified and user is a kid, use their own ID
-    const targetKidId = kidId || (session.user.role === "KID" ? session.user.id : null);
+    // Kids may only ever read their own ledger — ignore any kidId they pass so
+    // a kid can't enumerate a sibling's history via ?kidId=<sibling>. Parents
+    // may request a specific kid (still family-scoped by the check below).
+    const targetKidId =
+      session.user.role === "KID" ? session.user.id : kidId;
 
     if (!targetKidId) {
       return NextResponse.json(
@@ -100,7 +107,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const { kidId, choreId, points, note, date, photoUrl } = await req.json();
+    const { kidId, choreId, points, note, date, photoUrl, generateBadge } =
+      await req.json();
 
     if (!kidId || points === undefined) {
       return NextResponse.json(
@@ -378,10 +386,49 @@ export async function POST(req: Request) {
       }
     }
 
+    const shouldGenerateCustomBadge =
+      generateBadge === true &&
+      !choreId &&
+      points > 0 &&
+      typeof note === "string" &&
+      note.trim().length > 0;
+
+    let customAwardBadgeId: string | null = null;
+    if (shouldGenerateCustomBadge) {
+      const taskDescription = note.trim();
+      const customBadge = await prisma.achievementBadge.create({
+        data: {
+          familyId: session.user.familyId!,
+          kidId,
+          badgeId: customAwardBadgeIdFor(pointEntry.id),
+          metadata: { taskDescription, points, imageUrl: null },
+        },
+      });
+      customAwardBadgeId = customBadge.id;
+
+      after(async () => {
+        try {
+          await generateAndStoreBadgeImage(
+            prisma,
+            customBadge.id,
+            session.user.familyId!,
+            taskDescription,
+            points
+          );
+        } catch (err) {
+          console.error(
+            `[custom-badge] image gen failed for "${taskDescription}":`,
+            err
+          );
+        }
+      });
+    }
+
     return NextResponse.json({
       pointEntry,
       badgeLevelUp,
       achievementBadges: achievementBadges.length > 0 ? achievementBadges : null,
+      customAwardBadgeId,
       categoryBonus,
     }, { status: 201 });
   } catch (error: any) {

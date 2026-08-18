@@ -51,6 +51,19 @@ export default function OptimizedImage({
   const [error, setError] = useState(false);
   const config = SIZES[variant];
 
+  // Drive proxy URLs: ask the server for a size-matched thumbnail. Cuts
+  // gallery bandwidth ~50× compared to streaming the full 5MB original
+  // for every tile. Vercel Blob URLs are unaffected — next/image's
+  // remotePatterns config handles their optimization already.
+  // We request 2× the displayed CSS width so retina screens render crisp;
+  // next/image does the same for blob URLs via its srcset, but the Drive
+  // proxy is a single redirect so we encode the device-pixel intent here.
+  // The proxy clamps to its MAX_THUMB (1600) on its end.
+  const isDriveProxy = src.startsWith("/api/drive/");
+  const resolvedSrc = isDriveProxy
+    ? `${src}${src.includes("?") ? "&" : "?"}thumb=${config.width * 2}`
+    : src;
+
   if (error) {
     return (
       <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
@@ -74,13 +87,14 @@ export default function OptimizedImage({
       )}
 
       <Image
-        src={src}
+        src={resolvedSrc}
         alt={alt}
         width={config.width}
         height={config.height}
         sizes={config.sizes}
         priority={priority}
         quality={config.quality}
+        unoptimized={isDriveProxy}
         className={`object-cover transition-opacity duration-300 ${
           isLoading ? "opacity-0" : "opacity-100"
         }`}

@@ -106,6 +106,31 @@ export async function POST(req: Request) {
 
     const weekStart = getWeekStart(parsedWeekStart);
 
+    // Verify every referenced dishId belongs to this family — otherwise a
+    // client could attach another family's dish and leak its data via the
+    // GET include.
+    const dishIds = Array.from(
+      new Set(
+        ((plannedDays || []) as PlannedDayInput[])
+          .flatMap((day) => day.meals || [])
+          .flatMap((meal) => meal.dishes || [])
+          .map((dish) => dish.dishId)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
+
+    if (dishIds.length > 0) {
+      const validCount = await prisma.dish.count({
+        where: { id: { in: dishIds }, familyId: session.user.familyId! },
+      });
+      if (validCount !== dishIds.length) {
+        return NextResponse.json(
+          { error: "One or more dishes are not in your family" },
+          { status: 400 }
+        );
+      }
+    }
+
     const plan = await prisma.mealPlan.upsert({
       where: {
         familyId_weekStart: {

@@ -32,7 +32,11 @@ describe('BadgeIcon', () => {
 
       const image = screen.getByRole('img', { name: 'Custom Badge' })
       expect(image).toBeInTheDocument()
-      expect(image).toHaveAttribute('src', 'https://example.com/badge.png')
+      // next/image optimizes the src, so the original URL is encoded into the
+      // optimizer query rather than used verbatim.
+      expect(image.getAttribute('src')).toContain(
+        encodeURIComponent('https://example.com/badge.png')
+      )
     })
 
     it('should prefer image over emoji when both provided', () => {
@@ -49,11 +53,12 @@ describe('BadgeIcon', () => {
       expect(screen.queryByText('🏆')).not.toBeInTheDocument()
     })
 
-    it('should have rounded-full class on image', () => {
+    it('should have rounded-full class on image wrapper', () => {
       render(<BadgeIcon imageUrl="https://example.com/badge.png" alt="Badge" />)
 
+      // OptimizedImage applies layout classes to the wrapping element.
       const image = screen.getByRole('img')
-      expect(image).toHaveClass('rounded-full')
+      expect(image.closest('.rounded-full')).not.toBeNull()
     })
   })
 
@@ -93,11 +98,12 @@ describe('BadgeIcon', () => {
       expect(emoji).toHaveClass('w-20', 'h-20', 'text-6xl')
     })
 
-    it('should apply size classes to image', () => {
+    it('should apply size classes to image wrapper', () => {
       render(<BadgeIcon imageUrl="https://example.com/badge.png" size="lg" alt="Large" />)
 
       const image = screen.getByRole('img')
-      expect(image).toHaveClass('w-12', 'h-12')
+      expect(image.closest('.w-12')).not.toBeNull()
+      expect(image.closest('.h-12')).not.toBeNull()
     })
   })
 
@@ -109,7 +115,7 @@ describe('BadgeIcon', () => {
       expect(emoji).toHaveClass('custom-class')
     })
 
-    it('should apply custom className to image', () => {
+    it('should apply custom className to image wrapper', () => {
       render(
         <BadgeIcon
           imageUrl="https://example.com/badge.png"
@@ -119,7 +125,8 @@ describe('BadgeIcon', () => {
       )
 
       const image = screen.getByRole('img')
-      expect(image).toHaveClass('grayscale', 'opacity-50')
+      expect(image.closest('.grayscale')).not.toBeNull()
+      expect(image.closest('.opacity-50')).not.toBeNull()
     })
   })
 

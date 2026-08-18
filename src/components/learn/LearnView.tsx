@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import confetti from "canvas-confetti";
+import { Volume2, BookOpen, Trophy, RotateCcw, PartyPopper } from "lucide-react";
 
 type SightWord = {
   id: string;
@@ -10,12 +11,20 @@ type SightWord = {
   imageUrl: string | null;
 };
 
-type TodayResponse = {
-  sightWord: SightWord | null;
-  alreadyCompletedToday?: boolean;
+type SessionResponse = {
+  words: SightWord[];
+  message?: "noWords" | "alreadyDoneToday";
   isReview?: boolean;
-  message?: string;
   progress: { current: number; total: number };
+};
+
+type Phase = "study" | "quiz" | "done";
+
+type QuizItem = {
+  word: SightWord;
+  display: string;
+  hiddenIndex: number | null;
+  answer: string;
 };
 
 type Props = {
@@ -23,108 +32,191 @@ type Props = {
   onComplete?: () => void;
 };
 
+function speak(word: string) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(word);
+  utter.rate = 0.8;
+  utter.lang = "en-US";
+  window.speechSynthesis.speak(utter);
+}
+
+function buildQuizItem(word: SightWord): QuizItem {
+  if (word.word.length <= 1) {
+    return {
+      word,
+      display: "_",
+      hiddenIndex: null,
+      answer: word.word.toLowerCase(),
+    };
+  }
+  const idx = 1 + Math.floor(Math.random() * (word.word.length - 1));
+  const display = word.word
+    .split("")
+    .map((c, i) => (i === idx ? "_" : c))
+    .join("");
+  return {
+    word,
+    display,
+    hiddenIndex: idx,
+    answer: word.word[idx].toLowerCase(),
+  };
+}
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 export default function LearnView({ kidId, onComplete }: Props) {
-  const [data, setData] = useState<TodayResponse | null>(null);
+  const [data, setData] = useState<SessionResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showQuiz, setShowQuiz] = useState(false);
-  const [answer, setAnswer] = useState("");
-  const [quizResult, setQuizResult] = useState<{ correct: boolean; pointAwarded: boolean; message: string } | null>(null);
+  const [phase, setPhase] = useState<Phase>("study");
+  const [studyIndex, setStudyIndex] = useState(0);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizItems, setQuizItems] = useState<QuizItem[]>([]);
+  const [userInput, setUserInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
+  const [pointsEarned, setPointsEarned] = useState(0);
   const t = useTranslations("learn");
-  const tCommon = useTranslations("common");
 
-  useEffect(() => {
-    fetchTodaysWord();
-  }, [kidId]);
+  const timezone = useMemo(
+    () =>
+      typeof Intl !== "undefined"
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : "America/Los_Angeles",
+    []
+  );
 
-  useEffect(() => {
-    if (data?.alreadyCompletedToday) {
-      onComplete?.();
-    }
-  }, [data?.alreadyCompletedToday, onComplete]);
-
-  const fetchTodaysWord = async () => {
+  const fetchSession = useCallback(async () => {
+    setLoading(true);
     try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const params = new URLSearchParams({ timezone });
       if (kidId) params.set("kidId", kidId);
-      const url = `/api/sight-words/today?${params.toString()}`;
-      const response = await fetch(url);
-      const result = await response.json();
-      if (response.ok) {
+      const res = await fetch(`/api/sight-words/session?${params.toString()}`);
+      const result = (await res.json()) as SessionResponse;
+      if (res.ok) {
         setData(result);
+        setPhase(
+          result.message === "alreadyDoneToday" || result.message === "noWords"
+            ? "done"
+            : "study"
+        );
+        setStudyIndex(0);
+        setQuizIndex(0);
+        setUserInput("");
+        setFeedback(null);
+        setPointsEarned(0);
       }
-    } catch (error) {
-      console.error("Failed to fetch today's word:", error);
+    } catch (err) {
+      console.error("Failed to fetch session:", err);
     } finally {
       setLoading(false);
     }
+  }, [kidId, timezone]);
+
+  useEffect(() => {
+    fetchSession();
+  }, [fetchSession]);
+
+  const activeWord =
+    phase === "study"
+      ? data?.words[studyIndex]?.word
+      : phase === "quiz"
+        ? quizItems[quizIndex]?.word.word
+        : null;
+
+  useEffect(() => {
+    if (!activeWord) return;
+    const timeout = setTimeout(() => speak(activeWord), 200);
+    return () => clearTimeout(timeout);
+  }, [activeWord]);
+
+  const handleNextStudy = () => {
+    if (!data) return;
+    if (studyIndex < data.words.length - 1) {
+      setStudyIndex(studyIndex + 1);
+    } else {
+      setQuizItems(shuffle(data.words.map(buildQuizItem)));
+      setQuizIndex(0);
+      setUserInput("");
+      setFeedback(null);
+      setPhase("quiz");
+    }
   };
 
-  const handleStartQuiz = () => {
-    setShowQuiz(true);
-    setAnswer("");
-    setQuizResult(null);
-  };
+  const currentQuizItem = quizItems[quizIndex];
 
-  const handleSubmitQuiz = async (e: React.FormEvent) => {
+  const handleSubmitAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data?.sightWord || submitting) return;
+    if (!currentQuizItem || submitting || feedback === "correct") return;
+
+    const typed = userInput.trim().toLowerCase();
+    if (!typed) return;
+
+    const isCorrect = typed === currentQuizItem.answer;
+
+    if (!isCorrect) {
+      setFeedback("wrong");
+      return;
+    }
 
     setSubmitting(true);
-
     try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const response = await fetch("/api/sight-words/quiz", {
+      const res = await fetch("/api/sight-words/quiz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sightWordId: data.sightWord.id,
-          answer: answer.trim(),
-          kidId, // Pass kidId for view-as mode
+          sightWordId: currentQuizItem.word.id,
+          answer: currentQuizItem.word.word,
+          kidId,
           timezone,
         }),
       });
-
-      const result = await response.json();
-
-      // Handle API errors (e.g., parent trying to submit in view-as mode)
-      if (!response.ok) {
-        setQuizResult({ correct: false, pointAwarded: false, message: result.error || "error" });
+      const result = await res.json();
+      if (!res.ok) {
+        console.error("Quiz submit failed:", result);
+        setFeedback("wrong");
         return;
       }
 
-      setQuizResult(result);
-
-      if (result.correct && result.pointAwarded) {
-        // Celebrate!
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-        // Update the data to show completed
-        setData((prev) =>
-          prev
-            ? {
-                ...prev,
-                alreadyCompletedToday: true,
-                progress: { ...prev.progress, current: prev.progress.current + 1 },
-              }
-            : null
-        );
-        onComplete?.();
+      setFeedback("correct");
+      if (result.pointAwarded) {
+        setPointsEarned((p) => p + 1);
       }
-    } catch (error) {
-      console.error("Failed to submit quiz:", error);
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+    } catch (err) {
+      console.error("Failed to submit quiz:", err);
+      setFeedback("wrong");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleNextQuiz = () => {
+    if (quizIndex < quizItems.length - 1) {
+      setQuizIndex(quizIndex + 1);
+      setUserInput("");
+      setFeedback(null);
+    } else {
+      confetti({
+        particleCount: 200,
+        spread: 90,
+        origin: { y: 0.5 },
+      });
+      setPhase("done");
+      onComplete?.();
+    }
+  };
+
   const handleTryAgain = () => {
-    setAnswer("");
-    setQuizResult(null);
+    setUserInput("");
+    setFeedback(null);
   };
 
   if (loading) {
@@ -138,187 +230,250 @@ export default function LearnView({ kidId, onComplete }: Props) {
     );
   }
 
-  // No words set up yet
-  if (data?.message === "noWords" || !data?.sightWord) {
+  if (data?.message === "noWords" || (data && data.words.length === 0 && data.message !== "alreadyDoneToday")) {
     return (
-      <div className="text-center py-16">
-        <span className="text-8xl mb-4 block">📚</span>
-        <h2 className="text-2xl font-bold text-gray-700 mb-2">{t("noWordsYet")}</h2>
-        <p className="text-gray-500">Ask your parent to add some sight words!</p>
+      <div className="bg-white rounded-2xl p-5 border border-[rgba(26,24,19,0.06)] text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-ca-tile-teal mb-2">
+          <BookOpen size={28} className="text-ca-teal" />
+        </div>
+        <h2 className="text-lg font-extrabold text-ca-ink mt-2">{t("noWordsYet")}</h2>
+        <p className="text-sm text-ca-muted mt-1">Ask a parent to add some sight words.</p>
       </div>
     );
   }
 
-  // All words completed and already reviewed today
-  if (data?.message === "alreadyCompletedToday") {
+  if (data?.message === "alreadyDoneToday") {
     return (
-      <div className="text-center py-16">
-        <span className="text-8xl mb-4 block">✅</span>
-        <h2 className="text-2xl font-bold text-gray-700 mb-2">{t("allDoneToday")}</h2>
-        <p className="text-gray-500">{t("allDoneTodayDesc")}</p>
-        <div className="mt-6">
-          <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-full">
-            <span className="font-bold">{data.progress.total}/{data.progress.total}</span>
-            <span className="ml-2">{t("wordsMastered")}</span>
-          </div>
+      <div className="bg-white rounded-2xl p-5 border border-[rgba(26,24,19,0.06)] text-center">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-ca-tile-mint mb-2">
+          <PartyPopper size={28} className="text-ca-mint" />
+        </div>
+        <h2 className="text-lg font-extrabold text-ca-ink mt-2">{t("allDoneToday")}</h2>
+        <p className="text-sm text-ca-muted mt-1">{t("allDoneTodayDesc")}</p>
+        <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-ca-tile-mint text-ca-mint text-sm font-bold">
+          {data.progress.total}/{data.progress.total} {t("wordsMastered")}
         </div>
       </div>
     );
   }
 
-  const { sightWord, alreadyCompletedToday, progress } = data;
+  if (!data) return null;
+
+  const { words, isReview, progress } = data;
+
+  const cardGradient = "linear-gradient(160deg, var(--ca-cobalt) 0%, var(--ca-cobalt-deep) 70%, #0d2480 100%)";
 
   return (
-    <div className="max-w-lg mx-auto">
-      {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>{data?.isReview ? t("reviewProgress") : t("progress")}</span>
-          <span>{progress.current}/{progress.total}</span>
+    <div className="max-w-lg mx-auto font-[family-name:var(--font-nunito)]">
+      <div className="mb-5">
+        <div className="flex justify-between text-sm font-bold text-ca-muted mb-1.5">
+          <span>{isReview ? t("reviewProgress") : t("progress")}</span>
+          <span>
+            {progress.current}/{progress.total}
+          </span>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2.5 rounded-full bg-[rgba(26,24,19,0.06)] overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
-            style={{ width: `${(progress.current / progress.total) * 100}%` }}
+            className="h-full rounded-full transition-all duration-500"
+            style={{
+              width: `${(progress.current / Math.max(progress.total, 1)) * 100}%`,
+              background: "linear-gradient(90deg, var(--ca-cobalt), var(--ca-sky))",
+            }}
           />
         </div>
       </div>
 
-      {/* Flashcard */}
-      {!showQuiz ? (
+      {phase === "study" && words[studyIndex] && (
         <div className="text-center">
-          {data.isReview && (
-            <div className="mb-2">
-              <span className="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-semibold">
-                🔄 {t("reviewWord")}
-              </span>
-            </div>
-          )}
-          <h2 className="text-lg font-semibold text-gray-600 mb-4">
-            {data.isReview ? t("reviewTodaysWord") : t("todaysWord")}
+          <h2 className="text-sm font-bold uppercase tracking-wider text-ca-muted mb-2">
+            {t("study.heading", {
+              current: studyIndex + 1,
+              total: words.length,
+            })}
           </h2>
-
-          {/* Card */}
-          <div className="bg-gradient-to-br from-blue-400 to-purple-500 rounded-3xl p-8 shadow-2xl transform hover:scale-[1.02] transition-transform">
-            {/* Image */}
-            {sightWord.imageUrl ? (
-              <div className="mb-6">
-                <img
-                  src={sightWord.imageUrl}
-                  alt={sightWord.word}
-                  className="w-48 h-48 object-cover rounded-2xl mx-auto shadow-lg border-4 border-white/30"
-                />
-              </div>
+          <div
+            className="rounded-3xl p-6 text-white shadow-xl"
+            style={{ background: cardGradient }}
+          >
+            {words[studyIndex].imageUrl ? (
+              <img
+                src={words[studyIndex].imageUrl!}
+                alt={words[studyIndex].word}
+                className="w-44 h-44 object-cover rounded-2xl mx-auto mb-5 border-4 border-white/20"
+              />
             ) : (
-              <div className="w-48 h-48 bg-white/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <span className="text-8xl">📖</span>
+              <div className="w-44 h-44 bg-white/15 rounded-2xl mx-auto mb-5 flex items-center justify-center">
+                <BookOpen size={56} className="text-white/70" />
               </div>
             )}
 
-            {/* Word */}
-            <h1 className="text-6xl sm:text-7xl font-bold text-white mb-6 tracking-wide drop-shadow-lg">
-              {sightWord.word}
-            </h1>
-
-            {/* Status or Quiz Button */}
-            {alreadyCompletedToday ? (
-              <div className="bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 inline-flex items-center">
-                <span className="text-2xl mr-2">✅</span>
-                <span className="text-white font-semibold">{t("alreadyCompleted")}</span>
-              </div>
-            ) : (
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <h1 className="text-5xl sm:text-6xl font-black tracking-wide font-[family-name:var(--font-baloo-2)]">
+                {words[studyIndex].word}
+              </h1>
               <button
-                onClick={handleStartQuiz}
-                className="bg-white text-purple-600 font-bold text-xl px-8 py-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                onClick={() => speak(words[studyIndex].word)}
+                aria-label={t("speak")}
+                className="bg-white/15 hover:bg-white/25 rounded-full p-3 transition-colors"
               >
-                {t("takeQuiz")} 📝
+                <Volume2 size={22} />
               </button>
-            )}
+            </div>
+
+            <button
+              onClick={handleNextStudy}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-extrabold"
+              style={{ background: "var(--ca-gold)", color: "var(--ca-gold-deep)" }}
+            >
+              {studyIndex < words.length - 1
+                ? t("study.next")
+                : t("study.readyForQuiz")}{" "}
+              →
+            </button>
           </div>
         </div>
-      ) : (
-        /* Quiz Mode */
-        <div className="text-center">
-          <h2 className="text-lg font-semibold text-gray-600 mb-4">{t("spellTheWord")}</h2>
+      )}
 
-          {/* Quiz Card */}
-          <div className="bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-8 shadow-2xl">
-            {/* Show image as hint */}
-            {sightWord.imageUrl ? (
-              <div className="mb-6">
-                <img
-                  src={sightWord.imageUrl}
-                  alt="Hint"
-                  className="w-40 h-40 object-cover rounded-2xl mx-auto shadow-lg border-4 border-white/30"
-                />
-              </div>
+      {phase === "quiz" && currentQuizItem && (
+        <div className="text-center">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-ca-muted mb-2">
+            {t("quiz.heading", {
+              current: quizIndex + 1,
+              total: quizItems.length,
+            })}
+          </h2>
+          <div
+            className="rounded-3xl p-6 text-white shadow-xl"
+            style={{ background: cardGradient }}
+          >
+            {currentQuizItem.word.imageUrl ? (
+              <img
+                src={currentQuizItem.word.imageUrl!}
+                alt="Hint"
+                className="w-36 h-36 object-cover rounded-2xl mx-auto mb-4 border-4 border-white/20"
+              />
             ) : (
-              <div className="w-40 h-40 bg-white/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <span className="text-6xl">🤔</span>
+              <div className="w-36 h-36 bg-white/15 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                <BookOpen size={48} className="text-white/70" />
               </div>
             )}
 
-            {quizResult ? (
-              /* Result */
-              <div className="text-white">
-                {quizResult.correct ? (
-                  <>
-                    <span className="text-8xl block mb-4">🎉</span>
-                    <h3 className="text-3xl font-bold mb-2">{t("correct")}</h3>
-                    {quizResult.pointAwarded && (
-                      <p className="text-xl">+1 point earned!</p>
-                    )}
-                    <button
-                      onClick={() => setShowQuiz(false)}
-                      className="mt-6 bg-white text-teal-600 font-bold px-6 py-3 rounded-full"
-                    >
-                      {t("back")}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-8xl block mb-4">🤔</span>
-                    <h3 className="text-3xl font-bold mb-2">{t("incorrect")}</h3>
-                    <button
-                      onClick={handleTryAgain}
-                      className="mt-6 bg-white text-teal-600 font-bold px-6 py-3 rounded-full"
-                    >
-                      Try Again
-                    </button>
-                  </>
-                )}
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="text-4xl sm:text-5xl font-black tracking-[0.3em] font-[family-name:var(--font-baloo-2)]">
+                {currentQuizItem.display.split("").map((ch, i) => (
+                  <span
+                    key={i}
+                    style={ch === "_" ? { color: "var(--ca-gold)" } : undefined}
+                  >
+                    {ch === "_" ? "_" : ch}
+                  </span>
+                ))}
+              </div>
+              <button
+                onClick={() => speak(currentQuizItem.word.word)}
+                aria-label={t("speak")}
+                className="bg-white/15 hover:bg-white/25 rounded-full p-3 transition-colors"
+              >
+                <Volume2 size={22} />
+              </button>
+            </div>
+
+            <p className="text-white/80 text-sm mb-4">
+              {currentQuizItem.hiddenIndex === null
+                ? t("quiz.typeWord")
+                : t("quiz.typeMissingLetter")}
+            </p>
+
+            {feedback === "correct" ? (
+              <div>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/15 mb-3">
+                  <PartyPopper size={28} className="text-ca-gold" />
+                </div>
+                <h3 className="text-xl font-black mb-4 font-[family-name:var(--font-baloo-2)]">{t("correct")}</h3>
+                <button
+                  onClick={handleNextQuiz}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-extrabold"
+                  style={{ background: "var(--ca-gold)", color: "var(--ca-gold-deep)" }}
+                >
+                  {quizIndex < quizItems.length - 1
+                    ? t("quiz.next")
+                    : t("quiz.finish")}{" "}
+                  →
+                </button>
               </div>
             ) : (
-              /* Input Form */
-              <form onSubmit={handleSubmitQuiz}>
+              <form onSubmit={handleSubmitAnswer}>
                 <input
                   type="text"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder={t("typeAnswer")}
-                  className="w-full text-center text-4xl font-bold py-4 px-6 rounded-2xl border-4 border-white/30 bg-white/90 text-gray-800 placeholder-gray-400 focus:outline-none focus:border-white mb-6"
+                  value={userInput}
+                  onChange={(e) => {
+                    setUserInput(e.target.value);
+                    if (feedback === "wrong") setFeedback(null);
+                  }}
+                  placeholder="?"
+                  maxLength={
+                    currentQuizItem.hiddenIndex === null
+                      ? currentQuizItem.word.word.length
+                      : 1
+                  }
+                  className="w-28 text-center text-5xl font-black py-3 rounded-2xl border-4 border-white/20 bg-white text-ca-ink placeholder-ca-muted focus:outline-none focus:border-white mb-3 font-[family-name:var(--font-baloo-2)]"
                   autoComplete="off"
                   autoCapitalize="off"
                   autoFocus
                 />
-                <div className="flex gap-4 justify-center">
-                  <button
-                    type="button"
-                    onClick={() => setShowQuiz(false)}
-                    className="bg-white/20 text-white font-bold px-6 py-3 rounded-full hover:bg-white/30"
-                  >
-                    {t("back")}
-                  </button>
+                {feedback === "wrong" && (
+                  <p className="text-white/90 text-base mb-3">
+                    {t("quiz.tryAgain")}
+                  </p>
+                )}
+                <div className="flex gap-2 justify-center items-center">
+                  {feedback === "wrong" && (
+                    <button
+                      type="button"
+                      onClick={handleTryAgain}
+                      aria-label="Try again"
+                      className="bg-white/15 hover:bg-white/25 rounded-full p-3 transition-colors"
+                    >
+                      <RotateCcw size={18} />
+                    </button>
+                  )}
                   <button
                     type="submit"
-                    disabled={submitting || !answer.trim()}
-                    className="bg-white text-teal-600 font-bold px-8 py-3 rounded-full shadow-lg hover:shadow-xl disabled:opacity-50"
+                    disabled={submitting || !userInput.trim()}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-extrabold disabled:opacity-50"
+                    style={{ background: "var(--ca-gold)", color: "var(--ca-gold-deep)" }}
                   >
                     {submitting ? "..." : t("submit")}
                   </button>
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {phase === "done" && (
+        <div className="text-center">
+          <div
+            className="rounded-3xl p-6 text-white shadow-xl"
+            style={{ background: "linear-gradient(160deg, var(--ca-coral) 0%, var(--ca-gold) 100%)" }}
+          >
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/15 mb-3">
+              <Trophy size={44} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-black mb-2 font-[family-name:var(--font-baloo-2)]">
+              {t("done.title")}
+            </h2>
+            <p className="text-white/90 text-lg mb-5">
+              {t("done.earned", { points: pointsEarned })}
+            </p>
+            <button
+              onClick={fetchSession}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-extrabold"
+              style={{ background: "#fff", color: "var(--ca-coral)" }}
+            >
+              {t("done.again")}
+            </button>
           </div>
         </div>
       )}

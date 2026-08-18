@@ -24,29 +24,46 @@ export default async function SettingsPage() {
       id: true,
       name: true,
       inviteCode: true,
-      hueAccessToken: true,
       users: {
         select: {
           id: true,
           name: true,
           email: true,
           role: true,
+          _count: {
+            select: {
+              pointEntries: true,
+              photos: true,
+              badges: true,
+              achievementBadges: true,
+              requestedRedemptions: true,
+            },
+          },
         },
       },
     },
   });
 
-  const isHueConnected = !!family?.hueAccessToken;
-  const kids = family?.users.filter((u) => u.role === "KID") || [];
+  const kids =
+    family?.users
+      .filter((u) => u.role === "KID")
+      .map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        counts: {
+          pointEntries: u._count.pointEntries,
+          photos: u._count.photos,
+          badges: u._count.badges + u._count.achievementBadges,
+          redemptions: u._count.requestedRedemptions,
+        },
+      })) || [];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <SettingsPageContent
-        familyName={family?.name || ""}
-        inviteCode={family?.inviteCode || ""}
-        kids={kids}
-        isHueConnected={isHueConnected}
-      />
-    </div>
+    <SettingsPageContent
+      familyName={family?.name || ""}
+      inviteCode={family?.inviteCode || ""}
+      kids={kids}
+    />
   );
 }

@@ -102,8 +102,10 @@ export default function KidPointsView({ kidId, readOnly = false }: KidPointsView
   const fetchPoints = useCallback(async () => {
     try {
       const response = await fetch(`/api/points?kidId=${kidId}`);
-      const data = await response.json();
+      // Guard against parsing a non-JSON error body (e.g. a 5xx HTML page),
+      // which would otherwise throw and be swallowed as a blank view.
       if (response.ok) {
+        const data = await response.json();
         const newTotal = data.totalPoints;
         const newEntries: PointEntry[] = data.entries || [];
         if (data.totalEarned !== undefined) setTotalEarned(data.totalEarned);

@@ -26,6 +26,12 @@ enum MealType {
   DINNER
 }
 
+enum PhotoProvider {
+  NONE
+  VERCEL_BLOB
+  GOOGLE_DRIVE
+}
+
 model User {
   id               String    @id @default(cuid())
   email            String    @unique
@@ -48,8 +54,6 @@ model User {
   resolvedRedemptions Redemption[]  @relation("RedemptionResolvedBy")
   requestedRedemptions Redemption[] @relation("RedemptionRequested")
   pointEntries        PointEntry[]  @relation("KidPointEntries")
-  milestones          Milestone[]   @relation("KidMilestones")
-  createdMilestones   Milestone[]   @relation("MilestoneCreatedBy")
   createdTodos        FamilyTodo[]  @relation("TodoCreatedBy")
   photos              Photo[]       @relation("KidPhotos")
   createdPhotos       Photo[]       @relation("PhotoCreatedBy")
@@ -83,16 +87,19 @@ model User {
 }
 
 model Family {
-  id         String @id @default(cuid())
-  name       String
-  inviteCode String @unique
+  id                     String        @id @default(cuid())
+  name                   String
+  inviteCode             String        @unique
+  photoProvider           PhotoProvider @default(NONE)
+  googleDriveFolderId     String?
+  googleDriveConnectedAt  DateTime?
+  googleDriveConnectedById String?
 
   users             User[]
   chores            Chore[]
   pointEntries      PointEntry[]
   rewards           Reward[]
   redemptions       Redemption[]
-  milestones        Milestone[]
   calendarSettings  CalendarSettings?
   todos             FamilyTodo[]
   photos            Photo[]
@@ -110,12 +117,6 @@ model Family {
   customMathQuestions CustomMathQuestion[]
   schoolOffDays  SchoolOff[]
   kidStats       KidStats[]
-
-  // Philips Hue integration
-  hueAccessToken  String?
-  hueRefreshToken String?
-  hueTokenExpiry  DateTime?
-  hueUsername     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -269,31 +270,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Milestone {
-  id       String @id @default(cuid())
-  familyId String
-  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
-
-  kidId String
-  kid   User   @relation("KidMilestones", fields: [kidId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String?
-  icon        String?
-  date        DateTime @default(now())
-  imageUrl    String?
-
-  createdById String
-  createdBy   User   @relation("MilestoneCreatedBy", fields: [createdById], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([familyId])
-  @@index([kidId])
-  @@index([familyId, kidId])
-}
-
 model CalendarSettings {
   id       String @id @default(cuid())
   familyId String @unique
@@ -338,9 +314,10 @@ model Photo {
   kidId String
   kid   User   @relation("KidPhotos", fields: [kidId], references: [id], onDelete: Cascade)
 
-  photoUrl String
-  caption  String?
-  date     DateTime @default(now())
+  photoUrl     String
+  driveFileId  String?
+  caption      String?
+  date         DateTime @default(now())
 
   createdById String
   createdBy   User   @relation("PhotoCreatedBy", fields: [createdById], references: [id])
@@ -351,6 +328,7 @@ model Photo {
   @@index([familyId])
   @@index([kidId])
   @@index([familyId, kidId])
+  @@index([familyId, driveFileId])
 }
 
 model Badge {
@@ -571,6 +549,14 @@ model BadgeTemplate {
 
   ruleConfig Json? // For custom badges: rule configuration
   isActive   Boolean @default(true)
+  // Visibility for kids. The two flags combine into a tri-state:
+  //   hidden=false, forceShow=false → AUTO (progressive disclosure)
+  //   hidden=true                   → HIDDEN (override, kid never sees)
+  //   forceShow=true                → SHOWN (override, bypasses tier gate)
+  // hidden takes precedence if both are true. Parents always see every
+  // badge in Settings → Badge Management regardless.
+  hidden     Boolean @default(false)
+  forceShow  Boolean @default(false)
 
   createdById String
   createdBy   User   @relation("BadgeTemplateCreatedBy", fields: [createdById], references: [id])

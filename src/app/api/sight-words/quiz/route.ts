@@ -1,6 +1,41 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireFamily } from "@/lib/permissions";
+import { generateSightWordImage } from "@/lib/gemini-image";
+
+const UPCOMING_IMAGE_PREFETCH = 2;
+
+async function prefetchUpcomingImages(
+  familyId: string,
+  currentSortOrder: number,
+  updatedById: string
+) {
+  const upcoming = await prisma.sightWord.findMany({
+    where: {
+      familyId,
+      isActive: true,
+      imageUrl: null,
+      sortOrder: { gt: currentSortOrder },
+    },
+    orderBy: { sortOrder: "asc" },
+    take: UPCOMING_IMAGE_PREFETCH,
+  });
+
+  for (const sw of upcoming) {
+    try {
+      const url = await generateSightWordImage(sw.word, familyId);
+      await prisma.sightWord.update({
+        where: { id: sw.id },
+        data: { imageUrl: url, updatedById },
+      });
+    } catch (err) {
+      console.error(
+        `[sight-words] prefetch image gen failed for "${sw.word}":`,
+        err
+      );
+    }
+  }
+}
 
 // POST /api/sight-words/quiz - Submit a quiz answer and award point if correct
 export async function POST(req: Request) {
@@ -31,9 +66,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!sightWordId || !answer) {
+    if (!sightWordId || typeof answer !== "string" || !answer.trim()) {
       return NextResponse.json(
-        { error: "sightWordId and answer are required" },
+        { error: "sightWordId and a non-empty answer are required" },
         { status: 400 }
       );
     }
@@ -96,28 +131,47 @@ export async function POST(req: Request) {
       });
     }
 
-    // Award point and update progress in a transaction
-    await prisma.$transaction([
-      prisma.sightWordProgress.upsert({
+    // Ensure the progress row exists so the compare-and-swap below always
+    // targets a real row (Prisma upsert is an atomic INSERT ... ON CONFLICT on
+    // Postgres, so concurrent callers don't collide).
+    await prisma.sightWordProgress.upsert({
+      where: {
+        kidId_sightWordId: { kidId: targetKidId, sightWordId },
+      },
+      create: {
+        kidId: targetKidId,
+        sightWordId,
+        viewedAt: new Date(),
+        quizPassedAt: null,
+        pointAwarded: false,
+      },
+      update: {},
+    });
+
+    // Optimistic-concurrency award: only the request that flips quizPassedAt
+    // away from the value we just observed awards the point. A duplicate
+    // correct submission (double-click / retry) reads the same prior value but
+    // matches zero rows on its update because the winner already moved it —
+    // Postgres serializes the two updateMany calls via the row lock — so the
+    // point is never awarded twice for the same word in the same day.
+    const prevPassedAt = existingProgress?.quizPassedAt ?? null;
+
+    const awarded = await prisma.$transaction(async (tx) => {
+      const { count } = await tx.sightWordProgress.updateMany({
         where: {
-          kidId_sightWordId: {
-            kidId: targetKidId,
-            sightWordId,
-          },
-        },
-        create: {
           kidId: targetKidId,
           sightWordId,
-          viewedAt: new Date(),
+          quizPassedAt: prevPassedAt,
+        },
+        data: {
           quizPassedAt: new Date(),
           pointAwarded: true,
         },
-        update: {
-          quizPassedAt: new Date(),
-          pointAwarded: true,
-        },
-      }),
-      prisma.pointEntry.create({
+      });
+
+      if (count === 0) return false;
+
+      await tx.pointEntry.create({
         data: {
           familyId: session.user.familyId!,
           kidId: targetKidId,
@@ -126,8 +180,26 @@ export async function POST(req: Request) {
           createdById: session.user.id,
           updatedById: session.user.id,
         },
-      }),
-    ]);
+      });
+
+      return true;
+    });
+
+    if (!awarded) {
+      return NextResponse.json({
+        correct: true,
+        pointAwarded: false,
+        message: "alreadyCompleted",
+      });
+    }
+
+    after(() =>
+      prefetchUpcomingImages(
+        session.user.familyId!,
+        sightWord.sortOrder,
+        session.user.id
+      )
+    );
 
     return NextResponse.json({
       correct: true,

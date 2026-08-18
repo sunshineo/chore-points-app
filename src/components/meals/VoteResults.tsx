@@ -139,7 +139,8 @@ export default function VoteResults() {
     <div>
       <p className="text-sm text-gray-500 mb-6">
         {t("weekResets")} •{" "}
-        {weekStart && new Date(weekStart).toLocaleDateString()}
+        {weekStart &&
+          new Date(weekStart).toLocaleDateString(undefined, { timeZone: "UTC" })}
       </p>
 
       {!hasAnyVotes ? (

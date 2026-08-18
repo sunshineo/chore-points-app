@@ -26,16 +26,26 @@ export async function DELETE(
       );
     }
 
-    // If vote was for an existing dish, decrement totalVotes
-    if (vote.dishId) {
-      await prisma.dish.update({
-        where: { id: vote.dishId },
-        data: { totalVotes: { decrement: 1 } },
+    // Delete the vote and decrement the tally atomically. The delete uses the
+    // scoped id/family/voter filter so a concurrent double-delete removes at
+    // most one row; deleteMany reports how many rows it actually removed, and we
+    // only decrement when this call is the one that deleted the vote — otherwise
+    // two racing deletes would each decrement for a single vote.
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.weeklyVote.deleteMany({
+        where: {
+          id,
+          familyId: session.user.familyId!,
+          voterId: session.user.id,
+        },
       });
-    }
 
-    await prisma.weeklyVote.delete({
-      where: { id },
+      if (count > 0 && vote.dishId) {
+        await tx.dish.update({
+          where: { id: vote.dishId },
+          data: { totalVotes: { decrement: 1 } },
+        });
+      }
     });
 
     return NextResponse.json({ success: true });

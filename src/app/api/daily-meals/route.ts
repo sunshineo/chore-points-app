@@ -106,6 +106,30 @@ export async function POST(req: Request) {
       );
     }
 
+    // Verify every referenced dishId belongs to this family — otherwise a
+    // client could attach another family's dish and leak its name/photo via the
+    // GET include.
+    const dishIds = Array.from(
+      new Set(
+        ((meals || []) as { dishes?: { dishId?: string }[] }[])
+          .flatMap((meal) => meal.dishes || [])
+          .map((dish) => dish.dishId)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
+
+    if (dishIds.length > 0) {
+      const validCount = await prisma.dish.count({
+        where: { id: { in: dishIds }, familyId: session.user.familyId! },
+      });
+      if (validCount !== dishIds.length) {
+        return NextResponse.json(
+          { error: "One or more dishes are not in your family" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Upsert the daily log with nested creates
     const log = await prisma.dailyMealLog.upsert({
       where: {

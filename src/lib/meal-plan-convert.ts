@@ -63,31 +63,49 @@ export async function autoConvertPlannedMeals(familyId: string): Promise<void> {
         continue;
       }
 
-      // Create a new DailyMealLog from the planned day
-      await prisma.dailyMealLog.create({
-        data: {
-          familyId,
-          date: plannedDay.date,
-          // Create meals from planned day meals
-          meals: {
-            create: plannedDay.meals.map((meal) => ({
-              mealType: meal.mealType,
-              notes: meal.notes,
-              dishes: {
-                create: meal.dishes.map((dish) => ({
-                  dishId: dish.dishId,
-                  dishName: dish.dishName,
-                  isFreeForm: dish.isFreeForm,
-                })),
-              },
-            })),
+      // Create a new DailyMealLog from the planned day.
+      // Two concurrent GET /api/daily-meals calls can both pass the findUnique
+      // above for the same date; the loser's create then violates the
+      // @@unique([familyId, date]) constraint. Swallow that P2002 — it just
+      // means another request already converted this day — instead of letting a
+      // 500 bubble out of the GET.
+      try {
+        await prisma.dailyMealLog.create({
+          data: {
+            familyId,
+            date: plannedDay.date,
+            // Create meals from planned day meals
+            meals: {
+              create: plannedDay.meals.map((meal) => ({
+                mealType: meal.mealType,
+                notes: meal.notes,
+                dishes: {
+                  create: meal.dishes.map((dish) => ({
+                    dishId: dish.dishId,
+                    dishName: dish.dishName,
+                    isFreeForm: dish.isFreeForm,
+                  })),
+                },
+              })),
+            },
+            // Add weekly staples as daily items
+            dailyItems: {
+              create: plan.weeklyStaples.map((name) => ({ name })),
+            },
           },
-          // Add weekly staples as daily items
-          dailyItems: {
-            create: plan.weeklyStaples.map((name) => ({ name })),
-          },
-        },
-      });
+        });
+      } catch (err) {
+        if (
+          !(
+            err &&
+            typeof err === "object" &&
+            "code" in err &&
+            (err as { code?: string }).code === "P2002"
+          )
+        ) {
+          throw err;
+        }
+      }
     }
   }
 }

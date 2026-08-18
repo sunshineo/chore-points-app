@@ -54,26 +54,22 @@ export async function POST(req: Request) {
       );
     }
 
-    const weekStart = getWeekStart(new Date());
-
-    // Check for existing vote
-    const existingVote = await prisma.weeklyVote.findFirst({
-      where: {
-        familyId: session.user.familyId!,
-        voterId: session.user.id,
-        weekStart,
-        ...(dishId ? { dishId } : { suggestedDishName }),
-      },
-    });
-
-    if (existingVote) {
-      return NextResponse.json(
-        { error: "You have already voted for this dish this week" },
-        { status: 400 }
-      );
+    // Normalize suggested name up front so a non-string body can't throw on
+    // .trim(), and so the dedupe/unique check operates on the stored value.
+    let trimmedName: string | undefined;
+    if (!dishId) {
+      if (typeof suggestedDishName !== "string" || !suggestedDishName.trim()) {
+        return NextResponse.json(
+          { error: "suggestedDishName must be a non-empty string" },
+          { status: 400 }
+        );
+      }
+      trimmedName = suggestedDishName.trim();
     }
 
-    // If voting for existing dish, verify it exists
+    const weekStart = getWeekStart(new Date());
+
+    // If voting for an existing dish, verify it belongs to this family.
     if (dishId) {
       const dish = await prisma.dish.findFirst({
         where: {
@@ -88,32 +84,57 @@ export async function POST(req: Request) {
           { status: 404 }
         );
       }
-
-      // Increment totalVotes on dish
-      await prisma.dish.update({
-        where: { id: dishId },
-        data: { totalVotes: { increment: 1 } },
-      });
     }
 
-    const vote = await prisma.weeklyVote.create({
-      data: {
-        familyId: session.user.familyId!,
-        voterId: session.user.id,
-        weekStart,
-        ...(dishId ? { dishId } : { suggestedDishName: suggestedDishName.trim() }),
-      },
-      include: {
-        dish: {
-          select: { id: true, name: true, photoUrl: true, totalVotes: true },
-        },
-        voter: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    });
+    // Create the vote and bump the dish tally atomically. The vote row is
+    // created first so the @@unique constraint — not an app-level check —
+    // rejects duplicates; a P2002 becomes a clean "already voted" instead of a
+    // 500 with a leaked increment. Doing both in one transaction also prevents
+    // the count from drifting when the create fails.
+    try {
+      const vote = await prisma.$transaction(async (tx) => {
+        const created = await tx.weeklyVote.create({
+          data: {
+            familyId: session.user.familyId!,
+            voterId: session.user.id,
+            weekStart,
+            ...(dishId ? { dishId } : { suggestedDishName: trimmedName }),
+          },
+          include: {
+            dish: {
+              select: { id: true, name: true, photoUrl: true, totalVotes: true },
+            },
+            voter: {
+              select: { id: true, name: true, email: true },
+            },
+          },
+        });
 
-    return NextResponse.json({ vote }, { status: 201 });
+        if (dishId) {
+          await tx.dish.update({
+            where: { id: dishId },
+            data: { totalVotes: { increment: 1 } },
+          });
+        }
+
+        return created;
+      });
+
+      return NextResponse.json({ vote }, { status: 201 });
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        (error as { code?: string }).code === "P2002"
+      ) {
+        return NextResponse.json(
+          { error: "You have already voted for this dish this week" },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Something went wrong";
     return NextResponse.json({ error: errorMessage }, { status: 500 });

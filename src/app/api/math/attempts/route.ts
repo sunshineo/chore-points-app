@@ -17,8 +17,13 @@ export async function GET(req: Request) {
     const to = searchParams.get("to");
     const type = searchParams.get("type");
     const incorrectOnly = searchParams.get("incorrectOnly") === "true";
-    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500);
-    const offset = parseInt(searchParams.get("offset") || "0");
+    // Clamp to sane values so NaN/negative params can't reach Prisma take/skip.
+    const parsedLimit = parseInt(searchParams.get("limit") || "100");
+    const limit = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(parsedLimit, 1), 500)
+      : 100;
+    const parsedOffset = parseInt(searchParams.get("offset") || "0");
+    const offset = Number.isFinite(parsedOffset) && parsedOffset > 0 ? parsedOffset : 0;
 
     // Build where clause
     const where: Record<string, unknown> = {
@@ -30,12 +35,19 @@ export async function GET(req: Request) {
     }
 
     if (from || to) {
-      where.createdAt = {};
+      const range: Record<string, Date> = {};
       if (from) {
-        (where.createdAt as Record<string, Date>).gte = new Date(from);
+        const fromDate = new Date(from);
+        if (!isNaN(fromDate.getTime())) range.gte = fromDate;
       }
       if (to) {
-        (where.createdAt as Record<string, Date>).lte = new Date(to);
+        const toDate = new Date(to);
+        if (!isNaN(toDate.getTime())) range.lte = toDate;
+      }
+      // Only apply the filter if at least one bound parsed to a valid date,
+      // otherwise an invalid `from`/`to` would make Prisma throw.
+      if (range.gte || range.lte) {
+        where.createdAt = range;
       }
     }
 

@@ -21,7 +21,11 @@ function addOneDay(dateStr: string): string {
 function toISOWithOffset(localDateTimeStr: string, timeZone: string): string {
   const [datePart, timePart] = localDateTimeStr.split("T");
   const [year, month, day] = datePart.split("-").map(Number);
-  const [hour, minute, second = 0] = timePart.split(":").map(Number);
+  // A date-only value (no "T" part) would make timePart undefined and throw on
+  // .split — default it to midnight so a timed event with a bare date still works.
+  const [hour, minute, second = 0] = (timePart || "00:00:00")
+    .split(":")
+    .map(Number);
 
   const date = new Date(year, month - 1, day, hour, minute, second);
   const formatter = new Intl.DateTimeFormat("en-US", {

@@ -30,6 +30,9 @@ export default function VotingGrid() {
   const [loading, setLoading] = useState(true);
   const [suggestName, setSuggestName] = useState("");
   const [suggesting, setSuggesting] = useState(false);
+  // Dishes with an in-flight vote/unvote request — blocks double-taps that
+  // would otherwise fire duplicate POSTs before the refetch flips isVoted.
+  const [pendingVotes, setPendingVotes] = useState<Set<string>>(new Set());
 
   const currentUserId = session?.user?.id;
 
@@ -41,10 +44,9 @@ export default function VotingGrid() {
   const fetchDishes = async () => {
     try {
       const response = await fetch("/api/dishes");
+      if (!response.ok) return;
       const data = await response.json();
-      if (response.ok) {
-        setDishes(data.dishes);
-      }
+      setDishes(data.dishes);
     } catch (err) {
       console.error("Failed to fetch dishes:", err);
     }
@@ -53,8 +55,8 @@ export default function VotingGrid() {
   const fetchVotes = async () => {
     try {
       const response = await fetch("/api/votes");
-      const data = await response.json();
       if (response.ok) {
+        const data = await response.json();
         setVotes(data.votes);
         // Extract only the current user's votes
         const myDishVotes = new Set<string>(
@@ -74,6 +76,9 @@ export default function VotingGrid() {
   };
 
   const handleVote = async (dishId: string) => {
+    // Ignore taps while a request for this dish is already in flight.
+    if (pendingVotes.has(dishId)) return;
+    setPendingVotes((prev) => new Set(prev).add(dishId));
     try {
       const response = await fetch("/api/votes", {
         method: "POST",
@@ -87,14 +92,22 @@ export default function VotingGrid() {
       }
     } catch (err) {
       console.error("Failed to vote:", err);
+    } finally {
+      setPendingVotes((prev) => {
+        const next = new Set(prev);
+        next.delete(dishId);
+        return next;
+      });
     }
   };
 
   const handleUnvote = async (dishId: string) => {
+    if (pendingVotes.has(dishId)) return;
     // Find the current user's vote for this dish
     const vote = votes.find((v) => v.dishId === dishId && v.voter.id === currentUserId);
     if (!vote) return;
 
+    setPendingVotes((prev) => new Set(prev).add(dishId));
     try {
       const response = await fetch(`/api/votes/${vote.id}`, {
         method: "DELETE",
@@ -108,6 +121,12 @@ export default function VotingGrid() {
       }
     } catch (err) {
       console.error("Failed to remove vote:", err);
+    } finally {
+      setPendingVotes((prev) => {
+        const next = new Set(prev);
+        next.delete(dishId);
+        return next;
+      });
     }
   };
 

@@ -27,13 +27,23 @@ function toLocalDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Family members for event assignment
-const FAMILY_MEMBERS = ["Jasper", "Mingfei", "Yue"];
+// Paper Garden palette — each family member gets the next color in the cycle.
+const MEMBER_PALETTE: { activeClass: string; bg: string }[] = [
+  { activeClass: "border-[#b49ef0] text-[#7b6bad]", bg: "rgba(180,158,240,0.15)" },
+  { activeClass: "border-[#9bbf7a] text-[#4a6a32]", bg: "rgba(155,191,122,0.15)" },
+  { activeClass: "border-[#d88b8b] text-[#a05555]", bg: "rgba(216,139,139,0.15)" },
+  { activeClass: "border-[#d4a674] text-[#a87a3c]", bg: "rgba(212,166,116,0.15)" },
+  { activeClass: "border-[#7bc1c1] text-[#3d6e6e]", bg: "rgba(123,193,193,0.15)" },
+  { activeClass: "border-[#dba2bf] text-[#a85577]", bg: "rgba(219,162,191,0.15)" },
+];
 
 // Detect family member from event title and return member name and clean title
-function parseMemberFromTitle(title: string): { member: string; cleanTitle: string } {
+function parseMemberFromTitle(
+  title: string,
+  members: string[]
+): { member: string; cleanTitle: string } {
   const lowerTitle = title.toLowerCase();
-  for (const member of FAMILY_MEMBERS) {
+  for (const member of members) {
     const lowerMember = member.toLowerCase();
     // Check for patterns like "Jasper - Event" or "Jasper: Event" or "Jasper's Event"
     const patterns = [
@@ -120,6 +130,47 @@ export default function CalendarEventForm({
   const t = useTranslations("calendar");
   const tCommon = useTranslations("common");
 
+  const theme = {
+    title: "text-[#2f2a1f]",
+    label: "text-[#2f2a1f]",
+    muted: "text-[#857d68]",
+    close: "text-[#857d68] hover:text-[#2f2a1f]",
+    input: "border-[rgba(68,55,32,0.14)] focus:ring-[#6b8e4e] focus:border-[#6b8e4e]",
+    checkbox: "text-[#6b8e4e] border-[rgba(68,55,32,0.14)] focus:ring-[#6b8e4e]",
+    footerBg: "bg-[#F9F4E8]",
+    cancelBtn: "text-[#2f2a1f] border-[rgba(68,55,32,0.14)] hover:bg-[#F9F4E8]",
+    submitBtn: "bg-[#4a6a32] text-white hover:bg-[#3d5a2a]",
+    errorBg: "bg-[rgba(197,84,61,0.08)] border border-[rgba(197,84,61,0.2)] text-[#c5543d]",
+    memberNone: "bg-[rgba(68,55,32,0.06)] border-[#4a6a32] text-[#4a6a32]",
+    memberNoneInactive: "bg-white border-[rgba(68,55,32,0.14)] text-[#857d68] hover:border-[rgba(68,55,32,0.25)]",
+  };
+
+  const [familyMembers, setFamilyMembers] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadMembers = async () => {
+      try {
+        const [kidsRes, parentsRes] = await Promise.all([
+          fetch("/api/family/kids"),
+          fetch("/api/family/parents"),
+        ]);
+        const kidsData = await kidsRes.json();
+        const parentsData = await parentsRes.json();
+        const names: string[] = [];
+        if (kidsRes.ok && Array.isArray(kidsData.kids)) {
+          for (const k of kidsData.kids) names.push((k.name || k.email).split(" ")[0]);
+        }
+        if (parentsRes.ok && Array.isArray(parentsData.parents)) {
+          for (const p of parentsData.parents) names.push((p.name || p.email).split(" ")[0]);
+        }
+        setFamilyMembers(names);
+      } catch (err) {
+        console.error("Failed to load family members:", err);
+      }
+    };
+    loadMembers();
+  }, []);
+
   const [summary, setSummary] = useState("");
   const [selectedMember, setSelectedMember] = useState("");
   const [description, setDescription] = useState("");
@@ -150,7 +201,7 @@ export default function CalendarEventForm({
   useEffect(() => {
     if (event) {
       // Parse member from existing title
-      const { member, cleanTitle } = parseMemberFromTitle(event.summary);
+      const { member, cleanTitle } = parseMemberFromTitle(event.summary, familyMembers);
       setSummary(cleanTitle);
       setSelectedMember(member);
       setDescription(event.description || "");
@@ -195,7 +246,7 @@ export default function CalendarEventForm({
       setDuration(60);
       setSelectedMember("");
     }
-  }, [event, selectedDate]);
+  }, [event, selectedDate, familyMembers]);
 
   // Handle start date change - update end date to maintain the same day gap
   const handleStartDateChange = (newStartDate: string) => {
@@ -300,14 +351,14 @@ export default function CalendarEventForm({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90dvh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className={`text-lg font-semibold ${theme.title}`}>
             {event ? t("editEvent") : t("addEvent")}
           </h3>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition"
+            className={`p-2 ${theme.close} rounded-lg transition`}
           >
             <svg
               className="w-5 h-5"
@@ -328,14 +379,14 @@ export default function CalendarEventForm({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className="p-4 space-y-4 overflow-y-auto flex-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div className={`${theme.errorBg} px-4 py-3 rounded-lg text-sm`}>
               {error}
             </div>
           )}
 
           {/* Family Member Selector */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("assignTo")}
             </label>
             <div className="flex flex-wrap gap-2">
@@ -344,36 +395,37 @@ export default function CalendarEventForm({
                 onClick={() => setSelectedMember("")}
                 className={`px-3 py-1.5 text-sm rounded-full border transition ${
                   selectedMember === ""
-                    ? "bg-blue-100 border-blue-500 text-blue-700"
-                    : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
+                    ? theme.memberNone
+                    : theme.memberNoneInactive
                 }`}
+                style={selectedMember === "" ? { backgroundColor: "rgba(68,55,32,0.06)" } : undefined}
               >
                 {t("noAssignment")}
               </button>
-              {FAMILY_MEMBERS.map((member) => (
+              {familyMembers.map((member, i) => {
+                const memberTheme = MEMBER_PALETTE[i % MEMBER_PALETTE.length];
+                return (
                 <button
                   key={member}
                   type="button"
                   onClick={() => setSelectedMember(member)}
                   className={`px-3 py-1.5 text-sm rounded-full border transition ${
                     selectedMember === member
-                      ? member === "Jasper"
-                        ? "bg-purple-100 border-purple-500 text-purple-700"
-                        : member === "Mingfei"
-                        ? "bg-green-100 border-green-500 text-green-700"
-                        : "bg-pink-100 border-pink-500 text-pink-700"
-                      : "bg-white border-gray-300 text-gray-600 hover:border-gray-400"
+                      ? memberTheme.activeClass
+                      : theme.memberNoneInactive
                   }`}
+                  style={selectedMember === member ? { backgroundColor: memberTheme.bg } : undefined}
                 >
                   {member}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           {/* Event Title */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("eventTitle")}
             </label>
             <input
@@ -381,7 +433,7 @@ export default function CalendarEventForm({
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               placeholder="Untitled"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-lg`}
             />
           </div>
 
@@ -392,16 +444,16 @@ export default function CalendarEventForm({
               id="allDay"
               checked={allDay}
               onChange={(e) => setAllDay(e.target.checked)}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className={`w-4 h-4 ${theme.checkbox} rounded`}
             />
-            <label htmlFor="allDay" className="text-sm text-gray-700">
+            <label htmlFor="allDay" className={`text-sm ${theme.label}`}>
               {t("allDayEvent")}
             </label>
           </div>
 
           {/* Timezone indicator */}
           {!allDay && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className={`flex items-center gap-2 text-sm ${theme.muted}`}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -412,7 +464,7 @@ export default function CalendarEventForm({
           {/* Start Date/Time */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                 {t("startDate")} *
               </label>
               <input
@@ -420,19 +472,19 @@ export default function CalendarEventForm({
                 value={startDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
                 required
-                className="w-full h-11 px-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
               />
             </div>
             {!allDay && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                   {t("startTime")} *
                 </label>
                 <select
                   value={startTime}
                   onChange={(e) => handleStartTimeChange(e.target.value)}
                   required
-                  className="w-full h-11 px-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
                 >
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
@@ -447,7 +499,7 @@ export default function CalendarEventForm({
           {/* End Date/Time */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                 {t("endDate")} *
               </label>
               <input
@@ -455,19 +507,19 @@ export default function CalendarEventForm({
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
-                className="w-full h-11 px-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
               />
             </div>
             {!allDay && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className={`block text-sm font-medium ${theme.label} mb-1`}>
                   {t("endTime")} *
                 </label>
                 <select
                   value={endTime}
                   onChange={(e) => handleEndTimeChange(e.target.value)}
                   required
-                  className="w-full h-11 px-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  className={`w-full h-11 px-3 border ${theme.input} rounded-lg bg-white`}
                 >
                   {TIME_OPTIONS.map((time) => (
                     <option key={time} value={time}>
@@ -481,46 +533,46 @@ export default function CalendarEventForm({
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("location")}
             </label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-lg`}
               placeholder={t("locationPlaceholder")}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className={`block text-sm font-medium ${theme.label} mb-1`}>
               {t("description")}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-3 py-2 border ${theme.input} rounded-lg`}
               placeholder={t("descriptionPlaceholder")}
             />
           </div>
           </div>
 
           {/* Buttons - Fixed at bottom */}
-          <div className="flex justify-end gap-3 p-4 bg-gray-50 flex-shrink-0 rounded-b-lg">
+          <div className={`flex justify-end gap-3 p-4 ${theme.footerBg} flex-shrink-0 rounded-b-lg`}>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              className={`px-4 py-2 border ${theme.cancelBtn} rounded-lg transition`}
             >
               {tCommon("cancel")}
             </button>
             <button
               type="submit"
               disabled={loading || !startDate}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-4 py-2 ${theme.submitBtn} rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {loading
                 ? tCommon("saving")

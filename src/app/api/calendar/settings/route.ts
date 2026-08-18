@@ -53,6 +53,16 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { selectedCalendarId, selectedCalendarName } = body;
 
+    // A connection requires an actual calendar; refuse to mark isConnected when
+    // no calendar was chosen (the events endpoints would otherwise report
+    // "No calendar connected" while settings claim to be connected).
+    if (!selectedCalendarId) {
+      return NextResponse.json(
+        { error: "selectedCalendarId is required" },
+        { status: 400 }
+      );
+    }
+
     const settings = await prisma.calendarSettings.upsert({
       where: { familyId: session.user.familyId },
       update: {
@@ -99,7 +109,9 @@ export async function DELETE() {
       return NextResponse.json({ error: "No family" }, { status: 403 });
     }
 
-    await prisma.calendarSettings.update({
+    // updateMany (not update) so disconnecting when no settings row exists is a
+    // harmless no-op instead of a P2025 → 500.
+    await prisma.calendarSettings.updateMany({
       where: { familyId: session.user.familyId },
       data: {
         isConnected: false,

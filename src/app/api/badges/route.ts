@@ -4,6 +4,10 @@ import { requireFamily } from "@/lib/permissions";
 import { Role } from "@prisma/client";
 import { getLevelInfo, getProgressToNextLevel } from "@/lib/badges";
 import { getAchievementBadgeById, ACHIEVEMENT_BADGES } from "@/lib/achievement-badges";
+import {
+  isCustomAwardBadgeId,
+  parseCustomAwardBadgeMetadata,
+} from "@/lib/custom-award-badge";
 
 // GET /api/badges - Get badges for the family
 // Parents can see all badges, kids can only see their own
@@ -26,22 +30,55 @@ export async function GET(req: Request) {
       whereClause.kidId = kidId;
     }
 
-    // Fetch badge templates for the family (for custom images)
-    const badgeTemplates = await prisma.badgeTemplate.findMany({
-      where: { familyId: session.user.familyId!, isActive: true },
+    // Fetch all badge templates for the family. We use all of them to
+    // build the `hidden` filter — `hidden` is independent of `isActive`
+    // (a template can be inactive but still mark the badge as hidden, or
+    // active without hiding) — but we only apply image/name overrides
+    // from active templates.
+    const allTemplates = await prisma.badgeTemplate.findMany({
+      where: { familyId: session.user.familyId! },
     });
 
-    // Create lookup maps for templates
+    const activeTemplates = allTemplates.filter((t) => t.isActive);
+
+    // Create lookup maps for templates (image/name overrides come only
+    // from active templates).
     const achievementTemplateMap = new Map(
-      badgeTemplates
+      activeTemplates
         .filter((t) => t.type === "achievement" && t.builtInBadgeId)
         .map((t) => [t.builtInBadgeId!, t])
     );
     const choreTemplateMap = new Map(
-      badgeTemplates
+      activeTemplates
         .filter((t) => t.type === "chore_level" && t.choreId)
         .map((t) => [t.choreId!, t])
     );
+
+    // Tri-state visibility for kids. Parents always see everything in
+    // Settings → Badge Management. hidden wins if both hidden+forceShow
+    // are set on the same template.
+    const hiddenAchievementIds = new Set(
+      allTemplates
+        .filter((t) => t.type === "achievement" && t.builtInBadgeId && t.hidden)
+        .map((t) => t.builtInBadgeId!)
+    );
+    const forceShowAchievementIds = new Set(
+      allTemplates
+        .filter(
+          (t) =>
+            t.type === "achievement" &&
+            t.builtInBadgeId &&
+            t.forceShow &&
+            !t.hidden
+        )
+        .map((t) => t.builtInBadgeId!)
+    );
+    const hiddenChoreIds = new Set(
+      allTemplates
+        .filter((t) => t.type === "chore_level" && t.choreId && t.hidden)
+        .map((t) => t.choreId!)
+    );
+    const isKid = session.user.role === Role.KID;
 
     const badges = await prisma.badge.findMany({
       where: whereClause,
@@ -88,8 +125,23 @@ export async function GET(req: Request) {
       orderBy: { earnedAt: "desc" },
     });
 
-    // Enrich achievement badges with definitions and custom template data
     const enrichedAchievementBadges = achievementBadges.map((badge) => {
+      if (isCustomAwardBadgeId(badge.badgeId)) {
+        const meta = parseCustomAwardBadgeMetadata(badge.metadata);
+        const name = meta.taskDescription?.slice(0, 40) || "Custom award";
+        return {
+          ...badge,
+          name,
+          nameZh: name,
+          description: meta.taskDescription || "",
+          descriptionZh: meta.taskDescription || "",
+          icon: "🎨",
+          customImageUrl: meta.imageUrl || null,
+          isCustomAward: true,
+          points: meta.points ?? null,
+        };
+      }
+
       const definition = getAchievementBadgeById(badge.badgeId);
       const template = achievementTemplateMap.get(badge.badgeId);
 
@@ -100,8 +152,8 @@ export async function GET(req: Request) {
         description: template?.description || definition?.description || "",
         descriptionZh: template?.descriptionZh || definition?.descriptionZh || "",
         icon: template?.icon || definition?.icon || "🏅",
-        // Add custom template data if available
-        customImageUrl: template?.imageUrl || null,
+        customImageUrl: template?.imageUrl || definition?.imageUrl || null,
+        isCustomAward: false,
       };
     });
 
@@ -115,14 +167,58 @@ export async function GET(req: Request) {
         description: template?.description || badge.description,
         descriptionZh: template?.descriptionZh || badge.descriptionZh,
         icon: template?.icon || badge.icon,
-        customImageUrl: template?.imageUrl || null,
+        customImageUrl: template?.imageUrl || badge.imageUrl || null,
       };
     });
 
+    // Progressive disclosure: within each category (streak / milestone /
+    // variety / weekly), a kid only sees the next-tier badge after
+    // they've earned the previous tier. Tier-1 badges are always visible
+    // so brand-new kids have something to chase. Standalone badges (no
+    // category/tier) are always visible.
+    const maxEarnedTierByCategory: Record<string, number> = {};
+    for (const earned of achievementBadges) {
+      const def = getAchievementBadgeById(earned.badgeId);
+      if (def?.category && def.tier) {
+        maxEarnedTierByCategory[def.category] = Math.max(
+          maxEarnedTierByCategory[def.category] || 0,
+          def.tier
+        );
+      }
+    }
+    const isVisibleByProgress = (badgeId: string): boolean => {
+      // Parent's force-show toggle bypasses the tier gate entirely.
+      if (forceShowAchievementIds.has(badgeId)) return true;
+      const def = getAchievementBadgeById(badgeId);
+      if (!def?.category || !def.tier) return true; // standalone
+      if (def.tier === 1) return true; // entry-level always shows
+      const maxEarned = maxEarnedTierByCategory[def.category] || 0;
+      return def.tier <= maxEarned + 1;
+    };
+
+    // For kids, drop badges the parent has hidden, then apply progressive
+    // disclosure for tiered badges. Custom-award badges (AI-generated)
+    // don't have a template or a tier and are never filtered.
+    const visibleBadges = isKid
+      ? enrichedBadges.filter((b) => !hiddenChoreIds.has(b.choreId))
+      : enrichedBadges;
+    const visibleAchievementBadges = isKid
+      ? enrichedAchievementBadges.filter(
+          (b) =>
+            b.isCustomAward ||
+            (!hiddenAchievementIds.has(b.badgeId) && isVisibleByProgress(b.badgeId))
+        )
+      : enrichedAchievementBadges;
+    const visibleAllAchievementBadges = isKid
+      ? allAchievementBadges.filter(
+          (b) => !hiddenAchievementIds.has(b.id) && isVisibleByProgress(b.id)
+        )
+      : allAchievementBadges;
+
     return NextResponse.json({
-      badges: enrichedBadges,
-      achievementBadges: enrichedAchievementBadges,
-      allAchievementBadges,
+      badges: visibleBadges,
+      achievementBadges: visibleAchievementBadges,
+      allAchievementBadges: visibleAllAchievementBadges,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Something went wrong";

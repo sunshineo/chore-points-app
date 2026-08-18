@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import PhotoUploadForm from "./PhotoUploadForm";
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import { toLocalDay } from "@/lib/date-utils";
 
 type Kid = {
   id: string;
@@ -28,6 +30,8 @@ type PhotoGalleryProps = {
 };
 
 export default function PhotoGallery({ kidId, showKidFilter = true, showUpload = false }: PhotoGalleryProps) {
+  const { data: session, status } = useSession();
+  const photoProvider = session?.user?.photoProvider ?? "NONE";
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [kids, setKids] = useState<Kid[]>([]);
   const [selectedKidId, setSelectedKidId] = useState<string>("");
@@ -71,6 +75,10 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
     }
   };
 
+  // Treat still-loading sessions as "unknown yet" — don't flash the
+  // disabled state while the JWT claim is still in flight.
+  const uploadsDisabled = status !== "loading" && photoProvider === "NONE";
+
   const filteredPhotos = selectedKidId
     ? photos.filter((p) => p.kid.id === selectedKidId)
     : photos;
@@ -91,10 +99,8 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      // Create filename from kid name and date
       const kidName = photo.kid.name || "photo";
-      const date = new Date(photo.date).toISOString().split("T")[0];
-      link.download = `${kidName}-${date}.jpg`;
+      link.download = `${kidName}-${toLocalDay(photo.date)}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -107,8 +113,8 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
   if (photos.length === 0) {
     return (
       <>
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <div className="text-gray-400 mb-4">
+        <div className="bg-white rounded-[14px] border border-[rgba(68,55,32,0.14)] p-12 text-center">
+          <div className="text-[#857d68] mb-4">
             <svg
               className="w-16 h-16 mx-auto"
               fill="none"
@@ -123,12 +129,16 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
               />
             </svg>
           </div>
-          <p className="text-gray-500 text-lg mb-2">{t("noPhotosYet")}</p>
-          <p className="text-gray-400 text-sm mb-4">{t("addPhotosWhenAwarding")}</p>
-          {showUpload && kids.length > 0 && (
+          <p className="text-[#2f2a1f] text-lg mb-2">
+            {uploadsDisabled ? t("photosDisabledTitle") : t("noPhotosYet")}
+          </p>
+          <p className="text-[#857d68] text-sm mb-4">
+            {uploadsDisabled ? t("photosDisabledBody") : t("addPhotosWhenAwarding")}
+          </p>
+          {showUpload && kids.length > 0 && !uploadsDisabled && (
             <button
               onClick={() => setShowUploadForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#4a6a32] text-white rounded-lg hover:bg-[#3d5a2a] transition"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -157,13 +167,13 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
           <div className="flex items-center space-x-4">
             {showKidFilter && kids.length > 0 && (
               <>
-                <label className="text-sm font-medium text-gray-700">
+                <label className="text-sm font-medium text-[#2f2a1f]">
                   {t("filterByKid")}
                 </label>
                 <select
                   value={selectedKidId}
                   onChange={(e) => setSelectedKidId(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="px-4 py-2 border border-[rgba(68,55,32,0.14)] rounded-lg focus:outline-none focus:ring-[#6b8e4e] focus:border-[#6b8e4e]"
                 >
                   <option value="">{t("allKids")}</option>
                   {kids.map((kid) => (
@@ -174,15 +184,15 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
                 </select>
               </>
             )}
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-[#857d68]">
               {filteredPhotos.length} {t("photo")}
               {filteredPhotos.length !== 1 ? "s" : ""}
             </span>
           </div>
-          {showUpload && kids.length > 0 && (
+          {showUpload && kids.length > 0 && !uploadsDisabled && (
             <button
               onClick={() => setShowUploadForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#4a6a32] text-white rounded-lg hover:bg-[#3d5a2a] transition"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -201,7 +211,7 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
             className="relative group cursor-pointer"
             onClick={() => setViewingPhoto(photo)}
           >
-            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+            <div className="aspect-square bg-[#F9F4E8] rounded-xl overflow-hidden">
               <OptimizedImage
                 src={photo.photoUrl}
                 alt={photo.chore?.title || t("pointAward")}
@@ -212,7 +222,7 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
             {/* Points text - always visible at bottom */}
             {photo.points > 0 && (
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 rounded-b-lg">
-                <p className="text-green-400 text-sm font-semibold">
+                <p className="text-[#9bbf7a] text-sm font-semibold">
                   +{photo.points} {tCommon("points")}
                 </p>
               </div>
@@ -226,7 +236,7 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
                 {photo.chore?.title || photo.note || t("pointAward")}
               </p>
               {photo.points > 0 && (
-                <p className="text-green-400 text-sm font-semibold">
+                <p className="text-[#9bbf7a] text-sm font-semibold">
                   +{photo.points} {tCommon("points")}
                 </p>
               )}
@@ -242,7 +252,7 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
           onClick={() => setViewingPhoto(null)}
         >
           <div
-            className="relative max-w-4xl w-full bg-white rounded-lg overflow-hidden"
+            className="relative max-w-4xl w-full bg-white rounded-[14px] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative">
@@ -273,20 +283,20 @@ export default function PhotoGallery({ kidId, showKidFilter = true, showUpload =
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-[#2f2a1f]">
                     {viewingPhoto.kid.name || viewingPhoto.kid.email}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[#857d68]">
                     {viewingPhoto.chore?.title || viewingPhoto.note || t("pointAward")}
                   </p>
                 </div>
                 <div className="text-right">
                   {viewingPhoto.points > 0 && (
-                    <p className="text-lg font-bold text-green-600">
+                    <p className="text-lg font-bold text-[#4a6a32]">
                       +{viewingPhoto.points} {tCommon("points")}
                     </p>
                   )}
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-[#857d68]">
                     {new Date(viewingPhoto.date).toLocaleDateString()}
                   </p>
                 </div>

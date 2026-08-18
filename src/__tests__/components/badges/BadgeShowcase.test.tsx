@@ -153,7 +153,8 @@ describe('BadgeShowcase', () => {
     render(<BadgeShowcase />)
 
     await waitFor(() => {
-      expect(screen.getByText('15x')).toBeInTheDocument()
+      // Component renders the count with a multiplication sign, e.g. "15×".
+      expect(screen.getByText('15×')).toBeInTheDocument()
     })
   })
 

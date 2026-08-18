@@ -2,7 +2,12 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import ReactCrop, { type Crop, type PixelCrop } from "react-image-crop";
+import ReactCrop, {
+  centerCrop,
+  makeAspectCrop,
+  type Crop,
+  type PixelCrop,
+} from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 
 type BadgeImageUploadProps = {
@@ -60,42 +65,113 @@ export default function BadgeImageUpload({
     reader.readAsDataURL(file);
   };
 
-  const getCroppedImg = useCallback(async (): Promise<Blob | null> => {
-    if (!imgRef.current || !completedCrop) return null;
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight, width, height } = e.currentTarget;
+    if (!naturalWidth || !naturalHeight) return;
+    // Initialize crop centered with 80% of the smaller dimension so the
+    // square always fits inside the image regardless of orientation.
+    const initial = centerCrop(
+      makeAspectCrop({ unit: "%", width: 80 }, 1, naturalWidth, naturalHeight),
+      naturalWidth,
+      naturalHeight
+    );
+    setCrop(initial);
+    // Seed completedCrop in display pixels so Apply Crop works even if the
+    // user never drags. Without this, ReactCrop only emits onComplete after
+    // a manual interaction and we'd produce a zero-area canvas.
+    setCompletedCrop({
+      unit: "px",
+      x: (initial.x / 100) * width,
+      y: (initial.y / 100) * height,
+      width: (initial.width / 100) * width,
+      height: (initial.height / 100) * height,
+    });
+  };
 
+  // Resolve a pixel-unit crop from the live image element + current crop
+  // state. Avoids the timing gap between onImageLoad and ReactCrop's first
+  // onComplete (which only fires after a manual drag), and also handles the
+  // case where the image element resized after the initial seed.
+  const resolvePixelCrop = (): PixelCrop | null => {
     const image = imgRef.current;
-    const canvas = document.createElement("canvas");
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
+    if (!image) return null;
 
-    canvas.width = completedCrop.width;
-    canvas.height = completedCrop.height;
+    const displayedWidth = image.width;
+    const displayedHeight = image.height;
+    if (!displayedWidth || !displayedHeight) return null;
+
+    if (
+      completedCrop &&
+      completedCrop.width > 0 &&
+      completedCrop.height > 0 &&
+      completedCrop.x >= 0 &&
+      completedCrop.y >= 0 &&
+      completedCrop.x + completedCrop.width <= displayedWidth + 1 &&
+      completedCrop.y + completedCrop.height <= displayedHeight + 1
+    ) {
+      return completedCrop;
+    }
+
+    if (!crop || !crop.width || !crop.height) return null;
+    const isPercent = crop.unit === "%";
+    return {
+      unit: "px",
+      x: isPercent ? (crop.x / 100) * displayedWidth : crop.x,
+      y: isPercent ? (crop.y / 100) * displayedHeight : crop.y,
+      width: isPercent ? (crop.width / 100) * displayedWidth : crop.width,
+      height: isPercent ? (crop.height / 100) * displayedHeight : crop.height,
+    };
+  };
+
+  const getCroppedImg = useCallback(async (): Promise<Blob | null> => {
+    const image = imgRef.current;
+    if (!image) return null;
+
+    const naturalWidth = image.naturalWidth;
+    const naturalHeight = image.naturalHeight;
+    const displayedWidth = image.width;
+    const displayedHeight = image.height;
+    if (!naturalWidth || !naturalHeight || !displayedWidth || !displayedHeight) {
+      return null;
+    }
+
+    const pxCrop = resolvePixelCrop();
+    if (!pxCrop || pxCrop.width <= 0 || pxCrop.height <= 0) return null;
+
+    const scaleX = naturalWidth / displayedWidth;
+    const scaleY = naturalHeight / displayedHeight;
+
+    const sx = pxCrop.x * scaleX;
+    const sy = pxCrop.y * scaleY;
+    const sw = pxCrop.width * scaleX;
+    const sh = pxCrop.height * scaleY;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(sw));
+    canvas.height = Math.max(1, Math.round(sh));
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
 
-    ctx.drawImage(
-      image,
-      completedCrop.x * scaleX,
-      completedCrop.y * scaleY,
-      completedCrop.width * scaleX,
-      completedCrop.height * scaleY,
-      0,
-      0,
-      completedCrop.width,
-      completedCrop.height
-    );
+    ctx.drawImage(image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
 
     return new Promise((resolve) => {
       canvas.toBlob(
         (blob) => {
-          resolve(blob);
+          // Sanity check — toBlob can return ~empty blobs for tainted /
+          // misconfigured canvases, which would upload as broken images.
+          if (!blob || blob.size < 200) {
+            resolve(null);
+          } else {
+            resolve(blob);
+          }
         },
         "image/jpeg",
-        0.9
+        0.92
       );
     });
-  }, [completedCrop]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedCrop, crop]);
 
   const handleCropComplete = async () => {
     if (!completedCrop) {
@@ -157,35 +233,32 @@ export default function BadgeImageUpload({
     }
   };
 
-  // Show cropper modal
+  const primaryBtn: React.CSSProperties = {
+    background: "#4a6a32",
+    boxShadow: "0 2px 0 rgba(74,106,50,0.3)",
+  };
+
+  // Cropper modal
   if (showCropper && imageSrc) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-auto">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 font-[family-name:var(--font-inter)]">
+        <div className="bg-white rounded-[14px] border border-pg-line p-6 w-full max-w-2xl max-h-[90dvh] overflow-auto">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Crop Image</h2>
+            <h2 className="font-[family-name:var(--font-fraunces)] text-xl font-medium text-pg-ink">
+              Crop image
+            </h2>
             <button
               onClick={handleCancelCrop}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-pg-muted hover:text-pg-ink"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            <div className="bg-[rgba(197,84,61,0.08)] border border-[rgba(197,84,61,0.25)] text-pg-coral px-4 py-3 rounded-[10px] text-sm font-medium mb-4">
               {error}
             </div>
           )}
@@ -202,12 +275,13 @@ export default function BadgeImageUpload({
                 ref={imgRef}
                 src={imageSrc}
                 alt="Crop preview"
-                className="max-h-[50vh]"
+                className="max-h-[50dvh]"
+                onLoad={onImageLoad}
               />
             </ReactCrop>
           </div>
 
-          <p className="text-sm text-gray-500 text-center mb-4">
+          <p className="text-sm text-pg-muted text-center mb-4">
             Drag to adjust the crop area. The image will be cropped to a circle.
           </p>
 
@@ -215,7 +289,7 @@ export default function BadgeImageUpload({
             <button
               type="button"
               onClick={handleCancelCrop}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+              className="flex-1 px-4 py-2 min-h-[44px] border border-pg-line rounded-[10px] text-pg-ink hover:bg-pg-cream font-semibold text-sm"
             >
               {tCommon("cancel")}
             </button>
@@ -223,9 +297,10 @@ export default function BadgeImageUpload({
               type="button"
               onClick={handleCropComplete}
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 min-h-[44px] text-white rounded-[10px] font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-transform hover:scale-[1.01]"
+              style={primaryBtn}
             >
-              {loading ? "Uploading..." : "Apply Crop"}
+              {loading ? "Uploading..." : "Apply crop"}
             </button>
           </div>
         </div>
@@ -235,12 +310,12 @@ export default function BadgeImageUpload({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-sm font-semibold text-pg-ink mb-1">
         {label}
       </label>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-2 text-sm">
+        <div className="bg-[rgba(197,84,61,0.08)] border border-[rgba(197,84,61,0.25)] text-pg-coral px-4 py-2 rounded-[10px] mb-2 text-sm font-medium">
           {error}
         </div>
       )}
@@ -259,12 +334,24 @@ export default function BadgeImageUpload({
           <img
             src={imageUrl}
             alt="Badge preview"
-            className="w-24 h-24 object-cover rounded-full border-2 border-purple-200"
+            className="w-24 h-24 object-cover rounded-full border-2 border-[rgba(107,142,78,0.35)] bg-pg-cream"
+            onError={(e) => {
+              const img = e.currentTarget;
+              img.style.display = "none";
+              const fallback = img.nextElementSibling as HTMLElement | null;
+              if (fallback) fallback.style.display = "flex";
+            }}
           />
+          <div
+            style={{ display: "none" }}
+            className="w-24 h-24 rounded-full border-2 border-pg-coral bg-[rgba(197,84,61,0.08)] items-center justify-center text-[10px] font-semibold text-pg-coral text-center px-2"
+          >
+            Image failed to load
+          </div>
           <button
             type="button"
             onClick={handleRemoveImage}
-            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+            className="absolute -top-2 -right-2 bg-pg-coral text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:opacity-90"
           >
             &times;
           </button>
@@ -273,10 +360,10 @@ export default function BadgeImageUpload({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-colors"
+          className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-pg-line rounded-full cursor-pointer hover:border-pg-accent hover:bg-[rgba(107,142,78,0.06)] transition-colors"
         >
           <svg
-            className="w-8 h-8 text-gray-400"
+            className="w-8 h-8 text-pg-muted"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -290,7 +377,7 @@ export default function BadgeImageUpload({
           </svg>
         </button>
       )}
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-xs text-pg-muted">
         Upload a custom image (optional)
       </p>
     </div>

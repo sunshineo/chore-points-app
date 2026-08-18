@@ -15,7 +15,14 @@ export async function GET(req: Request) {
 
     if (weekParam) {
       // Parse as local noon to avoid timezone issues
-      weekStart = getWeekStart(new Date(`${weekParam}T12:00:00`));
+      const parsed = new Date(`${weekParam}T12:00:00`);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid week format. Use YYYY-MM-DD" },
+          { status: 400 }
+        );
+      }
+      weekStart = getWeekStart(parsed);
     } else {
       // Default to next week (Saturday after this Saturday)
       const today = new Date();
@@ -84,7 +91,14 @@ export async function POST(req: Request) {
     // Determine week start
     let weekStart: Date;
     if (weekStartParam) {
-      weekStart = getWeekStart(new Date(`${weekStartParam}T12:00:00`));
+      const parsed = new Date(`${weekStartParam}T12:00:00`);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid weekStart format. Use YYYY-MM-DD" },
+          { status: 400 }
+        );
+      }
+      weekStart = getWeekStart(parsed);
     } else {
       // Default to next week
       const today = new Date();

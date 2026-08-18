@@ -30,6 +30,13 @@ export default function ChoreFlashcards() {
   const t = useTranslations("chores");
   const tCommon = useTranslations("common");
 
+  const theme = {
+    skeleton: "bg-[rgba(68,55,32,0.06)]",
+    emptyCard: "bg-white rounded-[14px] border border-[rgba(68,55,32,0.14)]",
+    emptyText: "text-[#857d68]",
+    emptyHint: "text-[#857d68]",
+  };
+
   useEffect(() => {
     fetchChores();
   }, []);
@@ -54,7 +61,7 @@ export default function ChoreFlashcards() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="bg-gray-100 rounded-2xl p-6 animate-pulse h-40"
+            className={`${theme.skeleton} rounded-2xl p-6 animate-pulse h-40`}
           />
         ))}
       </div>
@@ -63,9 +70,9 @@ export default function ChoreFlashcards() {
 
   if (chores.length === 0) {
     return (
-      <div className="text-center py-8 bg-white rounded-lg shadow">
-        <p className="text-gray-500">{t("noChoresYet")}</p>
-        <p className="text-sm text-gray-400 mt-1">
+      <div className={`text-center py-8 ${theme.emptyCard}`}>
+        <p className={theme.emptyText}>{t("noChoresYet")}</p>
+        <p className={`text-sm ${theme.emptyHint} mt-1`}>
           {t("askParents")}
         </p>
       </div>

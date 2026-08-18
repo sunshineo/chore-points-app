@@ -1,5 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 
+// App-wide default timezone for bucketing point entries into calendar days and
+// weeks. PointEntry.date stores a UTC instant, but the UI groups by local day
+// (and the dashboard's weekly total uses Sunday-start weeks). Evaluating badges
+// in UTC / ISO-Monday weeks would disagree with what the kid sees — e.g. an
+// evening entry (PT) would shift to the next UTC day and break a streak. This
+// matches the default timezone used elsewhere (math / sight-words); if a
+// per-family timezone is ever added, thread it through here.
+const APP_TIME_ZONE = "America/Los_Angeles";
+
 // Context passed to badge evaluation functions
 export type BadgeEvaluationContext = {
   prisma: PrismaClient;
@@ -27,6 +36,15 @@ export type AchievementBadgeDefinition = {
   description: string;
   descriptionZh: string; // Chinese description
   icon: string;
+  // Optional default image URL. If set, families without their own
+  // BadgeTemplate override see this image instead of the emoji icon.
+  imageUrl?: string;
+  // Progressive-disclosure metadata. Badges within the same category form
+  // a ladder; the API only shows tier N to a kid if they have already
+  // earned tier N-1 (tier 1 is always visible). Standalone badges (e.g.
+  // first_chore, combo_day) omit category/tier and are always visible.
+  category?: "streak" | "milestone" | "variety" | "weekly";
+  tier?: number;
   // Function to evaluate if the badge should be awarded
   evaluate: (ctx: BadgeEvaluationContext) => Promise<BadgeEvaluationResult>;
 };
@@ -47,6 +65,10 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned 10+ points every day for 7 consecutive days",
     descriptionZh: "连续7天每天获得10分以上",
     icon: "🔥",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768696474260-LYRVZnpuU5KZxAzhBS1jpK51aAmQMr.jpg",
+    category: "streak",
+    tier: 1,
     evaluate: async (ctx) => {
       return evaluateStreakBadge(ctx, 7, 10);
     },
@@ -58,6 +80,10 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned 10+ points every day for 14 consecutive days",
     descriptionZh: "连续14天每天获得10分以上",
     icon: "⚡",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768696241205-QaOsV5q38b5szec7YzPAPsEfNb2Sxq.jpg",
+    category: "streak",
+    tier: 2,
     evaluate: async (ctx) => {
       return evaluateStreakBadge(ctx, 14, 10);
     },
@@ -69,8 +95,51 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned 10+ points every day for 30 consecutive days",
     descriptionZh: "连续30天每天获得10分以上",
     icon: "👑",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768689303078-gYaHr2OI6Z631kdaxCbtkwmSn8s7RV.jpg",
+    category: "streak",
+    tier: 3,
     evaluate: async (ctx) => {
       return evaluateStreakBadge(ctx, 30, 10);
+    },
+  },
+  {
+    id: "streak_50_days_10pts",
+    name: "Iron Will",
+    nameZh: "钢铁意志",
+    description: "Earned 10+ points every day for 50 consecutive days",
+    descriptionZh: "连续50天每天获得10分以上",
+    icon: "⚔️",
+    category: "streak",
+    tier: 4,
+    evaluate: async (ctx) => {
+      return evaluateStreakBadge(ctx, 50, 10);
+    },
+  },
+  {
+    id: "streak_100_days_10pts",
+    name: "Triple-Digit Streaker",
+    nameZh: "百日传奇",
+    description: "Earned 10+ points every day for 100 consecutive days",
+    descriptionZh: "连续100天每天获得10分以上",
+    icon: "🌋",
+    category: "streak",
+    tier: 5,
+    evaluate: async (ctx) => {
+      return evaluateStreakBadge(ctx, 100, 10);
+    },
+  },
+  {
+    id: "streak_365_days_10pts",
+    name: "Year of Joy",
+    nameZh: "喜乐年华",
+    description: "Earned 10+ points every day for a full year",
+    descriptionZh: "连续365天每天获得10分以上",
+    icon: "🎊",
+    category: "streak",
+    tier: 6,
+    evaluate: async (ctx) => {
+      return evaluateStreakBadge(ctx, 365, 10);
     },
   },
 
@@ -84,6 +153,10 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned a total of 100 points",
     descriptionZh: "累计获得100分",
     icon: "💯",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768689167570-beYvnzb03UPIL6C3avYFovDnfB6A5o.jpg",
+    category: "milestone",
+    tier: 1,
     evaluate: async (ctx) => {
       return evaluateTotalPointsMilestone(ctx, 100);
     },
@@ -95,6 +168,10 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned a total of 500 points",
     descriptionZh: "累计获得500分",
     icon: "🌟",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768689182893-1qUSVwDpXhme9BMFCr5WN4lLpfDOSR.jpg",
+    category: "milestone",
+    tier: 2,
     evaluate: async (ctx) => {
       return evaluateTotalPointsMilestone(ctx, 500);
     },
@@ -106,6 +183,10 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned a total of 1000 points",
     descriptionZh: "累计获得1000分",
     icon: "🏆",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768696102331-znnM8AkESqqTMPUAbxJuQxLKKC7HsE.jpg",
+    category: "milestone",
+    tier: 3,
     evaluate: async (ctx) => {
       return evaluateTotalPointsMilestone(ctx, 1000);
     },
@@ -117,6 +198,10 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned a total of 1500 points",
     descriptionZh: "累计获得1500分",
     icon: "💎",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1769386960088-GXQ5vl4HjdwyZalDbieEJtMcR6uX5l.jpg",
+    category: "milestone",
+    tier: 4,
     evaluate: async (ctx) => {
       return evaluateTotalPointsMilestone(ctx, 1500);
     },
@@ -128,8 +213,51 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned a total of 2000 points",
     descriptionZh: "累计获得2000分",
     icon: "👑",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1769386980767-OiCtmYCgYOgmEQj3zvJJEB8F5y8deO.jpg",
+    category: "milestone",
+    tier: 5,
     evaluate: async (ctx) => {
       return evaluateTotalPointsMilestone(ctx, 2000);
+    },
+  },
+  {
+    id: "milestone_3000_points",
+    name: "Star Collector",
+    nameZh: "集星者",
+    description: "Earned a total of 3000 points",
+    descriptionZh: "累计获得3000分",
+    icon: "🌠",
+    category: "milestone",
+    tier: 6,
+    evaluate: async (ctx) => {
+      return evaluateTotalPointsMilestone(ctx, 3000);
+    },
+  },
+  {
+    id: "milestone_5000_points",
+    name: "Galaxy Voyager",
+    nameZh: "银河旅人",
+    description: "Earned a total of 5000 points",
+    descriptionZh: "累计获得5000分",
+    icon: "🌌",
+    category: "milestone",
+    tier: 7,
+    evaluate: async (ctx) => {
+      return evaluateTotalPointsMilestone(ctx, 5000);
+    },
+  },
+  {
+    id: "milestone_10000_points",
+    name: "Five-Figure Champion",
+    nameZh: "万分冠军",
+    description: "Earned a total of 10,000 points",
+    descriptionZh: "累计获得10000分",
+    icon: "🏛️",
+    category: "milestone",
+    tier: 8,
+    evaluate: async (ctx) => {
+      return evaluateTotalPointsMilestone(ctx, 10000);
     },
   },
 
@@ -143,6 +271,10 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Completed 5 different types of chores",
     descriptionZh: "完成了5种不同的家务",
     icon: "🎭",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768688876777-EnHhzceuWiaD2ryG1rQiaAi2CLnQQv.jpg",
+    category: "variety",
+    tier: 1,
     evaluate: async (ctx) => {
       return evaluateVarietyBadge(ctx, 5);
     },
@@ -154,8 +286,38 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Completed 10 different types of chores",
     descriptionZh: "完成了10种不同的家务",
     icon: "🎪",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768696730220-uAXstq5wio5dyl1eWWkYozG2JwC2Qa.jpg",
+    category: "variety",
+    tier: 2,
     evaluate: async (ctx) => {
       return evaluateVarietyBadge(ctx, 10);
+    },
+  },
+  {
+    id: "variety_15_chores",
+    name: "Renaissance Kid",
+    nameZh: "多才小达人",
+    description: "Completed 15 different types of chores",
+    descriptionZh: "完成了15种不同的家务",
+    icon: "🎨",
+    category: "variety",
+    tier: 3,
+    evaluate: async (ctx) => {
+      return evaluateVarietyBadge(ctx, 15);
+    },
+  },
+  {
+    id: "variety_20_chores",
+    name: "Master of Twenty",
+    nameZh: "二十全能",
+    description: "Completed 20 different types of chores",
+    descriptionZh: "完成了20种不同的家务",
+    icon: "🧙",
+    category: "variety",
+    tier: 4,
+    evaluate: async (ctx) => {
+      return evaluateVarietyBadge(ctx, 20);
     },
   },
 
@@ -169,6 +331,8 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Completed your very first chore",
     descriptionZh: "完成了第一个家务",
     icon: "🎉",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768688347880-wip5Z6bbkGomMrSbuCR8VU096ScT57.jpg",
     evaluate: async (ctx) => {
       const count = await ctx.prisma.pointEntry.count({
         where: {
@@ -194,8 +358,98 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     description: "Earned 50+ points in a single week",
     descriptionZh: "一周内获得50分以上",
     icon: "📅",
+    imageUrl:
+      "https://yk03gs3qzrtaag1r.public.blob.vercel-storage.com/families/cmk0dov3z0001aajp1mue9g2u/points/1768688729640-gkTozM38p4B4M7KlBQKnWj07BKqMvL.jpg",
+    category: "weekly",
+    tier: 1,
     evaluate: async (ctx) => {
       return evaluateWeeklyPointsBadge(ctx, 50);
+    },
+  },
+  {
+    id: "weekly_100_points",
+    name: "Century Week",
+    nameZh: "百分一周",
+    description: "Earned 100+ points in a single week",
+    descriptionZh: "一周内获得100分以上",
+    icon: "🗓️",
+    category: "weekly",
+    tier: 2,
+    evaluate: async (ctx) => {
+      return evaluateWeeklyPointsBadge(ctx, 100);
+    },
+  },
+  {
+    id: "weekly_300_points",
+    name: "Triple Crown Week",
+    nameZh: "三冠周",
+    description: "Earned 300+ points in a single week",
+    descriptionZh: "一周内获得300分以上",
+    icon: "🥇",
+    category: "weekly",
+    tier: 3,
+    evaluate: async (ctx) => {
+      return evaluateWeeklyPointsBadge(ctx, 300);
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // VERSATILITY BADGES — variety within a single day
+  // ---------------------------------------------------------------------------
+  {
+    id: "combo_day_5_chores",
+    name: "Combo Day",
+    nameZh: "五连击日",
+    description: "Logged 5 different chores in a single day",
+    descriptionZh: "一天内完成5种不同家务",
+    icon: "🎰",
+    evaluate: async (ctx) => {
+      return evaluateComboDayBadge(ctx, 5);
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // RESILIENCE BADGES — coming back after a break
+  // ---------------------------------------------------------------------------
+  {
+    id: "comeback_kid",
+    name: "Comeback Kid",
+    nameZh: "王者归来",
+    description: "Earned 10+ points after a break of 5 or more days",
+    descriptionZh: "停止5天以上后立即获得10分以上",
+    icon: "🔄",
+    evaluate: async (ctx) => {
+      return evaluateComebackBadge(ctx, 5, 10);
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // PROOF BADGES — entries with photos
+  // ---------------------------------------------------------------------------
+  {
+    id: "photo_proof_25",
+    name: "Photo Pride",
+    nameZh: "留影达人",
+    description: "Logged 25 point entries with a photo attached",
+    descriptionZh: "累计25条带照片的记录",
+    icon: "📸",
+    evaluate: async (ctx) => {
+      return evaluatePhotoEntries(ctx, 25);
+    },
+  },
+
+  // ---------------------------------------------------------------------------
+  // CUSTOM-AWARD COLLECTOR
+  // ---------------------------------------------------------------------------
+  {
+    id: "custom_award_5",
+    name: "Story Collector",
+    nameZh: "故事收藏家",
+    description: "Earned 5 custom AI-generated badges",
+    descriptionZh: "累计获得5个自定义徽章",
+    icon: "🎟️",
+    evaluate: async (ctx) => {
+      return evaluateCustomAwardCount(ctx, 5);
     },
   },
 ];
@@ -216,13 +470,13 @@ async function evaluateStreakBadge(
   const dailyPoints = await ctx.prisma.$queryRaw<
     { date: Date; total: bigint }[]
   >`
-    SELECT DATE(date) as date, SUM(points) as total
+    SELECT DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) as date, SUM(points) as total
     FROM "PointEntry"
     WHERE "kidId" = ${ctx.kidId}
       AND "familyId" = ${ctx.familyId}
       AND points > 0
-    GROUP BY DATE(date)
-    ORDER BY DATE(date) DESC
+    GROUP BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE})
+    ORDER BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) DESC
   `;
 
   if (dailyPoints.length < requiredDays) {
@@ -291,10 +545,14 @@ async function evaluateTotalPointsMilestone(
   ctx: BadgeEvaluationContext,
   requiredPoints: number
 ): Promise<BadgeEvaluationResult> {
+  // Count only points *earned* — exclude negative redemption entries — so this
+  // measures lifetime points earned, not current balance. Otherwise a kid who
+  // redeems rewards could be locked out of a milestone they've clearly passed.
   const result = await ctx.prisma.pointEntry.aggregate({
     where: {
       kidId: ctx.kidId,
       familyId: ctx.familyId,
+      points: { gt: 0 },
     },
     _sum: {
       points: true,
@@ -348,12 +606,12 @@ async function evaluateWeeklyPointsBadge(
   const weeklyPoints = await ctx.prisma.$queryRaw<
     { week: Date; total: bigint }[]
   >`
-    SELECT DATE_TRUNC('week', date) as week, SUM(points) as total
+    SELECT DATE_TRUNC('week', (date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE} + interval '1 day') - interval '1 day' as week, SUM(points) as total
     FROM "PointEntry"
     WHERE "kidId" = ${ctx.kidId}
       AND "familyId" = ${ctx.familyId}
       AND points > 0
-    GROUP BY DATE_TRUNC('week', date)
+    GROUP BY DATE_TRUNC('week', (date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE} + interval '1 day') - interval '1 day'
     HAVING SUM(points) >= ${requiredPoints}
     LIMIT 1
   `;
@@ -369,6 +627,115 @@ async function evaluateWeeklyPointsBadge(
   }
 
   return { earned: false };
+}
+
+/**
+ * Evaluates combo-day badges (X+ different chores logged in a single day)
+ */
+async function evaluateComboDayBadge(
+  ctx: BadgeEvaluationContext,
+  requiredChores: number
+): Promise<BadgeEvaluationResult> {
+  const rows = await ctx.prisma.$queryRaw<
+    { date: Date; chore_count: bigint }[]
+  >`
+    SELECT DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) as date, COUNT(DISTINCT "choreId") as chore_count
+    FROM "PointEntry"
+    WHERE "kidId" = ${ctx.kidId}
+      AND "familyId" = ${ctx.familyId}
+      AND points > 0
+      AND "choreId" IS NOT NULL
+    GROUP BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE})
+    HAVING COUNT(DISTINCT "choreId") >= ${requiredChores}
+    ORDER BY DATE((date AT TIME ZONE 'UTC') AT TIME ZONE ${APP_TIME_ZONE}) DESC
+    LIMIT 1
+  `;
+
+  if (rows.length > 0) {
+    return {
+      earned: true,
+      metadata: {
+        date: rows[0].date,
+        choresInDay: Number(rows[0].chore_count),
+      },
+    };
+  }
+  return { earned: false };
+}
+
+/**
+ * Evaluates comeback badges (earned minPoints+ on an entry that follows
+ * a gap of >= gapDays since the previous positive entry)
+ */
+async function evaluateComebackBadge(
+  ctx: BadgeEvaluationContext,
+  gapDays: number,
+  minPoints: number
+): Promise<BadgeEvaluationResult> {
+  const entries = await ctx.prisma.pointEntry.findMany({
+    where: { kidId: ctx.kidId, familyId: ctx.familyId, points: { gt: 0 } },
+    select: { date: true, points: true },
+    orderBy: { date: "asc" },
+  });
+
+  let prev: Date | null = null;
+  for (const e of entries) {
+    if (prev) {
+      const diffDays = (e.date.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays >= gapDays && e.points >= minPoints) {
+        return {
+          earned: true,
+          metadata: {
+            gapDays: Math.round(diffDays),
+            comebackDate: e.date.toISOString(),
+          },
+        };
+      }
+    }
+    prev = e.date;
+  }
+  return { earned: false };
+}
+
+/**
+ * Evaluates photo-proof badges (X+ point entries with a photo attached)
+ */
+async function evaluatePhotoEntries(
+  ctx: BadgeEvaluationContext,
+  required: number
+): Promise<BadgeEvaluationResult> {
+  const count = await ctx.prisma.pointEntry.count({
+    where: {
+      kidId: ctx.kidId,
+      familyId: ctx.familyId,
+      photoUrl: { not: null },
+    },
+  });
+  return {
+    earned: count >= required,
+    metadata: { photoEntries: count },
+  };
+}
+
+/**
+ * Evaluates custom-award-collector badges (X+ AI custom-award badges
+ * earned, identified by the custom-award- badgeId prefix)
+ */
+async function evaluateCustomAwardCount(
+  ctx: BadgeEvaluationContext,
+  required: number
+): Promise<BadgeEvaluationResult> {
+  const count = await ctx.prisma.achievementBadge.count({
+    where: {
+      kidId: ctx.kidId,
+      familyId: ctx.familyId,
+      badgeId: { startsWith: "custom-award-" },
+    },
+  });
+  return {
+    earned: count >= required,
+    metadata: { customAwardCount: count },
+  };
 }
 
 // =============================================================================

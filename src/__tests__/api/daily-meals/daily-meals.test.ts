@@ -20,6 +20,9 @@ vi.mock('@/lib/db', () => {
         findUnique: vi.fn(),
         upsert: vi.fn(),
       },
+      dish: {
+        count: vi.fn(),
+      },
     }
   }
 })
@@ -186,6 +189,9 @@ describe('Daily Meals API', () => {
           familyId: 'family-1',
         },
       }
+
+      // Referenced dish belongs to the family.
+      mockPrisma.dish.count.mockResolvedValue(1)
 
       mockPrisma.dailyMealLog.upsert.mockResolvedValue({
         id: 'log-1',

@@ -3,6 +3,7 @@ import type { Adapter } from "next-auth/adapters";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import { PhotoProvider } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { compare } from "bcryptjs";
 
@@ -17,12 +18,14 @@ declare module "next-auth" {
       image?: string | null;
       role: Role;
       familyId?: string | null;
+      photoProvider?: PhotoProvider | null;
     };
   }
 
   interface User {
     role: Role;
     familyId?: string | null;
+    photoProvider?: PhotoProvider | null;
   }
 }
 
@@ -30,6 +33,7 @@ declare module "@auth/core/jwt" {
   interface JWT {
     role: Role;
     familyId?: string | null;
+    photoProvider?: PhotoProvider | null;
   }
 }
 
@@ -41,7 +45,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
         params: {
-          scope: "openid email profile https://www.googleapis.com/auth/calendar",
+          // drive.file is narrow — only files the app creates or that the
+          // user explicitly opens with us. We never see the rest of the
+          // user's Drive. Added alongside existing Calendar scope so a
+          // single re-consent brings both under one OAuth session.
+          scope:
+            "openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive.file",
           access_type: "offline",
           prompt: "consent",
         },
@@ -93,10 +102,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.familyId = user.familyId;
       }
 
-      // Handle session updates — only overwrite fields that are explicitly provided
-      if (trigger === "update" && session) {
-        if (session.familyId !== undefined) token.familyId = session.familyId;
-        if (session.role !== undefined) token.role = session.role;
+      // Hydrate photoProvider if missing — covers both initial sign-in
+      // and JWTs minted before this claim existed (otherwise those users
+      // would see photo UI as disabled until they signed out and back in).
+      if (token.photoProvider === undefined) {
+        if (token.familyId) {
+          const family = await prisma.family.findUnique({
+            where: { id: token.familyId },
+            select: { photoProvider: true },
+          });
+          token.photoProvider = family?.photoProvider ?? "NONE";
+        } else {
+          token.photoProvider = "NONE";
+        }
+      }
+
+      // On an explicit session.update() from the client, re-derive the
+      // security-sensitive claims from the database rather than trusting the
+      // caller-supplied payload. The client can request a refresh (e.g. after
+      // joining a family) but cannot dictate role/familyId — otherwise any
+      // authenticated user could self-promote to PARENT or pivot into an
+      // arbitrary family via useSession().update({ role, familyId }).
+      if (trigger === "update" && token.sub) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: {
+            role: true,
+            familyId: true,
+            family: { select: { photoProvider: true } },
+          },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.familyId = dbUser.familyId;
+          token.photoProvider = dbUser.family?.photoProvider ?? "NONE";
+        }
       }
 
       return token;
@@ -106,6 +146,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.sub!;
         session.user.role = token.role;
         session.user.familyId = token.familyId;
+        session.user.photoProvider = token.photoProvider ?? "NONE";
       }
       return session;
     },

@@ -60,6 +60,40 @@ export async function GET() {
   }
 }
 
+// Default numeric bounds, mirroring the GET fallbacks. Used to resolve the
+// "effective" counterpart when a PUT only supplies one side of a min/max pair
+// and no settings row exists yet.
+const DEFAULT_RANGES: Record<string, number> = {
+  additionMinA: 1,
+  additionMaxA: 9,
+  additionMinB: 10,
+  additionMaxB: 99,
+  subtractionMinA: 10,
+  subtractionMaxA: 99,
+  subtractionMinB: 1,
+  subtractionMaxB: 9,
+  multiplicationMinA: 1,
+  multiplicationMaxA: 10,
+  multiplicationMinB: 1,
+  multiplicationMaxB: 10,
+  divisionMinDividend: 1,
+  divisionMaxDividend: 100,
+  divisionMinDivisor: 1,
+  divisionMaxDivisor: 10,
+};
+
+// Min/max pairs that must satisfy min <= max on the *merged* settings.
+const RANGE_PAIRS: [string, string][] = [
+  ["additionMinA", "additionMaxA"],
+  ["additionMinB", "additionMaxB"],
+  ["subtractionMinA", "subtractionMaxA"],
+  ["subtractionMinB", "subtractionMaxB"],
+  ["multiplicationMinA", "multiplicationMaxA"],
+  ["multiplicationMinB", "multiplicationMaxB"],
+  ["divisionMinDividend", "divisionMaxDividend"],
+  ["divisionMinDivisor", "divisionMaxDivisor"],
+];
+
 // Validate a range field (min/max pair)
 function validateRange(
   data: Record<string, unknown>,
@@ -141,6 +175,31 @@ export async function PUT(req: Request) {
     if (error) return NextResponse.json({ error }, { status: 400 });
     error = validateRange(data, "divisionMinDivisor", "divisionMaxDivisor", 1, 999);
     if (error) return NextResponse.json({ error }, { status: 400 });
+
+    // Cross-check every min/max pair against the MERGED result of this update.
+    // validateRange only compares min vs max when both are in the same payload;
+    // a partial PUT (e.g. only additionMinA) could otherwise push min above the
+    // stored max, and randomInRange would then generate nonsensical questions.
+    const existing = await prisma.mathSettings.findUnique({
+      where: { familyId: session.user.familyId! },
+    });
+    const existingRanges = (existing ?? {}) as Record<string, number>;
+    for (const [minKey, maxKey] of RANGE_PAIRS) {
+      const effMin =
+        data[minKey] !== undefined
+          ? Number(data[minKey])
+          : existingRanges[minKey] ?? DEFAULT_RANGES[minKey];
+      const effMax =
+        data[maxKey] !== undefined
+          ? Number(data[maxKey])
+          : existingRanges[maxKey] ?? DEFAULT_RANGES[maxKey];
+      if (effMin > effMax) {
+        return NextResponse.json(
+          { error: `${minKey} (${effMin}) cannot be greater than ${maxKey} (${effMax})` },
+          { status: 400 }
+        );
+      }
+    }
 
     // Whitelist allowed fields to prevent unexpected data
     const allowedFields = [

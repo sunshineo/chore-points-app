@@ -3,7 +3,6 @@ import { getSession } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import FamilySetup from "@/components/family/FamilySetup";
 import ParentDashboardHeader from "@/components/parent/ParentDashboardHeader";
-
 import WeeklyCalendarView from "@/components/calendar/WeeklyCalendarView";
 import FamilyTodoList from "@/components/dashboard/FamilyTodoList";
 import PhotoCarousel from "@/components/dashboard/PhotoCarousel";

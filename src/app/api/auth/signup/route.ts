@@ -33,11 +33,18 @@ export async function POST(req: Request) {
     }
 
     // Determine role - use requested role or default to PARENT
-    const role: "PARENT" | "KID" = requestedRole === "KID" ? "KID" : "PARENT";
+    let role: "PARENT" | "KID" = requestedRole === "KID" ? "KID" : "PARENT";
     let familyId: string | null = null;
 
     if (inviteCode) {
-      // Invite code provided - validate and join family
+      // Invite code provided - validate and join family.
+      // Signing up with an invite code is the KID onboarding flow only; force
+      // the KID role regardless of the requested role. Additional parents sign
+      // up normally (with REGISTRATION_SECRET) and then join via the
+      // authenticated /api/family/join endpoint. Without this, anyone holding a
+      // family's invite code could self-provision a full PARENT account.
+      role = "KID";
+
       const family = await prisma.family.findUnique({
         where: { inviteCode },
       });
@@ -51,9 +58,11 @@ export async function POST(req: Request) {
 
       familyId = family.id;
     } else if (role === "PARENT") {
-      // Parent signup without invite code - validate registration secret
+      // Parent signup without invite code must present a valid REGISTRATION_SECRET.
+      // Fail closed: if the env var is missing in the current deployment, reject —
+      // otherwise a misconfigured env would silently allow open signups.
       const expectedSecret = process.env.REGISTRATION_SECRET;
-      if (expectedSecret && registrationSecret !== expectedSecret) {
+      if (!expectedSecret || registrationSecret !== expectedSecret) {
         return NextResponse.json(
           { error: "Invalid registration code" },
           { status: 400 }
