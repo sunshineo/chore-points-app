@@ -102,6 +102,7 @@ const DEFAULT_TASKS: KioskTask[] = [
   { id: "seed-task-shoes", title: "自己穿鞋", emoji: "👟", defaultPoints: 1, kind: "chore" },
   { id: "seed-task-bag", title: "自己装书包", emoji: "🎒", defaultPoints: 5, kind: "chore" },
   { id: "seed-task-mom-bye", title: "跟妈妈再见", emoji: "🙋", defaultPoints: 3, kind: "chore" },
+  { id: "seed-task-dinner", title: "晚饭吃干净", emoji: "🍽️", defaultPoints: 5, kind: "chore" },
   { id: "seed-task-grandma-bye", title: "跟姥姥再见", emoji: "🙋", defaultPoints: 3, kind: "chore" },
   { id: "seed-task-seatbelt", title: "自己上车自己系安全带", emoji: "🚗", defaultPoints: 2, kind: "chore" },
   { id: "seed-task-snack", title: "在学校吃光我们带的零食", emoji: "🍎", defaultPoints: 5, kind: "chore" },
