@@ -337,18 +337,29 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
             </button>
           </div>
 
-          <div className="mt-3 flex items-center gap-4">
-            <div className="rounded-xl bg-indigo-700 text-white p-4 text-center min-w-[150px]">
-              <p className="text-xs opacity-85">总净积分</p>
-              <p className="text-3xl font-black">{data.totals.totalNet}</p>
+          <div className="mt-3 rounded-xl bg-indigo-700 text-white p-4 space-y-3">
+            <div className="text-center">
+              <p className="text-xs opacity-90">总得分 - 总兑换 = 当前可用积分</p>
+              <p className="mt-1 text-4xl font-black leading-none tracking-wide">
+                {data.totals.totalEarned} - {data.totals.totalSpent} = {data.totals.totalNet}
+              </p>
+              <p className="mt-2 grid grid-cols-3 text-xs opacity-85">
+                <span>总得分</span>
+                <span>总兑换</span>
+                <span>当前可用积分</span>
+              </p>
             </div>
-            <div className="flex-1 text-sm text-slate-700">
-              <p>总得分：{data.totals.totalEarned}</p>
-              <p>总兑换：{data.totals.totalSpent}</p>
-              <p className="mt-1">今日得分：{data.selectedDay.earned}</p>
-              <p>今日兑换：{data.selectedDay.spent}</p>
-              <p>
-                今日净变化：{data.selectedDay.net >= 0 ? "+" : ""}{data.selectedDay.net}
+
+            <div className="border-t border-white/30 pt-2 text-center">
+              <p className="text-lg opacity-95">今日得分 - 今日兑换 = 今日净变化</p>
+              <p className="mt-1 text-3xl font-black leading-none tracking-wide">
+                {data.selectedDay.earned} - {data.selectedDay.spent} = {data.selectedDay.net >= 0 ? "+" : ""}
+                {data.selectedDay.net}
+              </p>
+              <p className="mt-2 grid grid-cols-3 text-xs opacity-85">
+                <span>今日得分</span>
+                <span>今日兑换</span>
+                <span>今日变化</span>
               </p>
             </div>
           </div>
