@@ -503,6 +503,10 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   return (
     <>
       <style>{`
+        @keyframes kiosk-spin-slow {
+          0% { transform: rotateY(0deg); }
+          100% { transform: rotateY(360deg); }
+        }
         @keyframes kiosk-gem-rain-fall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
@@ -516,6 +520,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
           0%, 100% { transform: scale(1) translateY(0); }
           50% { transform: scale(1.08) translateY(-12px); }
         }
+        .kiosk-spin-slow { animation: kiosk-spin-slow 2s linear infinite; transform-style: preserve-3d; }
         .kiosk-gem-rain { animation: kiosk-gem-rain-fall 2s ease-in forwards; }
         .kiosk-counter-bump { animation: kiosk-counter-bump 0.4s ease-out; }
         .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out infinite; }
@@ -538,12 +543,19 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
             <div className="flex items-start justify-start gap-3">
               <div className="flex-1 z-10">
-                <div className="flex items-center gap-3 text-8xl leading-none font-black font-mono tracking-tight">
-                  <span className="text-yellow-300 text-4xl">💰</span>
-                  <div className={`flex items-baseline gap-3 ${showRain ? "kiosk-counter-bump" : ""}`}>
-                    <span>{displayedPoints}</span>
+                <div className="flex items-center gap-4 text-7xl leading-none font-black tracking-tight">
+                  <div className="relative w-12 h-12 kiosk-spin-slow flex-shrink-0">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
+                    <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
+                    <div className="absolute top-2 left-3 w-3 h-4 bg-yellow-200 rounded-full opacity-60 blur-[1px]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-yellow-900 font-bold text-lg opacity-70">★</span>
+                    </div>
+                  </div>
+                  <div className={`flex items-center gap-3 ${showRain ? "kiosk-counter-bump" : ""}`}>
+                    <span style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>{displayedPoints}</span>
                     <span
-                      className={`text-3xl font-semibold ${
+                      className={`text-2xl font-semibold ${
                         selectedDayNet > 0
                           ? "text-emerald-300"
                           : selectedDayNet < 0
@@ -558,7 +570,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 </div>
               </div>
 
-              <div className="flex-shrink-0 z-10 flex flex-col items-end text-right gap-1">
+              <div className="flex-shrink-0 z-10 flex items-center justify-end gap-2 text-right">
                 <button
                   type="button"
                   onClick={handlePrevDay}
