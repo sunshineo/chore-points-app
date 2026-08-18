@@ -74,9 +74,12 @@ export async function GET(
     });
 
     const completedRewardIds = new Set<string>();
+    const rewardRedeemCounts = new Map<string, number>();
     selectedEntries.forEach((entry) => {
       const rewardId = parseMarker("reward", entry.note ?? null);
-      if (rewardId) completedRewardIds.add(rewardId);
+      if (!rewardId) return;
+      completedRewardIds.add(rewardId);
+      rewardRedeemCounts.set(rewardId, (rewardRedeemCounts.get(rewardId) ?? 0) + 1);
     });
 
     const tasks = DEFAULT_DAY_TASKS.map((task) => ({
@@ -87,6 +90,7 @@ export async function GET(
     const rewards = DEFAULT_DAY_REWARDS.map((reward) => ({
       ...reward,
       completed: completedRewardIds.has(reward.id),
+      redeemedCount: rewardRedeemCounts.get(reward.id) ?? 0,
     }));
 
     return NextResponse.json({

@@ -148,6 +148,7 @@ function RewardTile({ reward, onRedeem, disabled, enough }: RewardTileProps) {
       </h3>
       <p className="relative z-10 text-xs text-white/80 text-center px-2 mt-1">{reward.description}</p>
       <span className="relative z-10 mt-2 text-sm font-bold">-{reward.cost} 分</span>
+      <span className="relative z-10 mt-1 text-xs text-white/85">今日兑换 {reward.redeemedCount ?? 0} 次</span>
       <span className="relative z-10 mt-1 text-xs text-white/85">{enough ? "可兑换" : "积分不足"}</span>
     </button>
   );
@@ -171,7 +172,11 @@ function normalizeApiPayload(payload: KioskApiResponse): KioskApiResponse {
       completed: Boolean(task.completed),
       defaultPoints: Number(task.defaultPoints),
     })),
-    rewards: payload.rewards ?? DEFAULT_DAY_REWARDS,
+    rewards: (payload.rewards ?? DEFAULT_DAY_REWARDS).map((reward) => ({
+      ...reward,
+      stock: reward.stock ?? null,
+      redeemedCount: Number(reward.redeemedCount ?? 0),
+    })),
   };
 }
 
