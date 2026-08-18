@@ -425,8 +425,14 @@ export default function KioskView({ kidId }: { kidId: string }) {
 
           <div className="flex-1 z-10">
             <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block">
-              <p className="text-xs text-white/60 mb-0.5">🎯 当前总净积分（可兑）</p>
-              <p className="text-3xl font-bold font-mono">{totalNetPoints}</p>
+              <div>
+                <p className="text-xs text-white/60 mb-0.5">🏆 总得分</p>
+                <p className="text-2xl font-bold font-mono">{totalEarned}</p>
+              </div>
+              <div className="mt-2 pt-1.5 border-t border-white/20">
+                <p className="text-xs text-white/60">🌟 今天得分</p>
+                <p className="text-xl font-semibold font-mono">{selectedDayEarned}</p>
+              </div>
             </div>
           </div>
 
@@ -451,32 +457,23 @@ export default function KioskView({ kidId }: { kidId: string }) {
             </div>
 
             <p className="text-sm font-medium text-white/60 mt-1">总净积分（可兑换）</p>
+            <p className="text-xs text-white/80 mt-1">今日净变化：{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
             <p className="text-xs text-yellow-200 mt-1">{OFFLINE_LABEL}（无需网络）</p>
           </div>
 
           <div className="flex-1 flex flex-col items-end justify-center z-10">
             <div className="bg-white/10 rounded-2xl px-4 py-3 inline-block text-right w-full max-w-[230px]">
-              <div className="text-xs text-white/80 mb-1">📅 {selectedDateSummary}</div>
-              <div className="text-lg font-semibold">{selectedDateLabel}</div>
-              <div className="mt-1.5 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/70">🌟 这一天得分</p>
-                <p className="text-lg font-semibold">{selectedDayEarned}</p>
+              <div>
+                <p className="text-xs text-white/80 mb-0.5">🧾 总兑换</p>
+                <p className="text-2xl font-bold font-mono">{totalSpent}</p>
               </div>
-              <div className="mt-1 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/70">💸 这一天花费</p>
-                <p className="text-lg font-semibold">{selectedDaySpent}</p>
+              <div className="mt-2 pt-1.5 border-t border-white/20">
+                <p className="text-xs text-white/70">💸 今天兑换</p>
+                <p className="text-xl font-semibold font-mono">{selectedDaySpent}</p>
               </div>
-              <div className="mt-1 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/70">📊 这一天净变化</p>
-                <p className="text-lg font-semibold">{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
-              </div>
-              <div className="mt-1 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/70">🏆 总共得分</p>
-                <p className="text-lg font-semibold">{totalEarned}</p>
-              </div>
-              <div className="mt-1 pt-1.5 border-t border-white/20">
-                <p className="text-xs text-white/70">🧾 总共花费</p>
-                <p className="text-lg font-semibold">{totalSpent}</p>
+              <div className="mt-2 text-right">
+                <p className="text-xs text-white/80">📅 {selectedDateSummary}</p>
+                <p className="text-sm font-semibold">{selectedDateLabel}</p>
               </div>
               <div className="mt-2 flex items-center justify-end gap-1 text-xs">
                 <button
