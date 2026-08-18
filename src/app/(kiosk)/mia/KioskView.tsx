@@ -3,12 +3,9 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   KioskData,
-  KioskSection,
-  KioskLearningTemplate,
   KioskTask,
   KioskReward,
   completeTask as completeTaskMutator,
-  completeLearningActivity as completeLearningMutator,
   redeemReward,
   ensureKioskState,
   saveKioskState,
@@ -18,46 +15,19 @@ import {
 const OFFLINE_LABEL = "离线模式";
 
 type ChoreTileProps = {
-  chore: {
-    id: string;
-    title: string;
-    emoji: string | null;
-    defaultPoints: number;
-  };
+  task: KioskTask;
   done: boolean;
   colorIndex: number;
   onTap: () => void;
 };
 
-type BonusStatus = {
-  total: number;
-  completed: number;
-  bonusAwarded: boolean;
-};
+type KioskDataWithReward = KioskData;
 
-type KioskDataWithReward = KioskData & {
-  bonuses?: {
-    morning?: BonusStatus;
-    evening?: BonusStatus;
-    weekly?: BonusStatus;
-  };
-};
-
-type ChoreSectionProps = {
-  chores: KioskTask[];
-  isWeekly?: boolean;
-  colorOffset?: number;
-  onTap: (id: string) => void;
-};
-
-type TabKey = "morning" | "evening" | "weekly" | "rewards" | "learn";
+type TabKey = "tasks" | "rewards";
 
 const TABS: { key: TabKey; label: string; emoji: string }[] = [
-  { key: "morning", label: "早上", emoji: "🌅" },
-  { key: "evening", label: "晚上", emoji: "🌙" },
-  { key: "weekly", label: "每周", emoji: "📅" },
+  { key: "tasks", label: "任务", emoji: "✅" },
   { key: "rewards", label: "奖励", emoji: "🎁" },
-  { key: "learn", label: "学习", emoji: "🧠" },
 ];
 
 const TILE_COLORS = [
@@ -73,10 +43,10 @@ const TILE_COLORS = [
   "from-red-400 to-red-500",
 ];
 
-function getChoreEmoji(chore: { emoji: string | null; title: string }): string {
-  if (chore.emoji) return chore.emoji;
+function getChoreEmoji(task: { emoji: string | null; title: string }): string {
+  if (task.emoji) return task.emoji;
   const emojiRegex = /(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
-  const match = chore.title.match(emojiRegex);
+  const match = task.title.match(emojiRegex);
   if (match?.[0]) return match[0];
   return "⭐";
 }
@@ -99,8 +69,8 @@ function normalizeDate(now = new Date()): { todayFormatted: string; weekRangeFor
   };
 }
 
-function ChoreTile({ chore, done, colorIndex, onTap }: ChoreTileProps) {
-  const emoji = getChoreEmoji(chore);
+function ChoreTile({ task, done, colorIndex, onTap }: ChoreTileProps) {
+  const emoji = getChoreEmoji(task);
   const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
 
   return (
@@ -120,26 +90,33 @@ function ChoreTile({ chore, done, colorIndex, onTap }: ChoreTileProps) {
         {done ? "✓" : "!"}
       </div>
 
+      {task.kind === "learn" ? (
+        <span className="absolute top-2 left-2 text-xs font-bold bg-white/20 px-2 py-1 rounded-full">学习</span>
+      ) : null}
+
       <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>{emoji}</span>
       <h3
         className="relative z-10 mt-2 font-bold text-sm leading-tight text-center px-2 text-white"
         style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
       >
-        {chore.title}
+        {task.title}
       </h3>
+      {task.note ? (
+        <p className="relative z-10 mt-1 text-[11px] text-white/80 px-2 text-center opacity-90">{task.note}</p>
+      ) : null}
       <span
         className={`relative z-10 mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${
           done ? "bg-white/40" : "bg-white/30"
         }`}
       >
-        +{chore.defaultPoints} 分
+        +{task.defaultPoints} 分
       </span>
     </button>
   );
 }
 
-function ChoreSection({ chores, isWeekly, colorOffset = 0, onTap }: ChoreSectionProps) {
-  if (chores.length === 0) {
+function TaskSection({ tasks, onTap }: { tasks: KioskTask[]; onTap: (id: string) => void }) {
+  if (tasks.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-gray-400 text-lg">
         这组还没有任务
@@ -147,40 +124,34 @@ function ChoreSection({ chores, isWeekly, colorOffset = 0, onTap }: ChoreSection
     );
   }
 
-  const active = chores.filter((item) => item.activeToday !== false);
-  const done = chores.filter((item) =>
-    isWeekly ? !!item.completedThisWeek : !!item.completedToday,
-  );
-  const pending = chores.filter((item) => {
-    const doneNow = isWeekly ? !!item.completedThisWeek : !!item.completedToday;
-    return !doneNow;
-  });
+  const done = tasks.filter((item) => item.completedToday);
+  const pending = tasks.filter((item) => !item.completedToday);
 
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-500 px-1">
-        {active.length > 0 ? `${done.length}/${active.length} 已完成（未含今日不计入任务）` : "今天没有可做任务"}
+        {pending.length > 0 ? `今天还有 ${pending.length} 项未完成` : "今天任务已完成"}
       </div>
       <div className="flex flex-wrap gap-3">
-        {pending.map((chore, i) => (
+        {pending.map((task, i) => (
           <ChoreTile
-            key={chore.id}
-            chore={chore}
-            done={isWeekly ? !!chore.completedThisWeek : !!chore.completedToday}
-            colorIndex={colorOffset + i}
-            onTap={() => onTap(chore.id)}
+            key={task.id}
+            task={task}
+            done={false}
+            colorIndex={i}
+            onTap={() => onTap(task.id)}
           />
         ))}
       </div>
-      {active.length > 0 ? <div className="text-sm text-gray-500 px-1">已完成任务</div> : null}
+      {done.length > 0 ? <div className="text-sm text-gray-500 px-1">已完成任务</div> : null}
       <div className="flex flex-wrap gap-3">
-        {done.map((chore, i) => (
+        {done.map((task, i) => (
           <ChoreTile
-            key={chore.id}
-            chore={chore}
+            key={task.id}
+            task={task}
             done
-            colorIndex={colorOffset + active.length + i}
-            onTap={() => onTap(chore.id)}
+            colorIndex={pending.length + i}
+            onTap={() => onTap(task.id)}
           />
         ))}
       </div>
@@ -237,43 +208,6 @@ function RewardSection({ rewards, onRedeem, currentPoints }: { rewards: KioskRew
   );
 }
 
-function LearnSection({ templates, onLearn }: { templates: KioskLearningTemplate[]; onLearn: (id: string) => void }) {
-  if (templates.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400 text-lg">
-        暂无学习任务配置
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-y-auto h-full pr-1">
-      <div className="grid gap-3">
-        {templates.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-2xl bg-white/70 backdrop-blur-sm border border-sky-100 p-4 shadow-sm"
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-bold text-lg">
-                {item.emoji} {item.title}
-              </p>
-              <p className="text-sm font-bold text-blue-700">+{item.points} 分</p>
-            </div>
-            <p className="text-sm text-gray-500 mt-2">{item.note}</p>
-            <button
-              onClick={() => onLearn(item.id)}
-              className="mt-3 w-full py-2 rounded-xl text-sm font-bold bg-sky-600 text-white"
-            >
-              完成记录
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function RainParticle({ emoji }: { emoji: string }) {
   const left = useRef(Math.random() * 100).current;
   const delay = useRef(Math.random() * 0.8).current;
@@ -299,7 +233,7 @@ function RainParticle({ emoji }: { emoji: string }) {
 export default function KioskView({ kidId }: { kidId: string }) {
   const [data, setData] = useState<KioskDataWithReward | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabKey>("morning");
+  const [activeTab, setActiveTab] = useState<TabKey>("tasks");
 
   const [showEmoji, setShowEmoji] = useState(false);
   const [showRain, setShowRain] = useState(false);
@@ -361,7 +295,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
     saveKioskState(mutation.state);
     const previous = prevTotalRef.current;
     const incomingTotal = mutation.state.totalPoints;
-    const incomingEntry = mutation.state.latestEntry?.id ?? null;
     const shouldCelebrate = previous !== null && incomingTotal > previous;
 
     if (shouldCelebrate) {
@@ -369,16 +302,16 @@ export default function KioskView({ kidId }: { kidId: string }) {
     }
 
     prevTotalRef.current = incomingTotal;
-    prevEntryIdRef.current = incomingEntry;
+    prevEntryIdRef.current = mutation.state.latestEntry?.id ?? null;
 
     setData(mutation.state);
     setTotalPoints(incomingTotal);
     setDisplayedPoints(incomingTotal);
   };
 
-  const handleTaskTap = (section: KioskSection, choreId: string) => {
+  const handleTaskTap = (taskId: string) => {
     if (!data) return;
-    const mutation = completeTaskMutator(data, section, choreId);
+    const mutation = completeTaskMutator(data, taskId);
     handleLocalMutation(mutation);
   };
 
@@ -388,22 +321,11 @@ export default function KioskView({ kidId }: { kidId: string }) {
     handleLocalMutation(mutation);
   };
 
-  const handleLearning = (activityId: string) => {
-    if (!data) return;
-    const mutation = completeLearningMutator(data, activityId);
-    handleLocalMutation(mutation);
-  };
-
-  const todayCompleted = useCallback((tab: KioskSection) => {
-    const list = data?.chores?.[tab] ?? [];
-    const countTotal = list.filter((item) => item.activeToday !== false).length;
-    const countDone = list.filter((item) => (tab === "weekly" ? !!item.completedThisWeek : !!item.completedToday)).length;
-    const bonusAwarded = (data?.bonuses?.[tab]?.bonusAwarded) ?? false;
-    return {
-      countDone,
-      countTotal,
-      bonusText: bonusAwarded ? "🌟+5" : "全勤+5",
-    };
+  const taskSummary = useMemo(() => {
+    if (!data) return { countDone: 0, countTotal: 0 };
+    const countTotal = data.tasks.length;
+    const countDone = data.tasks.filter((item) => item.completedToday).length;
+    return { countDone, countTotal };
   }, [data]);
 
   if (loading || !data) {
@@ -514,10 +436,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
           <div className="flex px-4 pt-3 pb-1 gap-2">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.key;
-              const { countDone, countTotal, bonusText } =
-                tab.key === "rewards" || tab.key === "learn"
-                  ? { countDone: 0, countTotal: 0, bonusText: "" }
-                  : todayCompleted(tab.key);
               return (
                 <button
                   key={tab.key}
@@ -528,22 +446,13 @@ export default function KioskView({ kidId }: { kidId: string }) {
                 >
                   <span style={{ fontSize: 22 }}>{tab.emoji}</span>
                   <span className="ml-1 text-lg">{tab.label}</span>
-                  {countTotal > 0 ? (
+                  {tab.key === "tasks" && taskSummary.countTotal > 0 ? (
                     <span
                       className={`ml-1.5 text-base font-bold px-2 py-0.5 rounded-full ${
                         isActive ? "bg-white/20" : "bg-gray-100"
                       }`}
                     >
-                      {countDone}/{countTotal}
-                    </span>
-                  ) : null}
-                  {bonusText ? (
-                    <span
-                      className={`ml-1.5 text-base ${
-                        isActive ? "text-yellow-300 font-bold" : "text-yellow-500 font-bold"
-                      }`}
-                    >
-                      {bonusText}
+                      {taskSummary.countDone}/{taskSummary.countTotal}
                     </span>
                   ) : null}
                 </button>
@@ -558,14 +467,10 @@ export default function KioskView({ kidId }: { kidId: string }) {
                 currentPoints={data.totalPoints}
                 onRedeem={handleRewardRedeem}
               />
-            ) : activeTab === "learn" ? (
-              <LearnSection templates={data.learnTemplates} onLearn={handleLearning} />
             ) : (
-              <ChoreSection
-                chores={data.chores[activeTab]}
-                isWeekly={activeTab === "weekly"}
-                colorOffset={activeTab === "morning" ? 0 : activeTab === "evening" ? 3 : 6}
-                onTap={(id) => handleTaskTap(activeTab, id)}
+              <TaskSection
+                tasks={data.tasks}
+                onTap={handleTaskTap}
               />
             )}
           </div>

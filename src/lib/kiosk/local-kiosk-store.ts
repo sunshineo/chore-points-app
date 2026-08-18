@@ -1,20 +1,11 @@
-export type KioskSection = "morning" | "evening" | "weekly";
-
-type BonusStatus = {
-  total: number;
-  completed: number;
-  bonusAwarded: boolean;
-};
-
 export type KioskTask = {
   id: string;
   title: string;
   emoji: string | null;
   defaultPoints: number;
   completedToday?: boolean;
-  completedThisWeek?: boolean;
-  weekdayOnly?: boolean;
-  activeToday?: boolean;
+  note?: string;
+  kind?: "chore" | "learn";
 };
 
 export type KioskReward = {
@@ -24,14 +15,6 @@ export type KioskReward = {
   emoji: string;
   cost: number;
   stock: number | null;
-};
-
-export type KioskLearningTemplate = {
-  id: string;
-  title: string;
-  emoji: string;
-  points: number;
-  note: string;
 };
 
 export type KioskEntry = {
@@ -46,22 +29,11 @@ export type KioskData = {
   kid: { id: string; name: string | null };
   totalPoints: number;
   totalEarned: number;
-  chores: {
-    morning: KioskTask[];
-    evening: KioskTask[];
-    weekly: KioskTask[];
-  };
-  bonuses?: {
-    morning?: BonusStatus;
-    evening?: BonusStatus;
-    weekly?: BonusStatus;
-  };
+  tasks: KioskTask[];
   latestEntry: KioskEntry | null;
   rewards: KioskReward[];
-  learnTemplates: KioskLearningTemplate[];
   _meta: {
     lastDate: string;
-    lastWeekKey: string;
     updatedAt: string;
     seedVersion: number;
   };
@@ -84,11 +56,6 @@ type RemoteKioskResponse = {
     evening: Array<Partial<KioskTask> & { id: string; title: string; defaultPoints: number }>;
     weekly: Array<Partial<KioskTask> & { id: string; title: string; defaultPoints: number }>;
   };
-  bonuses?: {
-    morning?: BonusStatus;
-    evening?: BonusStatus;
-    weekly?: BonusStatus;
-  };
   latestEntry: {
     id: string;
     points: number;
@@ -99,29 +66,32 @@ type RemoteKioskResponse = {
 };
 
 type KioskStoragePayload = {
-  data: Omit<KioskData, "_meta">;
+  data: {
+    tasks?: KioskTask[];
+    chores?: Record<string, unknown>;
+    rewards?: KioskReward[];
+    latestEntry?: KioskEntry | null;
+    totalPoints?: number;
+    totalEarned?: number;
+    kid?: { id: string; name: string | null };
+  };
   version: number;
   savedAt: string;
 };
 
-const STORAGE_PREFIX = "kiosk-mvp-local-v1";
-const STORAGE_VERSION = 1;
+const STORAGE_PREFIX = "kiosk-mvp-local-v2";
+const STORAGE_VERSION = 2;
 
-const DEFAULT_SEED_TASKS = {
-  morning: [
-    { id: "seed-morning-1", title: "洗脸刷牙", emoji: "🦷", defaultPoints: 2, weekdayOnly: true, activeToday: true },
-    { id: "seed-morning-2", title: "整理床铺", emoji: "🛏️", defaultPoints: 3, weekdayOnly: false, activeToday: true },
-    { id: "seed-morning-3", title: "喝一杯水", emoji: "🥤", defaultPoints: 1, weekdayOnly: false, activeToday: true },
-  ],
-  evening: [
-    { id: "seed-evening-1", title: "收拾书包", emoji: "🎒", defaultPoints: 2, weekdayOnly: false, activeToday: true },
-    { id: "seed-evening-2", title: "整理客厅", emoji: "🧹", defaultPoints: 3, weekdayOnly: false, activeToday: true },
-  ],
-  weekly: [
-    { id: "seed-weekly-1", title: "拖地一次", emoji: "🧽", defaultPoints: 5, weekdayOnly: false, activeToday: true },
-    { id: "seed-weekly-2", title: "回收桶清空", emoji: "🗑️", defaultPoints: 4, weekdayOnly: false, activeToday: true },
-  ],
-};
+const DEFAULT_TASKS: KioskTask[] = [
+  { id: "seed-task-brush", title: "洗脸刷牙", emoji: "🦷", defaultPoints: 2, kind: "chore", note: "早上" },
+  { id: "seed-task-bed", title: "整理床铺", emoji: "🛏️", defaultPoints: 3, kind: "chore", note: "早上" },
+  { id: "seed-task-water", title: "喝一杯水", emoji: "🥤", defaultPoints: 1, kind: "chore", note: "早上" },
+  { id: "seed-task-bag", title: "收拾书包", emoji: "🎒", defaultPoints: 2, kind: "chore", note: "晚上" },
+  { id: "seed-task-room", title: "整理客厅", emoji: "🧹", defaultPoints: 3, kind: "chore", note: "晚上" },
+  { id: "seed-task-math", title: "做题 5 道", emoji: "🧮", defaultPoints: 6, kind: "learn", note: "学习打卡" },
+  { id: "seed-task-word", title: "单词复习 10 词", emoji: "📚", defaultPoints: 6, kind: "learn", note: "学习打卡" },
+  { id: "seed-task-quiz", title: "小测验一次", emoji: "✍️", defaultPoints: 8, kind: "learn", note: "学习打卡" },
+];
 
 const DEFAULT_REWARDS: KioskReward[] = [
   {
@@ -150,26 +120,8 @@ const DEFAULT_REWARDS: KioskReward[] = [
   },
 ];
 
-const DEFAULT_LEARNING_TEMPLATES: KioskLearningTemplate[] = [
-  { id: "learn-math-5", title: "完成数学题 5 道", emoji: "🧮", points: 6, note: "做题完成" },
-  { id: "learn-word-10", title: "单词复习 10 词", emoji: "📚", points: 6, note: "阅读背诵" },
-  { id: "learn-quiz", title: "小测验一次", emoji: "✍️", points: 8, note: "学习打卡" },
-];
-
 function getDateKeyPT(now = new Date()): string {
   return now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
-}
-
-function getWeekKeyPT(now = new Date()): string {
-  const ptNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-  const day = ptNow.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(ptNow);
-  monday.setDate(ptNow.getDate() + diffToMonday);
-  const y = monday.getFullYear();
-  const m = String(monday.getMonth() + 1).padStart(2, "0");
-  const d = String(monday.getDate()).padStart(2, "0");
-  return `${y}-W${m}${d}`;
 }
 
 function nowIso(): string {
@@ -188,98 +140,6 @@ function nextId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function isInActiveTime(task: KioskTask, now = new Date()): boolean {
-  if (task.weekdayOnly === false || task.weekdayOnly === undefined) return true;
-  const day = now.getDay();
-  return day !== 0 && day !== 6;
-}
-
-function computeBonuses(chores: KioskData["chores"]): KioskData["bonuses"] {
-  const sections: KioskSection[] = ["morning", "evening", "weekly"];
-  const result: KioskData["bonuses"] = {};
-  for (const section of sections) {
-    const items = chores[section];
-    const activeItems = items.filter((item) => item.activeToday !== false);
-    const total = activeItems.length;
-    const completed = activeItems.filter((item) =>
-      section === "weekly" ? !!item.completedThisWeek : !!item.completedToday
-    ).length;
-    result[section] = {
-      total,
-      completed,
-      bonusAwarded: completed >= total && total > 0,
-    };
-  }
-  return result;
-}
-
-function buildSeed(kidId: string, kidName: string | null): KioskData {
-  const now = new Date();
-  const seed: KioskData = {
-    kid: { id: kidId, name: kidName },
-    totalPoints: 0,
-    totalEarned: 0,
-    chores: {
-      morning: DEFAULT_SEED_TASKS.morning.map((task) => ({
-        ...task,
-        completedToday: false,
-        activeToday: isInActiveTime(task, now),
-      })),
-      evening: DEFAULT_SEED_TASKS.evening.map((task) => ({
-        ...task,
-        completedToday: false,
-        activeToday: true,
-      })),
-      weekly: DEFAULT_SEED_TASKS.weekly.map((task) => ({
-        ...task,
-        completedThisWeek: false,
-        activeToday: true,
-      })),
-    },
-    bonuses: computeBonuses({
-      morning: DEFAULT_SEED_TASKS.morning,
-      evening: DEFAULT_SEED_TASKS.evening,
-      weekly: DEFAULT_SEED_TASKS.weekly,
-    }),
-    latestEntry: null,
-    rewards: clone(DEFAULT_REWARDS),
-    learnTemplates: clone(DEFAULT_LEARNING_TEMPLATES),
-    _meta: {
-      lastDate: getDateKeyPT(now),
-      lastWeekKey: getWeekKeyPT(now),
-      updatedAt: nowIso(),
-      seedVersion: STORAGE_VERSION,
-    },
-  };
-  return seed;
-}
-
-function normalizeMetaFlags(state: KioskData, now = new Date()): KioskData {
-  const next = clone(state);
-  const today = getDateKeyPT(now);
-  const weekKey = getWeekKeyPT(now);
-  if (next._meta.lastDate !== today) {
-    for (const key of ["morning", "evening"] as const) {
-      for (const item of next.chores[key]) {
-        item.completedToday = false;
-        if (item.weekdayOnly) {
-          item.activeToday = isInActiveTime(item, now);
-        }
-      }
-    }
-    next._meta.lastDate = today;
-  }
-  if (next._meta.lastWeekKey !== weekKey) {
-    for (const item of next.chores.weekly) {
-      item.completedThisWeek = false;
-    }
-    next._meta.lastWeekKey = weekKey;
-  }
-  next.bonuses = computeBonuses(next.chores);
-  next._meta.updatedAt = nowIso();
-  return next;
-}
-
 function createEntry(note: string, points: number, choreTitle: string | null): KioskEntry {
   return {
     id: nextId("entry"),
@@ -290,25 +150,98 @@ function createEntry(note: string, points: number, choreTitle: string | null): K
   };
 }
 
-function sanitizeTask(task: Partial<KioskTask> & { id: string; title: string; defaultPoints: number }): KioskTask {
+function normalizeTask(raw: Partial<KioskTask> | undefined | null): KioskTask | null {
+  if (!raw || typeof raw !== "object") return null;
+  const id = typeof raw.id === "string" ? raw.id : null;
+  const title = typeof raw.title === "string" ? raw.title : null;
+  const defaultPoints = Number(raw.defaultPoints) || 0;
+  if (!id || !title) return null;
+
   return {
-    id: task.id,
-    title: task.title,
-    emoji: task.emoji ?? null,
-    defaultPoints: task.defaultPoints,
-    completedToday: task.completedToday ?? false,
-    completedThisWeek: task.completedThisWeek ?? false,
-    weekdayOnly: task.weekdayOnly ?? false,
-    activeToday: task.activeToday ?? true,
+    id,
+    title,
+    emoji: typeof raw.emoji === "string" ? raw.emoji : null,
+    defaultPoints,
+    completedToday: Boolean(raw.completedToday),
+    note: typeof raw.note === "string" ? raw.note : undefined,
+    kind: raw.kind === "learn" ? "learn" : "chore",
   };
 }
 
-function readStorage(raw: string | null): Omit<KioskData, "_meta"> | null {
+function normalizeReward(raw: Partial<KioskReward> | undefined | null): KioskReward | null {
+  if (!raw || typeof raw !== "object") return null;
+  const id = typeof raw.id === "string" ? raw.id : null;
+  const title = typeof raw.title === "string" ? raw.title : null;
+  const description = typeof raw.description === "string" ? raw.description : null;
+  const emoji = typeof raw.emoji === "string" ? raw.emoji : null;
+  if (!id || !title || !description || !emoji) return null;
+
+  const cost = Number(raw.cost) || 0;
+  const stock = raw.stock === null || Number.isFinite(Number(raw.stock)) ? (raw.stock === null ? null : Number(raw.stock)) : null;
+
+  return {
+    id,
+    title,
+    description,
+    emoji,
+    cost,
+    stock,
+  };
+}
+
+function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[] | null {
+  if (!payload?.data) return null;
+
+  if (Array.isArray(payload.data.tasks)) {
+    const mapped = payload.data.tasks.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
+    if (mapped.length > 0) {
+      return mapped;
+    }
+  }
+
+  const chores = payload.data.chores;
+  if (chores && typeof chores === "object") {
+    const taskBuckets: Array<ReadonlyArray<Partial<KioskTask>>> = [
+      Array.isArray((chores as Record<string, unknown>).morning)
+        ? ((chores as Record<string, unknown>).morning as ReadonlyArray<Partial<KioskTask>>)
+        : [],
+      Array.isArray((chores as Record<string, unknown>).evening)
+        ? ((chores as Record<string, unknown>).evening as ReadonlyArray<Partial<KioskTask>>)
+        : [],
+    ];
+    const legacy = taskBuckets.flatMap((bucket) => bucket.map((item) => ({
+      ...item,
+      kind: "chore" as const,
+    })));
+    const mappedLegacy = legacy.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
+    if (mappedLegacy.length > 0) {
+      return mappedLegacy;
+    }
+  }
+
+  return null;
+}
+
+function coerceMeta(payload: KioskStoragePayload | null): KioskData["_meta"] | null {
+  if (!payload?.data || typeof payload.data !== "object") return null;
+  let candidateLastDate = getDateKeyPT();
+  if (typeof (payload.data as { lastDate?: unknown }).lastDate === "string") {
+    candidateLastDate = (payload.data as { lastDate?: string }).lastDate ?? getDateKeyPT();
+  }
+
+  return {
+    lastDate: candidateLastDate,
+    updatedAt: nowIso(),
+    seedVersion: STORAGE_VERSION,
+  };
+}
+
+function readStorage(raw: string | null): KioskStoragePayload | null {
   if (!raw) return null;
   try {
-    const parsed: KioskStoragePayload = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object") return null;
-    return parsed.data ?? null;
+    return parsed as KioskStoragePayload;
   } catch {
     return null;
   }
@@ -324,6 +257,42 @@ function writeStorage(payload: Omit<KioskData, "_meta">, kidId: string) {
   localStorage.setItem(storageKey(kidId), JSON.stringify(wrapper));
 }
 
+function buildSeed(kidId: string, kidName: string | null): KioskData {
+  const now = new Date();
+  return {
+    kid: { id: kidId, name: kidName },
+    totalPoints: 0,
+    totalEarned: 0,
+    tasks: DEFAULT_TASKS.map((task) => ({
+      ...clone(task),
+      completedToday: false,
+    })),
+    latestEntry: null,
+    rewards: clone(DEFAULT_REWARDS),
+    _meta: {
+      lastDate: getDateKeyPT(now),
+      updatedAt: nowIso(),
+      seedVersion: STORAGE_VERSION,
+    },
+  };
+}
+
+function normalizeMetaFlags(state: KioskData, now = new Date()): KioskData {
+  const next = clone(state);
+  const today = getDateKeyPT(now);
+  if (next._meta.lastDate !== today) {
+    for (const task of next.tasks) {
+      task.completedToday = false;
+    }
+    next._meta.lastDate = today;
+  }
+  next._meta.updatedAt = nowIso();
+  if (next.totalPoints < 0) {
+    next.totalPoints = 0;
+  }
+  return next;
+}
+
 export function ensureKioskState(kidId: string, kidName: string | null): KioskData {
   const saved = loadKioskState(kidId);
   if (saved) return normalizeMetaFlags(saved, new Date());
@@ -337,19 +306,42 @@ export function loadKioskState(kidId: string): KioskData | null {
   const raw = localStorage.getItem(storageKey(kidId));
   const payload = readStorage(raw);
   if (!payload) return null;
-  const state = normalizeMetaFlags({
-    ...payload,
-    bonuses: payload.chores ? computeBonuses(payload.chores as KioskData["chores"]) : undefined,
+
+  const tasks = coerceTasksFromPayload(payload);
+  if (!tasks) return null;
+
+  const rewards = Array.isArray(payload.data?.rewards)
+    ? payload.data.rewards.map((reward) => normalizeReward(reward)).filter(Boolean) as KioskReward[]
+    : null;
+
+  const meta = coerceMeta(payload);
+  if (!meta) return null;
+
+  const next: Omit<KioskData, "_meta"> = {
+    kid: {
+      id: typeof payload.data?.kid?.id === "string" ? payload.data.kid!.id : kidId,
+      name:
+        typeof payload.data?.kid?.name === "string"
+          ? payload.data.kid!.name
+          : null,
+    },
+    totalPoints: Number(payload.data?.totalPoints ?? 0),
+    totalEarned: Number(payload.data?.totalEarned ?? 0),
+    tasks: tasks.map((task) => ({
+      ...task,
+      completedToday: task.completedToday ?? false,
+    })),
+    latestEntry: payload.data?.latestEntry ?? null,
+    rewards: rewards ?? clone(DEFAULT_REWARDS),
+  };
+
+  return normalizeMetaFlags({
+    ...next,
     _meta: {
-      lastDate: getDateKeyPT(),
-      lastWeekKey: getWeekKeyPT(),
-      updatedAt: nowIso(),
+      ...meta,
       seedVersion: STORAGE_VERSION,
     },
-    rewards: payload.rewards ?? clone(DEFAULT_REWARDS),
-    learnTemplates: payload.learnTemplates ?? clone(DEFAULT_LEARNING_TEMPLATES),
-  } as KioskData, new Date());
-  return state;
+  }, new Date());
 }
 
 export function saveKioskState(state: KioskData): void {
@@ -369,77 +361,80 @@ export function hasKioskState(kidId: string): boolean {
 }
 
 export function hydrateFromRemote(kidId: string, remote: RemoteKioskResponse): KioskData {
-  const existing = loadKioskState(kidId);
   const now = new Date();
-  const seed = existing ?? buildSeed(kidId, remote.kid?.name ?? null);
-  const next: KioskData = {
-    kid: remote.kid,
-    totalPoints: remote.totalPoints,
-    totalEarned: remote.totalEarned ?? 0,
-    chores: {
-      morning: remote.chores.morning.map((item) => sanitizeTask(item)),
-      evening: remote.chores.evening.map((item) => sanitizeTask(item)),
-      weekly: remote.chores.weekly.map((item) => sanitizeTask(item)),
+  const existing = loadKioskState(kidId);
+  const remoteTasks: KioskTask[] = [
+    ...remote.chores.morning.map((item) =>
+      normalizeTask({
+        ...item,
+        kind: "chore" as const,
+      }),
+    ),
+    ...remote.chores.evening.map((item) =>
+      normalizeTask({
+        ...item,
+        kind: "chore" as const,
+      }),
+    ),
+  ]
+    .filter(Boolean)
+    .map((task) => task as KioskTask);
+
+  const seed = buildSeed(kidId, remote.kid?.name ?? null);
+  return normalizeMetaFlags(
+    {
+      kid: remote.kid,
+      totalPoints: remote.totalPoints,
+      totalEarned: remote.totalEarned ?? 0,
+      tasks: remoteTasks.length > 0 ? remoteTasks : existing?.tasks ?? seed.tasks,
+      latestEntry: remote.latestEntry
+        ? {
+            id: remote.latestEntry.id,
+            points: remote.latestEntry.points,
+            choreTitle: remote.latestEntry.choreTitle,
+            note: remote.latestEntry.note,
+            date: remote.latestEntry.date,
+          }
+        : existing?.latestEntry ?? null,
+      rewards: existing?.rewards ?? clone(DEFAULT_REWARDS),
+      _meta: {
+        lastDate: getDateKeyPT(now),
+        updatedAt: nowIso(),
+        seedVersion: STORAGE_VERSION,
+      },
     },
-    bonuses: remote.bonuses ?? computeBonuses({
-      morning: remote.chores.morning.map((item) => sanitizeTask(item)),
-      evening: remote.chores.evening.map((item) => sanitizeTask(item)),
-      weekly: remote.chores.weekly.map((item) => sanitizeTask(item)),
-    }),
-    latestEntry: remote.latestEntry
-      ? {
-          id: remote.latestEntry.id,
-          points: remote.latestEntry.points,
-          choreTitle: remote.latestEntry.choreTitle,
-          note: remote.latestEntry.note,
-          date: remote.latestEntry.date,
-        }
-      : null,
-    rewards: existing?.rewards ?? clone(DEFAULT_REWARDS),
-    learnTemplates: existing?.learnTemplates ?? clone(DEFAULT_LEARNING_TEMPLATES),
-    _meta: {
-      lastDate: getDateKeyPT(now),
-      lastWeekKey: getWeekKeyPT(now),
-      updatedAt: nowIso(),
-      seedVersion: STORAGE_VERSION,
-    },
-  };
-  const normalized = normalizeMetaFlags(next, now);
-  return normalized;
+    now,
+  );
 }
 
-export function completeTask(state: KioskData, section: KioskSection, choreId: string): KioskMutationResult {
+export function completeTask(state: KioskData, taskId: string): KioskMutationResult {
   const next = clone(state);
-  const items = next.chores[section];
-  const index = items.findIndex((item) => item.id === choreId);
+  const index = next.tasks.findIndex((task) => task.id === taskId);
   if (index < 0) {
     return { state, changed: false, delta: 0, emoji: "⭐", reason: "任务不存在" };
   }
 
-  const item = items[index];
-  const alreadyDone = section === "weekly" ? !!item.completedThisWeek : !!item.completedToday;
-  if (alreadyDone) {
-    return { state, changed: false, delta: 0, emoji: item.emoji ?? "⭐", reason: "任务已完成" };
+  const task = next.tasks[index];
+  if (task.completedToday) {
+    return { state, changed: false, delta: 0, emoji: task.emoji ?? "⭐", reason: "任务已完成" };
   }
 
-  const entryPoints = item.defaultPoints;
-  if (section === "weekly") {
-    item.completedThisWeek = true;
-  } else {
-    item.completedToday = true;
-  }
-
+  task.completedToday = true;
+  const entryPoints = task.defaultPoints;
   next.totalPoints += entryPoints;
   next.totalEarned += entryPoints;
-  next.latestEntry = createEntry(`完成任务：${item.title}`, entryPoints, item.title);
+  next.latestEntry = createEntry(task.kind === "learn" ? `学习：${task.title}` : `完成任务：${task.title}`, entryPoints, task.title);
   next._meta.updatedAt = nowIso();
-  next.bonuses = computeBonuses(next.chores);
   return {
     state: next,
     changed: true,
     delta: entryPoints,
-    emoji: item.emoji ?? "⭐",
+    emoji: task.emoji ?? "⭐",
   };
+}
+
+export function completeLearningActivity(state: KioskData, activityId: string): KioskMutationResult {
+  return completeTask(state, activityId);
 }
 
 export function redeemReward(state: KioskData, rewardId: string): KioskMutationResult {
@@ -470,25 +465,5 @@ export function redeemReward(state: KioskData, rewardId: string): KioskMutationR
     delta: -reward.cost,
     emoji: reward.emoji,
     reason: "兑换成功",
-  };
-}
-
-export function completeLearningActivity(state: KioskData, activityId: string): KioskMutationResult {
-  const next = clone(state);
-  const activity = next.learnTemplates.find((entry) => entry.id === activityId);
-  if (!activity) {
-    return { state, changed: false, delta: 0, emoji: "📚", reason: "学习活动不存在" };
-  }
-
-  next.totalPoints += activity.points;
-  next.totalEarned += activity.points;
-  next.latestEntry = createEntry(activity.note, activity.points, "学习");
-  next._meta.updatedAt = nowIso();
-  return {
-    state: next,
-    changed: true,
-    delta: activity.points,
-    emoji: activity.emoji,
-    reason: "记录成功",
   };
 }
