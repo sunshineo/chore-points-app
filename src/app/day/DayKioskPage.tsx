@@ -503,10 +503,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   return (
     <>
       <style>{`
-        @keyframes kiosk-spin-slow {
-          0% { transform: rotateY(0deg); }
-          100% { transform: rotateY(360deg); }
-        }
         @keyframes kiosk-gem-rain-fall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
@@ -520,7 +516,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
           0%, 100% { transform: scale(1) translateY(0); }
           50% { transform: scale(1.08) translateY(-12px); }
         }
-        .kiosk-spin-slow { animation: kiosk-spin-slow 2s linear infinite; transform-style: preserve-3d; }
         .kiosk-gem-rain { animation: kiosk-gem-rain-fall 2s ease-in forwards; }
         .kiosk-counter-bump { animation: kiosk-counter-bump 0.4s ease-out; }
         .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out infinite; }
@@ -541,10 +536,10 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
               </div>
             )}
 
-            <div className="flex items-start justify-start gap-3">
+            <div className="flex items-center justify-start gap-3">
               <div className="flex-1 z-10">
                 <div className="flex items-center gap-4 text-7xl leading-none font-black tracking-tight">
-                  <div className="relative w-12 h-12 kiosk-spin-slow flex-shrink-0">
+                  <div className="relative w-12 h-12 flex-shrink-0">
                     <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
                     <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
                     <div className="absolute top-2 left-3 w-3 h-4 bg-yellow-200 rounded-full opacity-60 blur-[1px]" />
@@ -574,17 +569,17 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 <button
                   type="button"
                   onClick={handlePrevDay}
-                  className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-sm"
+                  className="px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-lg"
                 >
                   前一天
                 </button>
-                <p className="text-sm font-semibold text-white/95">{selectedDateDateLabel}</p>
-                <p className="text-sm font-semibold text-white/95">{selectedWeekdayLabel}</p>
+                <p className="text-base font-semibold text-white/95">{selectedDateDateLabel}</p>
+                <p className="text-base font-semibold text-white/95">{selectedWeekdayLabel}</p>
                 <button
                   type="button"
                   onClick={handleNextDay}
                   disabled={selectedDateOffset >= 0}
-                  className="px-3 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-sm"
+                  className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
                 >
                   后一天
                 </button>
