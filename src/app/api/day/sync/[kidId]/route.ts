@@ -152,7 +152,11 @@ export async function POST(
         const rewardDefaults = new Map(DEFAULT_DAY_REWARDS.map((reward) => [reward.id, reward.cost]));
 
         if (event.type === "task") {
-          if (!TASK_IDS.has(event.itemId) || !Number.isFinite(event.points) || event.points === 0) {
+          if (
+            !TASK_IDS.has(event.itemId) ||
+            !Number.isFinite(event.points) ||
+            event.points <= 0
+          ) {
             result.failedEvents.push(eventId);
             result.failed.push(eventId);
             continue;
@@ -172,11 +176,6 @@ export async function POST(
 
           const key = `${eventDateKey}|${event.itemId}`;
           const projectedTask = (taskPointsByDate.get(key) ?? 0) + event.points;
-          if (projectedTask < 0) {
-            result.failedEvents.push(eventId);
-            result.failed.push(eventId);
-            continue;
-          }
           taskPointsByDate.set(key, projectedTask);
         }
 

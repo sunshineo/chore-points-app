@@ -195,10 +195,8 @@ function RewardSection({
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
         {rewards.map((reward, i) => {
           const canUse = reward.stock === null ? true : reward.stock > 0;
-          const redeemedCount = Number(reward.redeemedCount ?? 0);
           const enough = currentPoints >= reward.cost;
-          const canUndo = redeemedCount > 0;
-          const isDisabled = disabled || (!canUndo && (!canUse || !enough));
+          const isDisabled = disabled || !canUse || !enough;
           return (
             <RewardTile
               key={reward.id + i}
@@ -413,10 +411,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       if (!data || !isToday || saving) return;
 
       const prevNet = Number(totalNetPoints);
-      const isUndo = task.completed;
-      const delta = isUndo ? -Math.abs(task.defaultPoints) : Math.abs(task.defaultPoints);
+      const delta = Math.abs(task.defaultPoints);
       const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const notePrefix = isUndo ? "撤销任务" : "完成任务";
+      const notePrefix = "完成任务";
       setErrorMessage(null);
 
       try {
@@ -447,15 +444,13 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const handleRewardRedeem = useCallback(
     async (reward: KioskApiResponse["rewards"][number]) => {
       if (!data || saving) return;
-      const redeemedCount = Number(reward.redeemedCount ?? 0);
-      const isUndo = redeemedCount > 0;
-      if (!isUndo && reward.stock !== null && reward.stock <= 0) return;
-      if (!isUndo && totalNetPoints < reward.cost) return;
+      if (reward.stock !== null && reward.stock <= 0) return;
+      if (totalNetPoints < reward.cost) return;
 
       setErrorMessage(null);
       const eventId = `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const notePrefix = isUndo ? "撤销奖励" : "兑换奖励";
-      const points = isUndo ? Math.abs(reward.cost) : -Math.abs(reward.cost);
+      const notePrefix = "兑换奖励";
+      const points = -Math.abs(reward.cost);
 
       try {
         const result = await syncEvents([
