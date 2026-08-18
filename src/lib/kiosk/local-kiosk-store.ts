@@ -111,7 +111,9 @@ const DEFAULT_TASKS: KioskTask[] = [
   { id: "seed-task-mom-hi", title: "跟妈妈问好", emoji: "🙋", defaultPoints: 3, kind: "chore" },
   { id: "seed-task-grandma-hi", title: "跟姥姥问好", emoji: "🙋", defaultPoints: 3, kind: "chore" },
   { id: "seed-task-dinner", title: "晚饭吃干净", emoji: "🍽️", defaultPoints: 5, kind: "chore" },
-  { id: "seed-task-class", title: "上课", emoji: "📚", defaultPoints: 5, kind: "chore" },
+  { id: "seed-task-dinner-fruit", title: "晚饭后吃水果", emoji: "🍎", defaultPoints: 2, kind: "chore" },
+  { id: "seed-task-piano", title: "上钢琴课", emoji: "🎹", defaultPoints: 5, kind: "chore" },
+  { id: "seed-task-swim", title: "上游泳课", emoji: "🏊", defaultPoints: 5, kind: "chore" },
   { id: "seed-task-math", title: "做数学题", emoji: "🧮", defaultPoints: 5, kind: "learn" },
   { id: "seed-task-handwriting", title: "写汉字", emoji: "✍️", defaultPoints: 10, kind: "learn" },
   { id: "seed-task-english", title: "拼写英文单词", emoji: "🇬🇧", defaultPoints: 5, kind: "learn" },
@@ -297,6 +299,40 @@ function coerceRewardsFromPayload(payload: KioskStoragePayload | null): KioskRew
   return Array.from(byId.values());
 }
 
+function normalizeLegacyClassTask(tasks: KioskTask[]): KioskTask[] {
+  const hasLegacyClass = tasks.some((task) => task.id === "seed-task-class");
+  if (!hasLegacyClass) {
+    return tasks;
+  }
+
+  const hasPiano = tasks.some((task) => task.id === "seed-task-piano");
+  const hasSwim = tasks.some((task) => task.id === "seed-task-swim");
+  if (hasPiano && hasSwim) {
+    return tasks.filter((task) => task.id !== "seed-task-class");
+  }
+
+  const classTask = tasks.find((task) => task.id === "seed-task-class");
+  const nextTasks = tasks.filter((task) => task.id !== "seed-task-class");
+
+  const seedPiano = DEFAULT_TASKS.find((task) => task.id === "seed-task-piano");
+  const seedSwim = DEFAULT_TASKS.find((task) => task.id === "seed-task-swim");
+
+  if (seedPiano) {
+    nextTasks.push({
+      ...seedPiano,
+      completedToday: classTask?.completedToday,
+    });
+  }
+  if (seedSwim) {
+    nextTasks.push({
+      ...seedSwim,
+      completedToday: classTask?.completedToday,
+    });
+  }
+
+  return nextTasks;
+}
+
 function applyTaskOrder(tasks: KioskTask[]): KioskTask[] {
   return [...tasks].sort((a, b) => {
     const aIndex = DEFAULT_TASK_ORDER_MAP.get(a.id);
@@ -314,9 +350,11 @@ function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[
 
   if (Array.isArray(payload.data.tasks)) {
     const mapped = payload.data.tasks.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
-    const filtered = mapped.filter((task) => !REMOVED_TASK_IDS.has(task.id));
+    const filtered = applyTaskOrder(
+      normalizeLegacyClassTask(mapped).filter((task) => !REMOVED_TASK_IDS.has(task.id)),
+    );
     if (mapped.length > 0) {
-      return applyTaskOrder(filtered);
+      return filtered;
     }
   }
 
@@ -336,7 +374,9 @@ function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[
     })));
     const mappedLegacy = legacy.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
     if (mappedLegacy.length > 0) {
-      return applyTaskOrder(mappedLegacy.filter((task) => !REMOVED_TASK_IDS.has(task.id)));
+      return applyTaskOrder(
+        normalizeLegacyClassTask(mappedLegacy).filter((task) => !REMOVED_TASK_IDS.has(task.id)),
+      );
     }
   }
 
@@ -412,7 +452,10 @@ function normalizeMetaFlags(state: KioskData, now = new Date()): KioskData {
 
   next.tasks = next.tasks.map((task) => ({
     ...task,
-    completedToday: completedSet.has(task.id),
+    completedToday:
+      completedSet.has(task.id) ||
+      (completedSet.has("seed-task-class") &&
+        (task.id === "seed-task-piano" || task.id === "seed-task-swim")),
   }));
 
   next.taskHistory = {
