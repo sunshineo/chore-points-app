@@ -17,7 +17,6 @@ import {
   getTasksForDate,
 } from "@/lib/kiosk/local-kiosk-store";
 
-const OFFLINE_LABEL = "离线模式";
 const PACIFIC_TIMEZONE = "America/Los_Angeles";
 
 type ChoreTileProps = {
@@ -479,9 +478,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
               </span>
             </div>
 
-            <p className="text-sm font-medium text-white/60 mt-1">总净积分（可兑换）</p>
             <p className="text-xs text-white/80 mt-1">今日净变化：{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
-            <p className="text-xs text-yellow-200 mt-1">{OFFLINE_LABEL}（无需网络）</p>
           </div>
 
           <div className="flex-1 flex flex-col items-end justify-center z-10">
