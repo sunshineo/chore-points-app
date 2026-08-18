@@ -120,7 +120,7 @@ function ChoreTile({ task, done, colorIndex, onTap, readOnly }: ChoreTileProps) 
         <p className="relative z-10 mt-1 text-[11px] text-white/80 px-2 text-center opacity-90">{task.note}</p>
       ) : null}
       <span
-        className={`relative z-10 mt-1 rounded-full px-3 py-0.5 text-xs font-semibold ${
+        className={`relative z-10 mt-2 rounded-full px-4 py-1.5 text-base font-black ${
           done ? "bg-white/40" : "bg-white/30"
         }`}
       >
@@ -139,34 +139,21 @@ function TaskSection({ tasks, onTap, readOnly }: { tasks: KioskTask[]; onTap: (i
     );
   }
 
-  const done = tasks.filter((item) => item.completedToday);
   const pending = tasks.filter((item) => !item.completedToday);
+  const allDone = pending.length === 0;
 
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-600 px-1">
-        {readOnly ? "历史日期只读查看" : pending.length > 0 ? `今天还有 ${pending.length} 项未完成` : "今天任务已完成"}
+        {readOnly ? "历史日期只读查看" : allDone ? "今天任务已完成" : `今天还有 ${pending.length} 项未完成`}
       </div>
       <div className="flex flex-wrap gap-3">
-        {pending.map((task, i) => (
+        {tasks.map((task, i) => (
           <ChoreTile
             key={task.id}
             task={task}
-            done={false}
+            done={Boolean(task.completedToday)}
             colorIndex={i}
-            readOnly={readOnly}
-            onTap={() => onTap(task.id)}
-          />
-        ))}
-      </div>
-      {done.length > 0 ? <div className="text-sm text-gray-500 px-1">已完成任务</div> : null}
-      <div className="flex flex-wrap gap-3">
-        {done.map((task, i) => (
-          <ChoreTile
-            key={task.id}
-            task={task}
-            done
-            colorIndex={pending.length + i}
             readOnly={readOnly}
             onTap={() => onTap(task.id)}
           />
