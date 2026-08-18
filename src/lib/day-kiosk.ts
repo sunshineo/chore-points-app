@@ -85,6 +85,8 @@ export const DEFAULT_DAY_TASKS: DayTask[] = [
   { id: "seed-task-shoes", title: "自己穿鞋", emoji: "👟", defaultPoints: 1 },
   { id: "seed-task-backpack", title: "自己背书包", emoji: "🎒", defaultPoints: 1 },
   { id: "seed-task-seatbelt", title: "自己上车系安全带", emoji: "🚗", defaultPoints: 1 },
+  { id: "seed-task-snack", title: "在学校吃完零食", emoji: "🍎", defaultPoints: 3 },
+  { id: "seed-task-after-school", title: "放学后进屋换鞋", emoji: "🏠", defaultPoints: 1 },
   { id: "seed-task-handwash", title: "洗手", emoji: "🧼", defaultPoints: 2 },
   { id: "seed-task-grandma-bye", title: "跟姥姥问好", emoji: "🙋", defaultPoints: 3 },
   { id: "seed-task-mom-hi", title: "跟妈妈问好", emoji: "🙋", defaultPoints: 3 },
@@ -94,10 +96,8 @@ export const DEFAULT_DAY_TASKS: DayTask[] = [
   { id: "seed-task-math", title: "做数学题", emoji: "🧮", defaultPoints: 5 },
   { id: "seed-task-handwriting", title: "写汉字", emoji: "✍️", defaultPoints: 5 },
   { id: "seed-task-english", title: "拼写英文单词", emoji: "🇬🇧", defaultPoints: 5 },
-  { id: "seed-task-snack", title: "在学校吃光我们带的零食", emoji: "🍎", defaultPoints: 3 },
   { id: "seed-task-piano", title: "上钢琴课", emoji: "🎹", defaultPoints: 10 },
   { id: "seed-task-swim", title: "上游泳课", emoji: "🏊", defaultPoints: 10 },
-  { id: "seed-task-after-school", title: "放学后进屋换鞋", emoji: "🏠", defaultPoints: 1 },
 ];
 
 export const DEFAULT_DAY_REWARDS: DayReward[] = [
