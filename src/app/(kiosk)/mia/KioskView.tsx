@@ -400,10 +400,10 @@ export default function KioskView({ kidId }: { kidId: string }) {
       `}</style>
 
       <div
-        className="fixed inset-0 z-50 overflow-hidden flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50"
+        className="fixed inset-0 z-50 grid grid-rows-[auto_1fr] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50"
         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
       >
-        <div className="flex items-center justify-between bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white flex-shrink-0 relative overflow-hidden px-6" style={{ height: "22vh" }}>
+        <div className="flex items-center justify-between bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 text-white flex-shrink-0 relative overflow-hidden px-6 py-2">
           <div className="absolute top-2 left-0 right-0 z-20 flex justify-center">
             <div className="flex items-center justify-center gap-3">
               <button
@@ -485,7 +485,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col">
+        <div className="min-h-0 overflow-hidden relative flex flex-col">
           {showEmoji && (
             <div
               className="absolute inset-0 z-20 flex items-center justify-center"
