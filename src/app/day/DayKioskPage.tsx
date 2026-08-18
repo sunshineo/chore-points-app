@@ -561,7 +561,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 <div className={`text-8xl leading-none font-black font-mono tracking-tight ${
                   showRain ? "kiosk-counter-bump" : ""
                 }`}>{displayedPoints}</div>
-                <p className="text-xs text-white/80 mt-1">今日净变化：{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
               </div>
 
               <div className="flex-shrink-0 z-10 flex flex-col items-end text-right gap-1">
