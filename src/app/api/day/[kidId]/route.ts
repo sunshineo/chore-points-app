@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { DEFAULT_DAY_REWARDS, DEFAULT_DAY_TASKS, getDateKeyPT, parseDateFromNote, parseMarker } from "@/lib/day-kiosk";
+import {
+  DEFAULT_DAY_REWARDS,
+  DEFAULT_DAY_TASKS,
+  DATE_MARKER_PREFIX,
+  TASK_MARKER_PREFIX,
+  REWARD_MARKER_PREFIX,
+  getDateKeyPT,
+  parseDateFromNote,
+  parseMarker,
+} from "@/lib/day-kiosk";
 import { verifyDayToken } from "@/lib/day-auth";
 
 function parseDateParam(raw: string | null): string {
@@ -41,7 +50,17 @@ export async function GET(
       },
     });
 
-    const totals = entries.reduce(
+    const isDayEntry = (note: string | null): boolean => {
+      if (!note) return false;
+      const hasTaskMarker = note.includes(`[${TASK_MARKER_PREFIX}`);
+      const hasRewardMarker = note.includes(`[${REWARD_MARKER_PREFIX}`);
+      const hasDateMarker = note.includes(`[${DATE_MARKER_PREFIX}`);
+      return hasTaskMarker || hasRewardMarker || hasDateMarker;
+    };
+
+    const dayEntries = entries.filter((entry) => isDayEntry(entry.note));
+
+    const totals = dayEntries.reduce(
       (acc, entry) => {
         const points = Number(entry.points);
         if (!Number.isFinite(points)) return acc;
@@ -53,7 +72,7 @@ export async function GET(
       { totalEarned: 0, totalSpent: 0, totalNet: 0 },
     );
 
-    const selectedEntries = entries.filter((entry) => parseDateFromNote(entry.note) === date);
+    const selectedEntries = dayEntries.filter((entry) => parseDateFromNote(entry.note) === date);
 
     const selectedDay = selectedEntries.reduce(
       (acc, entry) => {
