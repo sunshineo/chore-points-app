@@ -1,0 +1,192 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import {
+  DEFAULT_DAY_REWARDS,
+  DEFAULT_DAY_TASKS,
+  dateMarker,
+  eventMarker,
+  rewardMarker,
+  taskMarker,
+  DaySyncEvent,
+} from "@/lib/day-kiosk";
+import { verifyDayToken } from "@/lib/day-auth";
+
+const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const REWARD_TYPES = new Set(["task", "reward"]);
+const TASK_IDS = new Set(DEFAULT_DAY_TASKS.map((task) => task.id));
+const REWARD_IDS = new Set(DEFAULT_DAY_REWARDS.map((reward) => reward.id));
+
+function parseDateKey(raw: string | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  return DATE_KEY_RE.test(trimmed) ? trimmed : null;
+}
+
+function dateFromDateKey(dateKey: string): Date {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+}
+
+function isSafeId(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+export async function POST(
+  req: Request,
+  { params }: { params: { kidId: string } },
+) {
+  try {
+    const token = new URL(req.url).searchParams.get("token") || "";
+    if (!verifyDayToken(token)) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const payload = (await req.json().catch(() => null)) as { events?: DaySyncEvent[] } | null;
+    const rawEvents = payload?.events;
+
+    if (!Array.isArray(rawEvents) || rawEvents.length === 0) {
+      return NextResponse.json({ error: "Events are required" }, { status: 400 });
+    }
+
+    const kid = await prisma.user.findUnique({
+      where: { id: params.kidId },
+      select: { id: true, familyId: true, role: true },
+    });
+
+    if (!kid || kid.role !== "KID" || !kid.familyId) {
+      return NextResponse.json({ error: "Kid not found" }, { status: 404 });
+    }
+
+    const result = {
+      applied: 0,
+      skipped: 0,
+      failedEvents: [] as string[],
+      failed: [] as string[],
+    };
+
+    const response = await prisma.$transaction(async (tx) => {
+      const allEntries = await tx.pointEntry.findMany({
+        where: { kidId: params.kidId },
+        select: { points: true },
+      });
+
+      let runningNet = allEntries.reduce((sum, entry) => sum + Number(entry.points), 0);
+      const dedupe = new Set<string>();
+
+      for (const event of rawEvents) {
+        if (
+          !isSafeId(event?.id) ||
+          !REWARD_TYPES.has(event.type) ||
+          !isSafeId(event.itemId) ||
+          !isSafeId(event.note) ||
+          typeof event.points !== "number" ||
+          typeof event.date !== "string" ||
+          !isSafeId(event.dateKey) ||
+          !parseDateKey(event.dateKey)
+        ) {
+          if (isSafeId(event?.id)) {
+            result.failedEvents.push(event.id);
+          }
+          continue;
+        }
+
+        if (dedupe.has(event.id)) {
+          result.skipped += 1;
+          continue;
+        }
+        dedupe.add(event.id);
+
+        const eventId = event.id;
+        const eventDateKey = parseDateKey(event.dateKey);
+        if (!eventDateKey) {
+          result.failedEvents.push(eventId);
+          result.failed.push(eventId);
+          continue;
+        }
+
+        const existing = await tx.pointEntry.findFirst({
+          where: {
+            kidId: params.kidId,
+            note: { contains: eventMarker(eventId) },
+          },
+          select: { id: true },
+        });
+
+        if (existing) {
+          result.skipped += 1;
+          continue;
+        }
+
+        if (event.type === "task" && (event.points <= 0 || !TASK_IDS.has(event.itemId))) {
+          result.failedEvents.push(eventId);
+          result.failed.push(eventId);
+          continue;
+        }
+
+        if (event.type === "reward" && (event.points >= 0 || !REWARD_IDS.has(event.itemId))) {
+          result.failedEvents.push(eventId);
+          result.failed.push(eventId);
+          continue;
+        }
+
+        const projectedNet = runningNet + event.points;
+        if (projectedNet < 0) {
+          result.failedEvents.push(eventId);
+          result.failed.push(eventId);
+          continue;
+        }
+
+        const marker = event.type === "task" ? taskMarker(event.itemId) : rewardMarker(event.itemId);
+
+        const safeDate = dateFromDateKey(eventDateKey);
+        const eventNote = `${event.note.trim()}${marker}${dateMarker(eventDateKey)}${eventMarker(eventId)}`;
+        await tx.pointEntry.create({
+          data: {
+            familyId: kid.familyId!,
+            kidId: params.kidId,
+            points: event.points,
+            note: eventNote,
+            date: Number.isFinite(new Date(event.date).getTime())
+              ? new Date(event.date)
+              : safeDate,
+            createdById: params.kidId,
+            updatedById: params.kidId,
+          },
+        });
+
+        runningNet = projectedNet;
+        result.applied += 1;
+      }
+
+      return { ...result, totalNet: runningNet };
+    });
+
+    if (response.failed.length > 0) {
+      return NextResponse.json(
+        {
+          error: "积分不足，无法完成兑换",
+          failedEvents: response.failedEvents,
+          failed: response.failed,
+          skipped: response.skipped,
+          applied: response.applied,
+          totalNet: response.totalNet,
+        },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({
+      skipped: response.skipped,
+      applied: response.applied,
+      totalNet: response.totalNet,
+      failedEvents: response.failedEvents,
+      failed: response.failed,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Something went wrong";
+    return NextResponse.json(
+      { error: message },
+      { status: 500 },
+    );
+  }
+}
