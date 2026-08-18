@@ -301,8 +301,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("morning");
 
-  const [toast, setToast] = useState<string | null>(null);
-
   const [showEmoji, setShowEmoji] = useState(false);
   const [showRain, setShowRain] = useState(false);
   const [celebEmoji, setCelebEmoji] = useState("⭐");
@@ -323,10 +321,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
     setLoading(false);
   }, [kidId]);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-  }, []);
-
   const runCelebration = useCallback((entryEmoji: string, nextTotal: number) => {
     setCelebEmoji(entryEmoji);
     setShowEmoji(true);
@@ -338,14 +332,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
       setTimeout(() => setShowRain(false), 2500);
     }, 3500);
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timeout = setTimeout(() => {
-      setToast(null);
-    }, 1800);
-    return () => clearTimeout(timeout);
-  }, [toast]);
 
   useEffect(() => {
     const start = displayedPoints;
@@ -369,7 +355,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
 
   const handleLocalMutation = (mutation: KioskMutationResult) => {
     if (!mutation.changed) {
-      if (mutation.reason) showToast(mutation.reason);
       return;
     }
 
@@ -389,7 +374,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
     setData(mutation.state);
     setTotalPoints(incomingTotal);
     setDisplayedPoints(incomingTotal);
-    showToast(`${mutation.delta >= 0 ? "+" : ""}${mutation.delta} 分`);
   };
 
   const handleTaskTap = (section: KioskSection, choreId: string) => {
@@ -524,12 +508,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
               <div className="kiosk-emoji-bounce" style={{ fontSize: 160, lineHeight: 1 }}>
                 {celebEmoji}
               </div>
-            </div>
-          )}
-
-          {toast && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 rounded-full bg-black/80 text-white px-4 py-2 text-sm">
-              {toast}
             </div>
           )}
 
