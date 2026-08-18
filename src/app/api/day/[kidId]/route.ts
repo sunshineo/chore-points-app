@@ -12,8 +12,9 @@ function parseDateParam(raw: string | null): string {
 
 export async function GET(
   req: Request,
-  { params }: { params: { kidId: string } },
+  { params }: { params: Promise<{ kidId: string }> },
 ) {
+  const { kidId } = await params;
   try {
     const token = new URL(req.url).searchParams.get("token") || "";
     if (!verifyDayToken(token)) {
@@ -21,7 +22,7 @@ export async function GET(
     }
 
     const kid = await prisma.user.findUnique({
-      where: { id: params.kidId },
+      where: { id: kidId },
       select: { id: true, name: true, role: true, familyId: true },
     });
 
@@ -32,7 +33,7 @@ export async function GET(
     const date = parseDateParam(new URL(req.url).searchParams.get("date"));
 
     const entries = await prisma.pointEntry.findMany({
-      where: { kidId: params.kidId },
+      where: { kidId },
       orderBy: { createdAt: "desc" },
       select: {
         points: true,

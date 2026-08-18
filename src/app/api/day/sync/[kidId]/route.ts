@@ -33,8 +33,9 @@ function isSafeId(value: unknown): value is string {
 
 export async function POST(
   req: Request,
-  { params }: { params: { kidId: string } },
+  { params }: { params: Promise<{ kidId: string }> },
 ) {
+  const { kidId } = await params;
   try {
     const token = new URL(req.url).searchParams.get("token") || "";
     if (!verifyDayToken(token)) {
@@ -49,7 +50,7 @@ export async function POST(
     }
 
     const kid = await prisma.user.findUnique({
-      where: { id: params.kidId },
+      where: { id: kidId },
       select: { id: true, familyId: true, role: true },
     });
 
@@ -66,7 +67,7 @@ export async function POST(
 
     const response = await prisma.$transaction(async (tx) => {
       const allEntries = await tx.pointEntry.findMany({
-        where: { kidId: params.kidId },
+        where: { kidId },
         select: { points: true },
       });
 
@@ -106,7 +107,7 @@ export async function POST(
 
         const existing = await tx.pointEntry.findFirst({
           where: {
-            kidId: params.kidId,
+            kidId,
             note: { contains: eventMarker(eventId) },
           },
           select: { id: true },
@@ -143,14 +144,14 @@ export async function POST(
         await tx.pointEntry.create({
           data: {
             familyId: kid.familyId!,
-            kidId: params.kidId,
+            kidId,
             points: event.points,
             note: eventNote,
             date: Number.isFinite(new Date(event.date).getTime())
               ? new Date(event.date)
               : safeDate,
-            createdById: params.kidId,
-            updatedById: params.kidId,
+            createdById: kidId,
+            updatedById: kidId,
           },
         });
 
