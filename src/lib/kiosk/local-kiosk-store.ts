@@ -152,6 +152,11 @@ const DEFAULT_REWARDS: KioskReward[] = [
   },
 ];
 
+const DEFAULT_TASK_ORDER = DEFAULT_TASKS.map((task) => task.id);
+const DEFAULT_TASK_ORDER_MAP = new Map(
+  DEFAULT_TASK_ORDER.map((id, index) => [id, index] as [string, number]),
+);
+
 function getSafeNumber(value: unknown, fallback = 0): number {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
@@ -260,6 +265,50 @@ function coerceTaskHistory(raw: unknown): Record<string, KioskDaySummary> {
   return history;
 }
 
+function coerceRewardsFromPayload(payload: KioskStoragePayload | null): KioskReward[] | null {
+  if (!payload?.data || !Array.isArray(payload.data.rewards)) return null;
+
+  const parsed = payload.data.rewards
+    .map((reward) => normalizeReward(reward))
+    .filter(Boolean) as KioskReward[];
+
+  if (parsed.length === 0) return null;
+
+  const baseRewards = parsed.map((reward) => {
+    const seed = DEFAULT_REWARDS.find((item) => item.id === reward.id);
+    if (!seed) return reward;
+    return {
+      ...reward,
+      title: seed.title,
+      description: seed.description,
+      emoji: seed.emoji,
+      cost: seed.cost,
+    };
+  });
+
+  const byId = new Map(baseRewards.map((reward) => [reward.id, reward]));
+
+  for (const reward of DEFAULT_REWARDS) {
+    if (!byId.has(reward.id)) {
+      byId.set(reward.id, clone(reward));
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
+function applyTaskOrder(tasks: KioskTask[]): KioskTask[] {
+  return [...tasks].sort((a, b) => {
+    const aIndex = DEFAULT_TASK_ORDER_MAP.get(a.id);
+    const bIndex = DEFAULT_TASK_ORDER_MAP.get(b.id);
+
+    if (aIndex === undefined && bIndex === undefined) return 0;
+    if (aIndex === undefined) return 1;
+    if (bIndex === undefined) return -1;
+    return aIndex - bIndex;
+  });
+}
+
 function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[] | null {
   if (!payload?.data) return null;
 
@@ -267,7 +316,7 @@ function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[
     const mapped = payload.data.tasks.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
     const filtered = mapped.filter((task) => !REMOVED_TASK_IDS.has(task.id));
     if (mapped.length > 0) {
-      return filtered;
+      return applyTaskOrder(filtered);
     }
   }
 
@@ -287,7 +336,7 @@ function coerceTasksFromPayload(payload: KioskStoragePayload | null): KioskTask[
     })));
     const mappedLegacy = legacy.map((item) => normalizeTask(item)).filter(Boolean) as KioskTask[];
     if (mappedLegacy.length > 0) {
-      return mappedLegacy.filter((task) => !REMOVED_TASK_IDS.has(task.id));
+      return applyTaskOrder(mappedLegacy.filter((task) => !REMOVED_TASK_IDS.has(task.id)));
     }
   }
 
@@ -400,9 +449,7 @@ export function loadKioskState(kidId: string): KioskData | null {
   const tasks = coerceTasksFromPayload(payload);
   if (!tasks) return null;
 
-  const rewards = Array.isArray(payload.data?.rewards)
-    ? payload.data.rewards.map((reward) => normalizeReward(reward)).filter(Boolean) as KioskReward[]
-    : null;
+  const rewards = coerceRewardsFromPayload(payload);
 
   const meta = coerceMeta(payload);
   if (!meta) return null;
