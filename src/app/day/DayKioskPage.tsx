@@ -539,26 +539,19 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
             <div className="flex items-start justify-start gap-3">
               <div className="flex-1 z-10">
                 <div className="bg-white/10 rounded-2xl px-5 py-3 inline-block min-w-[260px]">
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <p className="text-xs text-white/60">🧾 总兑换</p>
-                      <p className="text-lg font-bold font-mono">{totalSpent}</p>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-[11px] text-white/75 tracking-wide">总得分 - 总兑换 = 余额</p>
+                      <p className="text-lg font-bold font-mono text-white">
+                        {totalEarned} - {totalSpent} = <span className="font-black">{totalNetPoints}</span>
+                      </p>
                     </div>
-                    <div className="text-right flex-1">
-                      <p className="text-xs text-white/60">🏆 总得分</p>
-                      <p className="text-lg font-bold font-mono">{totalEarned}</p>
-                    </div>
-                  </div>
-                  <div className="mt-2 pt-1.5 border-t border-white/20">
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <p className="text-xs text-white/60">💸 今日兑换</p>
-                        <p className="text-lg font-semibold font-mono">{selectedDaySpent}</p>
-                      </div>
-                      <div className="text-right flex-1">
-                        <p className="text-xs text-white/60">🌟 今日得分</p>
-                        <p className="text-lg font-semibold font-mono">{selectedDayEarned}</p>
-                      </div>
+                    <div className="border-t border-white/20 pt-1.5">
+                      <p className="text-[11px] text-white/75 tracking-wide">今日得分 - 今日兑换 = 今日变化</p>
+                      <p className="text-lg font-bold font-mono text-white">
+                        {selectedDayEarned} - {selectedDaySpent} ={" "}
+                        <span className="font-black">{selectedDayNet >= 0 ? "+" : ""}{selectedDayNet}</span>
+                      </p>
                     </div>
                   </div>
                 </div>
