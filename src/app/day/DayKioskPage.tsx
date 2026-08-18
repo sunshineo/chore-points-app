@@ -6,7 +6,6 @@ import {
   DayApiPayload,
   DayApiTask,
   DaySyncEvent,
-  formatDateLabel,
   getDateKeyPT,
   getDateInPacific,
 } from "@/lib/day-kiosk";
@@ -252,7 +251,19 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   }, [selectedDateOffset]);
 
   const selectedDateKey = useMemo(() => getDateKeyPT(selectedDate), [selectedDate]);
-  const selectedDateLabel = useMemo(() => formatDateLabel(selectedDate), [selectedDate]);
+  const selectedDateDateLabel = useMemo(() => {
+    const month = selectedDate.getMonth() + 1;
+    const day = selectedDate.getDate();
+    return `${month}月${day}日`;
+  }, [selectedDate]);
+  const selectedWeekdayLabel = useMemo(
+    () =>
+      selectedDate.toLocaleDateString("zh-CN", {
+        timeZone: DAY_TIMEZONE,
+        weekday: "long",
+      }),
+    [selectedDate],
+  );
   const selectedDateTasks = useMemo(() => (data ? data.tasks : []), [data]);
   const selectedDayEarned = data?.selectedDay.earned ?? 0;
   const selectedDaySpent = data?.selectedDay.spent ?? 0;
@@ -492,10 +503,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   return (
     <>
       <style>{`
-        @keyframes kiosk-spin-slow {
-          0% { transform: rotateY(0deg); }
-          100% { transform: rotateY(360deg); }
-        }
         @keyframes kiosk-gem-rain-fall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
@@ -509,7 +516,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
           0%, 100% { transform: scale(1) translateY(0); }
           50% { transform: scale(1.08) translateY(-12px); }
         }
-        .kiosk-spin-slow { animation: kiosk-spin-slow 2s linear infinite; transform-style: preserve-3d; }
         .kiosk-gem-rain { animation: kiosk-gem-rain-fall 2s ease-in forwards; }
         .kiosk-counter-bump { animation: kiosk-counter-bump 0.4s ease-out; }
         .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out infinite; }
@@ -522,25 +528,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       >
         <div className="text-white flex-shrink-0 relative overflow-hidden px-6 py-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
           <div className="relative z-20 flex flex-col gap-3">
-            <div className="flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={handlePrevDay}
-                className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-sm"
-              >
-                前一天
-              </button>
-              <p className="text-sm font-semibold text-white/95">{selectedDateLabel}</p>
-              <button
-                type="button"
-                onClick={handleNextDay}
-                disabled={selectedDateOffset >= 0}
-                className="px-3 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-sm"
-              >
-                后一天
-              </button>
-            </div>
-
             {showRain && (
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {Array.from({ length: 14 }).map((_, i) => (
@@ -575,23 +562,30 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                     </div>
                   </div>
                 </div>
+                <div className={`mt-3 text-8xl leading-none font-black font-mono tracking-tight ${
+                  showRain ? "kiosk-counter-bump" : ""
+                }`}>{displayedPoints}</div>
+                <p className="text-xs text-white/80 mt-1">今日净变化：{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
               </div>
 
-              <div className="flex flex-col items-center flex-shrink-0 z-10">
-                <div className="flex items-center gap-4">
-                  <div className="relative w-14 h-14 kiosk-spin-slow flex-shrink-0">
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
-                    <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
-                    <div className="absolute top-2 left-3 w-4 h-5 bg-yellow-200 rounded-full opacity-60 blur-[1px]" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-yellow-900 font-bold text-xl opacity-70">★</span>
-                    </div>
-                  </div>
-                  <span className={`text-8xl leading-none font-black font-mono tracking-tight ${
-                    showRain ? "kiosk-counter-bump" : ""
-                  }`}>{displayedPoints}</span>
-                </div>
-                <p className="text-xs text-white/80 mt-1">今日净变化：{selectedDayNet >= 0 ? "+" : "-"}{Math.abs(selectedDayNet)}</p>
+              <div className="flex-shrink-0 z-10 flex flex-col items-end text-right gap-1">
+                <button
+                  type="button"
+                  onClick={handlePrevDay}
+                  className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-sm"
+                >
+                  前一天
+                </button>
+                <p className="text-sm font-semibold text-white/95">{selectedDateDateLabel}</p>
+                <p className="text-sm font-semibold text-white/95">{selectedWeekdayLabel}</p>
+                <button
+                  type="button"
+                  onClick={handleNextDay}
+                  disabled={selectedDateOffset >= 0}
+                  className="px-3 py-1 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-sm"
+                >
+                  后一天
+                </button>
               </div>
             </div>
 
