@@ -538,22 +538,24 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
             <div className="flex items-start justify-start gap-3">
               <div className="flex-1 z-10">
-                <div className="flex items-center gap-2 text-8xl leading-none font-black font-mono tracking-tight">
-                  <span className="text-yellow-300 text-2xl">🪙</span>
-                  <div className={showRain ? "kiosk-counter-bump" : ""}>{displayedPoints}</div>
+                <div className="flex items-center gap-3 text-8xl leading-none font-black font-mono tracking-tight">
+                  <span className="text-yellow-300 text-4xl">💰</span>
+                  <div className={`flex items-baseline gap-3 ${showRain ? "kiosk-counter-bump" : ""}`}>
+                    <span>{displayedPoints}</span>
+                    <span
+                      className={`text-3xl font-semibold ${
+                        selectedDayNet > 0
+                          ? "text-emerald-300"
+                          : selectedDayNet < 0
+                            ? "text-rose-300"
+                            : "text-white"
+                      }`}
+                    >
+                      ({selectedDayNet > 0 ? "+" : ""}
+                      {selectedDayNet})
+                    </span>
+                  </div>
                 </div>
-                <p
-                  className={`mt-1 text-base font-semibold ${
-                    selectedDayNet > 0
-                      ? "text-emerald-300"
-                      : selectedDayNet < 0
-                        ? "text-rose-300"
-                        : "text-white"
-                  }`}
-                >
-                  ({selectedDayNet > 0 ? "+" : ""}
-                  {selectedDayNet})
-                </p>
               </div>
 
               <div className="flex-shrink-0 z-10 flex flex-col items-end text-right gap-1">
