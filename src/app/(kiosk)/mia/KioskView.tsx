@@ -311,8 +311,6 @@ export default function KioskView({ kidId }: { kidId: string }) {
 
   const prevTotalRef = useRef<number | null>(null);
   const prevEntryIdRef = useRef<string | null>(null);
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   const dates = useMemo(() => normalizeDate(), []);
 
   useEffect(() => {
@@ -322,19 +320,11 @@ export default function KioskView({ kidId }: { kidId: string }) {
     setDisplayedPoints(initial.totalPoints);
     prevTotalRef.current = initial.totalPoints;
     prevEntryIdRef.current = initial.latestEntry?.id ?? null;
-    setToast("Kiosk 已进入纯离线本地模式");
     setLoading(false);
   }, [kidId]);
 
   const showToast = useCallback((msg: string) => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
     setToast(msg);
-    toastTimeoutRef.current = setTimeout(() => {
-      setToast(null);
-      toastTimeoutRef.current = null;
-    }, 1800);
   }, []);
 
   const runCelebration = useCallback((entryEmoji: string, nextTotal: number) => {
@@ -350,12 +340,12 @@ export default function KioskView({ kidId }: { kidId: string }) {
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
-      }
-    };
-  }, []);
+    if (!toast) return;
+    const timeout = setTimeout(() => {
+      setToast(null);
+    }, 1800);
+    return () => clearTimeout(timeout);
+  }, [toast]);
 
   useEffect(() => {
     const start = displayedPoints;
