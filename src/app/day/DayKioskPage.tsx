@@ -549,18 +549,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                   </div>
                   <div className={`flex items-center gap-3 ${showRain ? "kiosk-counter-bump" : ""}`}>
                     <span style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>{displayedPoints}</span>
-                    <span
-                      className={`text-2xl font-semibold ${
-                        selectedDayNet > 0
-                          ? "text-emerald-300"
-                          : selectedDayNet < 0
-                            ? "text-rose-300"
-                            : "text-white"
-                      }`}
-                    >
-                      ({selectedDayNet > 0 ? "+" : ""}
-                      {selectedDayNet})
-                    </span>
                   </div>
                 </div>
               </div>
@@ -575,6 +563,18 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 </button>
                 <p className="text-base font-semibold text-white/95">{selectedDateDateLabel}</p>
                 <p className="text-base font-semibold text-white/95">{selectedWeekdayLabel}</p>
+                <p
+                  className={`text-2xl font-semibold ${
+                    selectedDayNet > 0
+                      ? "text-emerald-300"
+                      : selectedDayNet < 0
+                        ? "text-rose-300"
+                        : "text-white"
+                  }`}
+                >
+                  {selectedDayNet > 0 ? "+" : ""}
+                  {selectedDayNet}
+                </p>
                 <button
                   type="button"
                   onClick={handleNextDay}
