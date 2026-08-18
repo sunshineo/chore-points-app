@@ -71,7 +71,6 @@ function getChoreEmoji(task: { emoji: string; title: string }): string {
 }
 
 function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
-  const statusText = disabled ? "待完成" : "点我完成";
   const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
   const emoji = getChoreEmoji(task);
 
@@ -108,7 +107,6 @@ function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
       >
         +{task.defaultPoints} 分
       </span>
-      <span className="relative z-10 mt-1 text-[11px] text-white/90">{statusText}</span>
     </button>
   );
 }
