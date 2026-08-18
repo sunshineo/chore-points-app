@@ -104,10 +104,16 @@ export async function GET(
       }
     });
 
-    const tasks = DEFAULT_DAY_TASKS.map((task) => ({
-      ...task,
-      completed: (taskNetById.get(task.id) ?? 0) > 0,
-    }));
+    const tasks = DEFAULT_DAY_TASKS.map((task) => {
+      const netPoints = taskNetById.get(task.id) ?? 0;
+      const completedCount = Math.max(0, Math.round(netPoints / task.defaultPoints));
+
+      return {
+        ...task,
+        completed: completedCount > 0,
+        completedCount,
+      };
+    });
 
     const rewards = DEFAULT_DAY_REWARDS.map((reward) => ({
       ...reward,

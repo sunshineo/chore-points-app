@@ -72,6 +72,7 @@ function getChoreEmoji(task: { emoji: string; title: string }): string {
 function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
   const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
   const emoji = getChoreEmoji(task);
+  const completedCount = Number(task.completedCount ?? 0);
 
   return (
     <button
@@ -87,9 +88,8 @@ function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
           disabled ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
         }`}
       >
-        {task.completed ? "✓" : "!"}
+        {completedCount}
       </div>
-
       <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>
         {emoji}
       </span>
@@ -130,7 +130,6 @@ function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
       >
         {redeemedCount}
       </div>
-
       <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>{reward.emoji}</span>
       <h3
         className="relative z-10 mt-2 font-bold text-sm leading-tight text-center px-2 text-white"
@@ -153,7 +152,8 @@ function TaskSection({
   tasks,
   onTap,
   readOnly,
-}: { tasks: DayTask[]; onTap: (id: string) => void; readOnly: boolean }) {
+  isUndoMode,
+}: { tasks: DayTask[]; onTap: (id: string) => void; readOnly: boolean; isUndoMode: boolean }) {
   if (tasks.length === 0) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-lg">这组还没有任务</div>;
   }
@@ -166,7 +166,7 @@ function TaskSection({
             key={task.id}
             task={task}
             colorIndex={i}
-            disabled={readOnly}
+            disabled={readOnly || (isUndoMode && Number(task.completedCount || 0) <= 0)}
             onTap={() => onTap(task.id)}
           />
         ))}
@@ -180,11 +180,13 @@ function RewardSection({
   onRedeem,
   currentPoints,
   disabled,
+  isUndoMode,
 }: {
   rewards: KioskApiResponse["rewards"];
   onRedeem: (id: string) => void;
   currentPoints: number;
   disabled: boolean;
+  isUndoMode: boolean;
 }) {
   if (rewards.length === 0) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-lg">暂无奖励配置</div>;
@@ -196,7 +198,8 @@ function RewardSection({
         {rewards.map((reward, i) => {
           const canUse = reward.stock === null ? true : reward.stock > 0;
           const enough = currentPoints >= reward.cost;
-          const isDisabled = disabled || !canUse || !enough;
+          const redeemedCount = Number(reward.redeemedCount ?? 0);
+          const isDisabled = disabled || (isUndoMode ? redeemedCount <= 0 : !canUse || !enough);
           return (
             <RewardTile
               key={reward.id + i}
@@ -245,6 +248,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const [celebEmoji, setCelebEmoji] = useState("⭐");
   const [displayedPoints, setDisplayedPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
+  const [undoMode, setUndoMode] = useState(false);
 
   const selectedDate = useMemo(() => {
     const today = getDateInPacific(new Date()) as Date;
@@ -296,6 +300,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       const safeTasks = payload.tasks.map((task) => ({
         ...task,
         completed: Boolean(task.completed),
+        completedCount: Number(task.completedCount || 0),
         defaultPoints: Number(task.defaultPoints || 0),
       }));
 
@@ -441,6 +446,37 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     [data, isToday, saving, selectedDateKey, totalNetPoints, syncEvents, runCelebration, loadState],
   );
 
+  const handleTaskUndo = useCallback(
+    async (task: DayTask) => {
+      if (!data || !isToday || saving) return;
+      if (Number(task.completedCount ?? 0) <= 0) return;
+
+      const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const notePrefix = "撤销任务";
+      const delta = -Math.abs(task.defaultPoints);
+      setErrorMessage(null);
+
+      try {
+        await syncEvents([
+          {
+            id: eventId,
+            type: "task",
+            itemId: task.id,
+            points: delta,
+            dateKey: selectedDateKey,
+            date: new Date().toISOString(),
+            note: `${notePrefix}：${task.title} [day-task:${task.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
+          },
+        ]);
+
+        await loadState();
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "操作失败");
+      }
+    },
+    [data, isToday, saving, selectedDateKey, syncEvents, loadState],
+  );
+
   const handleRewardRedeem = useCallback(
     async (reward: KioskApiResponse["rewards"][number]) => {
       if (!data || saving) return;
@@ -475,6 +511,69 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       }
     },
     [data, saving, totalNetPoints, selectedDateKey, syncEvents, loadState],
+  );
+
+  const handleRewardUndo = useCallback(
+    async (reward: KioskApiResponse["rewards"][number]) => {
+      if (!data || saving) return;
+      const redeemedCount = Number(reward.redeemedCount ?? 0);
+      if (redeemedCount <= 0) return;
+
+      setErrorMessage(null);
+      const eventId = `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const notePrefix = "撤销奖励";
+      const points = Math.abs(reward.cost);
+
+      try {
+        const result = await syncEvents([
+          {
+            id: eventId,
+            type: "reward",
+            itemId: reward.id,
+            points,
+            dateKey: selectedDateKey,
+            date: new Date().toISOString(),
+            note: `${notePrefix}：${reward.title} [day-reward:${reward.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
+          },
+        ]);
+
+        if (result?.totalNet !== undefined) {
+          setTotalPoints(result.totalNet);
+        }
+
+        await loadState();
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "操作失败");
+      }
+    },
+    [data, saving, selectedDateKey, syncEvents, loadState],
+  );
+
+  const handleTaskCardTap = useCallback(
+    (taskId: string) => {
+      const task = data?.tasks.find((item) => item.id === taskId);
+      if (!task) return;
+      if (undoMode) {
+        void handleTaskUndo(task);
+      } else {
+        void handleTaskTap(task);
+      }
+    },
+    [data, handleTaskTap, handleTaskUndo, undoMode],
+  );
+
+  const handleRewardCardTap = useCallback(
+    (rewardId: string) => {
+      const reward = data?.rewards.find((item) => item.id === rewardId);
+      if (!reward) return;
+
+      if (undoMode) {
+        void handleRewardUndo(reward);
+      } else {
+        void handleRewardRedeem(reward);
+      }
+    },
+    [data, handleRewardRedeem, handleRewardUndo, undoMode],
   );
 
   const handlePrevDay = useCallback(() => {
@@ -579,6 +678,15 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 </p>
                 <button
                   type="button"
+                  onClick={() => setUndoMode((value) => !value)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
+                    undoMode ? "bg-rose-100 text-rose-700" : "bg-white/15 text-white"
+                  }`}
+                >
+                  {undoMode ? "退出撤销" : "撤销模式"}
+                </button>
+                <button
+                  type="button"
                   onClick={handleNextDay}
                   disabled={selectedDateOffset >= 0}
                   className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
@@ -590,6 +698,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
             {errorMessage ? (
               <div className="text-sm text-rose-100 text-center">{errorMessage}</div>
+            ) : null}
+            {undoMode ? (
+              <div className="text-xs text-white/90 mt-1">撤销模式：点击可撤销的卡片会执行撤销</div>
             ) : null}
           </div>
         </div>
@@ -625,26 +736,20 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
           </div>
 
           <div className="flex-1 min-h-0 px-6 py-4 overflow-y-auto overflow-x-hidden pt-0 pb-6 kiosk-scroll">
-            {activeTab === "rewards" ? (
+        {activeTab === "rewards" ? (
               <RewardSection
                 rewards={data.rewards}
                 currentPoints={totalNetPoints}
                 disabled={!isToday || saving}
-                onRedeem={(rewardId) => {
-                  const reward = data.rewards.find((item) => item.id === rewardId);
-                  if (!reward) return;
-                  void handleRewardRedeem(reward);
-                }}
+                isUndoMode={undoMode}
+                onRedeem={handleRewardCardTap}
               />
             ) : (
               <TaskSection
                 tasks={selectedDateTasks}
-                onTap={(taskId) => {
-                  const task = data.tasks.find((item) => item.id === taskId);
-                  if (!task) return;
-                  void handleTaskTap(task);
-                }}
+                onTap={handleTaskCardTap}
                 readOnly={!isToday}
+                isUndoMode={undoMode}
               />
             )}
           </div>

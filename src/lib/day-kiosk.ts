@@ -19,6 +19,7 @@ export type DayReward = {
 
 export type DayApiTask = DayTask & {
   completed: boolean;
+  completedCount: number;
 };
 
 export type DayApiPayload = {

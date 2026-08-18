@@ -155,7 +155,7 @@ export async function POST(
           if (
             !TASK_IDS.has(event.itemId) ||
             !Number.isFinite(event.points) ||
-            event.points <= 0
+            event.points === 0
           ) {
             result.failedEvents.push(eventId);
             result.failed.push(eventId);
@@ -176,6 +176,11 @@ export async function POST(
 
           const key = `${eventDateKey}|${event.itemId}`;
           const projectedTask = (taskPointsByDate.get(key) ?? 0) + event.points;
+          if (projectedTask < 0) {
+            result.failedEvents.push(eventId);
+            result.failed.push(eventId);
+            continue;
+          }
           taskPointsByDate.set(key, projectedTask);
         }
 
