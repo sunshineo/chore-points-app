@@ -5,6 +5,7 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import LocaleProvider from "@/components/LocaleProvider";
 import KidModeProvider from "@/components/providers/KidModeProvider";
 import LayoutShell from "@/components/v2/LayoutShell";
+import KioskServiceWorker from "@/components/KioskServiceWorker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "GemSteps - Build Great Habits",
   description: "Track progress, earn gems, and build lasting habits!",
+  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",
@@ -63,6 +65,7 @@ export default function RootLayout({
           <LocaleProvider>
             <KidModeProvider>
               <LayoutShell>{children}</LayoutShell>
+              <KioskServiceWorker />
             </KidModeProvider>
           </LocaleProvider>
         </SessionProvider>

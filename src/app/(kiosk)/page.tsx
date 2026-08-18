@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function LegacyMiaKioskPage() {
+export default function KioskHomePage() {
   redirect("/kiosk/local");
 }
