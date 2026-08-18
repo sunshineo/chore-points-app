@@ -485,7 +485,7 @@ export default function KioskView({ kidId }: { kidId: string }) {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-hidden relative">
+        <div className="flex-1 min-h-0 overflow-hidden relative flex flex-col">
           {showEmoji && (
             <div
               className="absolute inset-0 z-20 flex items-center justify-center"
