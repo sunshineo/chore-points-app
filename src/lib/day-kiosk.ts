@@ -110,8 +110,8 @@ export const DEFAULT_DAY_TASKS: DayTask[] = [
 export const DEFAULT_DAY_REWARDS: DayReward[] = [
   {
     id: "reward-ice-stick",
-    title: "棒棒糖",
-    description: "棒棒糖",
+    title: "冰棍或棒棒糖",
+    description: "冰棍或棒棒糖",
     emoji: "🍭",
     cost: 5,
     stock: null,
