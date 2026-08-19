@@ -825,14 +825,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       >
         <div className="text-white flex-shrink-0 relative overflow-hidden px-6 py-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
           <div className="relative z-20 flex flex-col gap-3">
-            {showRain && (
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <RainParticle key={i} emoji={celebEmoji} />
-                ))}
-              </div>
-            )}
-
             <div className="flex items-center justify-start gap-3">
               <div className="flex-1 z-10">
                 <div className="flex items-center gap-4 text-7xl leading-none font-black tracking-tight">
@@ -844,7 +836,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                       <span className="text-yellow-900 font-bold text-lg opacity-70">★</span>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-3 ${showRain ? "kiosk-counter-bump" : ""}`}>
+                  <div className="flex items-center gap-3">
                     <span style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>{displayedPoints}</span>
                   </div>
                 </div>
@@ -903,13 +895,28 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         </div>
 
         <div className="relative">
-          {showEmoji && (
+          {(showEmoji || showRain) && (
             <div
-              className="absolute inset-0 z-20 flex items-center justify-center"
+              className="fixed inset-0 z-30 pointer-events-none"
               style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(8px)" }}
             >
-              <div className="kiosk-emoji-bounce" style={{ fontSize: 160, lineHeight: 1 }}>
-                {celebEmoji}
+              <div className="relative h-full w-full overflow-hidden">
+                {showEmoji ? (
+                  <div
+                    className="absolute inset-0 z-10 flex items-center justify-center"
+                  >
+                    <div className="kiosk-emoji-bounce" style={{ fontSize: 160, lineHeight: 1 }}>
+                      {celebEmoji}
+                    </div>
+                  </div>
+                ) : null}
+                {showRain ? (
+                  <div className="absolute inset-0 overflow-hidden">
+                    {Array.from({ length: 14 }).map((_, i) => (
+                      <RainParticle key={i} emoji={celebEmoji} />
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
           )}
