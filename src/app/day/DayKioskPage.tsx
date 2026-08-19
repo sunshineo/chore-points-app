@@ -249,6 +249,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const [displayedPoints, setDisplayedPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [undoMode, setUndoMode] = useState(false);
+  const MIN_SELECTED_OFFSET = -1;
 
   const selectedDate = useMemo(() => {
     const today = getDateInPacific(new Date()) as Date;
@@ -577,7 +578,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   );
 
   const handlePrevDay = useCallback(() => {
-    setSelectedDateOffset((offset) => offset - 1);
+    setSelectedDateOffset((offset) => Math.max(offset - 1, MIN_SELECTED_OFFSET));
   }, []);
 
   const handleNextDay = useCallback(() => {
@@ -657,7 +658,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 <button
                   type="button"
                   onClick={handlePrevDay}
-                  disabled={false}
+                  disabled={selectedDateOffset <= MIN_SELECTED_OFFSET}
                   className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
                 >
                   前一天
