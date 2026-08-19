@@ -112,8 +112,16 @@ export const DEFAULT_DAY_REWARDS: DayReward[] = [
     id: "reward-ice-stick",
     title: "冰棍",
     description: "冰棍",
-    emoji: "🍦",
+    emoji: "🍭",
     cost: 5,
+    stock: null,
+  },
+  {
+    id: "reward-ice-cream",
+    title: "冰淇淋",
+    description: "冰淇淋",
+    emoji: "🍦",
+    cost: 10,
     stock: null,
   },
   {
