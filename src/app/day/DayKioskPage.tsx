@@ -688,20 +688,20 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 </p>
                 <button
                   type="button"
+                  onClick={handleNextDay}
+                  disabled={selectedDateOffset >= 0}
+                  className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
+                >
+                  后一天
+                </button>
+                <button
+                  type="button"
                   onClick={() => setUndoMode((value) => !value)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
                     undoMode ? "bg-rose-100 text-rose-700" : "bg-white/15 text-white"
                   }`}
                 >
                   {undoMode ? "退出撤销" : "撤销模式"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextDay}
-                  disabled={selectedDateOffset >= 0}
-                  className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
-                >
-                  后一天
                 </button>
               </div>
             </div>
