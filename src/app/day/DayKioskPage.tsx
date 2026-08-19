@@ -577,7 +577,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   );
 
   const handlePrevDay = useCallback(() => {
-    setSelectedDateOffset((offset) => Math.max(offset - 1, 0));
+    setSelectedDateOffset((offset) => offset - 1);
   }, []);
 
   const handleNextDay = useCallback(() => {
@@ -657,7 +657,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 <button
                   type="button"
                   onClick={handlePrevDay}
-                  disabled={selectedDateOffset <= 0}
+                  disabled={false}
                   className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
                 >
                   前一天
