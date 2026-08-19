@@ -704,7 +704,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         note: `${notePrefix}：${task.title} [day-task:${task.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
       enqueueAndApplyEvent(event);
-      runCelebration(task.emoji, -task.defaultPoints);
     },
     [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
   );
@@ -750,7 +749,6 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         note: `${notePrefix}：${reward.title} [day-reward:${reward.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
       enqueueAndApplyEvent(event);
-      runCelebration(reward.emoji, reward.cost);
     },
     [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
   );
