@@ -437,8 +437,10 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     saveQueuedEvents(kidId, pendingEvents);
   }, [kidId, pendingEvents]);
 
-  const loadState = useCallback(async () => {
-    setLoading(true);
+  const loadState = useCallback(async (showSpinner = true) => {
+    if (showSpinner) {
+      setLoading(true);
+    }
     setErrorMessage(null);
 
     try {
@@ -488,7 +490,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "加载失败");
     } finally {
-      setLoading(false);
+      if (showSpinner) {
+        setLoading(false);
+      }
     }
   }, [kidId, token, selectedDateKey]);
 
@@ -580,7 +584,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       
       syncingRef.current = false;
       if (queue.length === 0 && typeof window !== "undefined" && window.navigator.onLine) {
-        void loadState();
+        // Keep data updates optimistic/local; avoid forcing a full loading state refresh.
       }
     }
   }, [loadState, syncEvents]);
@@ -619,7 +623,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   );
 
   useEffect(() => {
-    void loadState();
+    void loadState(true);
     void drainPendingEvents();
   }, [loadState, drainPendingEvents, selectedDateKey]);
 
