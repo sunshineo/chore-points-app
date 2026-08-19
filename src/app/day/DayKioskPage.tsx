@@ -65,6 +65,7 @@ type SyncResult = {
 };
 
 type QueuedSyncEvent = DaySyncEvent & { enqueuedAt: string };
+type Celebration = { emoji: string; value: number };
 
 const QUEUE_STORAGE_PREFIX = "day-kiosk-offline-queue";
 
@@ -384,14 +385,13 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
   const [selectedDateOffset, setSelectedDateOffset] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showEmoji, setShowEmoji] = useState(false);
-  const [showRain, setShowRain] = useState(false);
-  const [celebEmoji, setCelebEmoji] = useState("⭐");
+  const [celebration, setCelebration] = useState<Celebration | null>(null);
   const [displayedPoints, setDisplayedPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [undoMode, setUndoMode] = useState(false);
   const pendingEventsRef = useRef(pendingEvents);
   const syncingRef = useRef(false);
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fallbackEarliestDate = useMemo(() => {
     const nowDate = getDateInPacific(new Date());
@@ -589,16 +589,23 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     }
   }, [loadState, syncEvents]);
 
-  const runCelebration = useCallback((entryEmoji: string) => {
-    setCelebEmoji(entryEmoji);
-    setShowEmoji(true);
-    setShowRain(false);
+  const runCelebration = useCallback((entryEmoji: string, value: number) => {
+    if (celebrationTimerRef.current) {
+      clearTimeout(celebrationTimerRef.current);
+    }
+    setCelebration({ emoji: entryEmoji, value });
+    celebrationTimerRef.current = setTimeout(() => {
+      setCelebration(null);
+      celebrationTimerRef.current = null;
+    }, 1000);
+  }, []);
 
-    setTimeout(() => {
-      setShowEmoji(false);
-      setShowRain(true);
-      setTimeout(() => setShowRain(false), 2500);
-    }, 3500);
+  useEffect(() => {
+    return () => {
+      if (celebrationTimerRef.current) {
+        clearTimeout(celebrationTimerRef.current);
+      }
+    };
   }, []);
 
   const enqueueAndApplyEvent = useCallback(
@@ -676,7 +683,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         note: `${notePrefix}：${task.title} [day-task:${task.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
       enqueueAndApplyEvent(event);
-      runCelebration(task.emoji);
+      runCelebration(task.emoji, task.defaultPoints);
     },
     [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
   );
@@ -697,8 +704,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         note: `${notePrefix}：${task.title} [day-task:${task.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
       enqueueAndApplyEvent(event);
+      runCelebration(task.emoji, -task.defaultPoints);
     },
-    [data, isToday, enqueueAndApplyEvent, selectedDateKey],
+    [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
   );
 
   const handleRewardRedeem = useCallback(
@@ -719,8 +727,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         note: `${notePrefix}：${reward.title} [day-reward:${reward.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
       enqueueAndApplyEvent(event);
+      runCelebration(reward.emoji, -reward.cost);
     },
-    [data, isToday, enqueueAndApplyEvent, selectedDateKey, totalNetPoints],
+    [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey, totalNetPoints],
   );
 
   const handleRewardUndo = useCallback(
@@ -741,8 +750,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         note: `${notePrefix}：${reward.title} [day-reward:${reward.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
       enqueueAndApplyEvent(event);
+      runCelebration(reward.emoji, reward.cost);
     },
-    [data, isToday, enqueueAndApplyEvent, selectedDateKey],
+    [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
   );
 
   const handleTaskCardTap = useCallback(
@@ -813,9 +823,16 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
           0%, 100% { transform: scale(1) translateY(0); }
           50% { transform: scale(1.08) translateY(-12px); }
         }
+        @keyframes kiosk-celebration-fade {
+          0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+          12% { opacity: 1; }
+          70% { transform: translate(-50%, -52%) scale(1.05); opacity: 1; }
+          100% { transform: translate(-50%, -58%) scale(1.1); opacity: 0; }
+        }
         .kiosk-gem-rain { animation: kiosk-gem-rain-fall 2s ease-in forwards; }
         .kiosk-counter-bump { animation: kiosk-counter-bump 0.4s ease-out; }
-        .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out infinite; }
+        .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out; }
+        .kiosk-celebration-fade { animation: kiosk-celebration-fade 1.05s ease-out forwards; }
         .kiosk-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
       `}</style>
 
@@ -894,32 +911,32 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
           </div>
         </div>
 
-        <div className="relative">
-          {(showEmoji || showRain) && (
-            <div
-              className="fixed inset-0 z-30 pointer-events-none"
-              style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(8px)" }}
-            >
-              <div className="relative h-full w-full overflow-hidden">
-                {showEmoji ? (
-                  <div
-                    className="absolute inset-0 z-10 flex items-center justify-center"
-                  >
-                    <div className="kiosk-emoji-bounce" style={{ fontSize: 160, lineHeight: 1 }}>
-                      {celebEmoji}
-                    </div>
-                  </div>
-                ) : null}
-                {showRain ? (
+          <div className="relative">
+            {celebration ? (
+              <div
+                className="fixed inset-0 z-30 pointer-events-none"
+                style={{ background: "rgba(255,255,255,0.12)" }}
+              >
+                <div className="relative h-full w-full overflow-hidden">
                   <div className="absolute inset-0 overflow-hidden">
-                    {Array.from({ length: 14 }).map((_, i) => (
-                      <RainParticle key={i} emoji={celebEmoji} />
+                    {Array.from({ length: 16 }).map((_, i) => (
+                      <RainParticle key={i} emoji={celebration.emoji} />
                     ))}
                   </div>
-                ) : null}
+                  <div className="kiosk-celebration-fade absolute left-1/2 top-1/2 text-center">
+                    <div className="kiosk-emoji-bounce" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.25)" }}>
+                      <span className="text-5xl block">{celebration.emoji}</span>
+                      <span
+                        className={`text-7xl font-black ${celebration.value >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                      >
+                        {celebration.value > 0 ? "+" : ""}
+                        {celebration.value}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            ) : null}
 
           <div className="flex px-4 pt-3 pb-1 gap-2">
             {TABS.map((tab) => {
