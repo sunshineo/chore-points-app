@@ -597,7 +597,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     celebrationTimerRef.current = setTimeout(() => {
       setCelebration(null);
       celebrationTimerRef.current = null;
-    }, 1000);
+    }, 2200);
   }, []);
 
   useEffect(() => {
@@ -825,14 +825,14 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         }
         @keyframes kiosk-celebration-fade {
           0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
-          12% { opacity: 1; }
-          70% { transform: translate(-50%, -52%) scale(1.05); opacity: 1; }
+          10% { opacity: 1; }
+          78% { transform: translate(-50%, -52%) scale(1.05); opacity: 1; }
           100% { transform: translate(-50%, -58%) scale(1.1); opacity: 0; }
         }
         .kiosk-gem-rain { animation: kiosk-gem-rain-fall 2s ease-in forwards; }
         .kiosk-counter-bump { animation: kiosk-counter-bump 0.4s ease-out; }
         .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out; }
-        .kiosk-celebration-fade { animation: kiosk-celebration-fade 1.05s ease-out forwards; }
+        .kiosk-celebration-fade { animation: kiosk-celebration-fade 1.8s ease-out forwards; }
         .kiosk-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
       `}</style>
 
@@ -912,10 +912,10 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         </div>
 
           <div className="relative">
-            {celebration ? (
+              {celebration ? (
               <div
                 className="fixed inset-0 z-30 pointer-events-none"
-                style={{ background: "rgba(255,255,255,0.12)" }}
+                style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(8px)" }}
               >
                 <div className="relative h-full w-full overflow-hidden">
                   <div className="absolute inset-0 overflow-hidden">
@@ -925,9 +925,8 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                   </div>
                   <div className="kiosk-celebration-fade absolute left-1/2 top-1/2 text-center">
                     <div className="kiosk-emoji-bounce" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.25)" }}>
-                      <span className="text-5xl block">{celebration.emoji}</span>
                       <span
-                        className={`text-7xl font-black ${celebration.value >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                        className={`text-8xl font-black ${celebration.value >= 0 ? "text-emerald-500" : "text-rose-500"}`}
                       >
                         {celebration.value > 0 ? "+" : ""}
                         {celebration.value}
