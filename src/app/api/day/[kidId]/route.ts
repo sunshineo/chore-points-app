@@ -66,11 +66,13 @@ export async function GET(
 
     const dayEntries = entries.filter((entry) => isDayEntry(entry.note));
 
-    const earliestDate = dayEntries
+    const parsedDateList = dayEntries
       .map((entry) => parseDateFromNote(entry.note))
       .filter((noteDate): noteDate is string => Boolean(noteDate))
-      .sort()
-      [0] ?? fallbackEarliest;
+      .sort();
+
+    const earliestObservedDate = parsedDateList[0] ?? fallbackEarliest;
+    const earliestDate = earliestObservedDate < fallbackEarliest ? fallbackEarliest : earliestObservedDate;
 
     const totals = dayEntries.reduce(
       (acc, entry) => {

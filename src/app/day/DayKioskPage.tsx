@@ -286,6 +286,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const totalSpent = data?.totals.totalSpent ?? 0;
   const totalNetPoints = data?.totals.totalNet ?? 0;
   const earliestDateKey = data?.earliestDate || fallbackEarliestDate;
+  const canGoPrevDay = selectedDateKey > earliestDateKey;
 
   const isToday = selectedDateOffset === 0;
 
@@ -585,8 +586,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   );
 
   const handlePrevDay = useCallback(() => {
+    if (!canGoPrevDay) return;
     setSelectedDateOffset((offset) => offset - 1);
-  }, []);
+  }, [canGoPrevDay]);
 
   const handleNextDay = useCallback(() => {
     setSelectedDateOffset((offset) => Math.min(offset + 1, 0));
@@ -665,7 +667,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 <button
                   type="button"
                   onClick={handlePrevDay}
-                  disabled={selectedDateKey <= earliestDateKey}
+                  disabled={!canGoPrevDay}
                   className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
                 >
                   前一天
