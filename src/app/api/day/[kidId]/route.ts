@@ -6,6 +6,7 @@ import {
   DATE_MARKER_PREFIX,
   TASK_MARKER_PREFIX,
   REWARD_MARKER_PREFIX,
+  getDateInPacific,
   getDateKeyPT,
   parseDateFromNote,
   parseMarker,
@@ -41,6 +42,11 @@ export async function GET(
 
     const date = parseDateParam(new URL(req.url).searchParams.get("date"));
 
+    const nowDate = getDateInPacific(new Date());
+    const fallbackDate = new Date(nowDate);
+    fallbackDate.setDate(nowDate.getDate() - 1);
+    const fallbackEarliest = getDateKeyPT(fallbackDate);
+
     const entries = await prisma.pointEntry.findMany({
       where: { kidId },
       orderBy: { createdAt: "desc" },
@@ -59,6 +65,12 @@ export async function GET(
     };
 
     const dayEntries = entries.filter((entry) => isDayEntry(entry.note));
+
+    const earliestDate = dayEntries
+      .map((entry) => parseDateFromNote(entry.note))
+      .filter((noteDate): noteDate is string => Boolean(noteDate))
+      .sort()
+      [0] ?? fallbackEarliest;
 
     const totals = dayEntries.reduce(
       (acc, entry) => {
@@ -125,6 +137,7 @@ export async function GET(
 
     return NextResponse.json({
       kid: { id: kid.id, name: kid.name },
+      earliestDate,
       totals,
       selectedDate: date,
       selectedDay,

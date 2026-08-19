@@ -249,7 +249,13 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const [displayedPoints, setDisplayedPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [undoMode, setUndoMode] = useState(false);
-  const MIN_SELECTED_OFFSET = -1;
+
+  const fallbackEarliestDate = useMemo(() => {
+    const nowDate = getDateInPacific(new Date());
+    const candidate = new Date(nowDate);
+    candidate.setDate(nowDate.getDate() - 1);
+    return getDateKeyPT(candidate);
+  }, []);
 
   const selectedDate = useMemo(() => {
     const today = getDateInPacific(new Date()) as Date;
@@ -279,6 +285,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const totalEarned = data?.totals.totalEarned ?? 0;
   const totalSpent = data?.totals.totalSpent ?? 0;
   const totalNetPoints = data?.totals.totalNet ?? 0;
+  const earliestDateKey = data?.earliestDate || fallbackEarliestDate;
 
   const isToday = selectedDateOffset === 0;
 
@@ -578,7 +585,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   );
 
   const handlePrevDay = useCallback(() => {
-    setSelectedDateOffset((offset) => Math.max(offset - 1, MIN_SELECTED_OFFSET));
+    setSelectedDateOffset((offset) => offset - 1);
   }, []);
 
   const handleNextDay = useCallback(() => {
@@ -658,7 +665,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 <button
                   type="button"
                   onClick={handlePrevDay}
-                  disabled={selectedDateOffset <= MIN_SELECTED_OFFSET}
+                  disabled={selectedDateKey <= earliestDateKey}
                   className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
                 >
                   前一天

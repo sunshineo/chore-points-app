@@ -27,6 +27,7 @@ export type DayApiPayload = {
     id: string;
     name: string | null;
   };
+  earliestDate: string;
   totals: {
     totalEarned: number;
     totalSpent: number;
