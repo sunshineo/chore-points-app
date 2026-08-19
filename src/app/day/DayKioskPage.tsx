@@ -193,7 +193,7 @@ function RewardSection({
   }
 
   return (
-    <div className="overflow-y-auto h-full pr-1">
+    <div className="pr-1">
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
         {rewards.map((reward, i) => {
           const canUse = reward.stock === null ? true : reward.stock > 0;
@@ -623,7 +623,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       `}</style>
 
       <div
-        className="fixed inset-0 z-50 grid grid-rows-[auto_1fr] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50"
+        className="relative grid grid-rows-[auto_1fr] min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50"
         style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
       >
         <div className="text-white flex-shrink-0 relative overflow-hidden px-6 py-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
@@ -705,7 +705,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
           </div>
         </div>
 
-        <div className="min-h-0 overflow-hidden relative flex flex-col">
+        <div className="relative">
           {showEmoji && (
             <div
               className="absolute inset-0 z-20 flex items-center justify-center"
@@ -735,7 +735,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         })}
           </div>
 
-          <div className="flex-1 min-h-0 px-6 py-4 overflow-y-auto overflow-x-hidden pt-0 pb-6 kiosk-scroll">
+          <div className="px-6 py-4 overflow-x-hidden pt-0 pb-6">
         {activeTab === "rewards" ? (
               <RewardSection
                 rewards={data.rewards}
