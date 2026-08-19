@@ -85,7 +85,7 @@ function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
       <div
         className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow ${
-          disabled ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+          completedCount > 0 ? "bg-emerald-500 text-white" : "bg-gray-500 text-white"
         }`}
       >
         {completedCount}
