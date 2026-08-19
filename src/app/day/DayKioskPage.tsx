@@ -600,6 +600,14 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     }, 2200);
   }, []);
 
+  const clearCelebration = useCallback(() => {
+    if (celebrationTimerRef.current) {
+      clearTimeout(celebrationTimerRef.current);
+      celebrationTimerRef.current = null;
+    }
+    setCelebration(null);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (celebrationTimerRef.current) {
@@ -692,6 +700,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     (task: DayTask) => {
       if (!data || !isToday) return;
       if (Number(task.completedCount ?? 0) <= 0) return;
+      clearCelebration();
       const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const notePrefix = "撤销任务";
       const event: DaySyncEvent = {
@@ -705,7 +714,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       };
       enqueueAndApplyEvent(event);
     },
-    [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
+    [clearCelebration, data, isToday, enqueueAndApplyEvent, selectedDateKey],
   );
 
   const handleRewardRedeem = useCallback(
@@ -736,6 +745,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       if (!data || !isToday) return;
       const redeemedCount = Number(reward.redeemedCount ?? 0);
       if (redeemedCount <= 0) return;
+      clearCelebration();
 
       const eventId = `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const notePrefix = "撤销奖励";
@@ -750,7 +760,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       };
       enqueueAndApplyEvent(event);
     },
-    [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
+    [clearCelebration, data, isToday, enqueueAndApplyEvent, selectedDateKey],
   );
 
   const handleTaskCardTap = useCallback(
