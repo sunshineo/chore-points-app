@@ -43,7 +43,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "GemSteps - Build Great Habits",
   description: "Track progress, earn gems, and build lasting habits",
-  manifest: "/manifest.webmanifest",
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",

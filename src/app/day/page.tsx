@@ -1,8 +1,20 @@
+import type { Metadata } from "next";
 import { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getDefaultDayToken } from "@/lib/day-auth";
 import DayKioskPage from "./DayKioskPage";
+
+export const metadata: Metadata = {
+  title: "GemSteps Day",
+  description: "Daily chores, points, and rewards",
+  manifest: "/day.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "GemSteps Day",
+    statusBarStyle: "default",
+  },
+};
 
 async function getDefaultKidId() {
   const configuredKidId = process.env.NEXT_PUBLIC_DAY_KID_ID || process.env.NEXT_PUBLIC_KIOSK_KID_ID;
