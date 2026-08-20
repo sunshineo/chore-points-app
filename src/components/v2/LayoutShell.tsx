@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import KidTabBar from "@/components/v2/KidTabBar";
 import ParentTabBar from "@/components/v2/ParentTabBar";
+import AutoRefresh from "@/components/providers/AutoRefresh";
 
 function V2KidModeBanner() {
   const { isKidMode, viewingAsKid, exitKidMode } = useKidMode();
@@ -113,7 +114,9 @@ export default function LayoutShell({ children }: { children: React.ReactNode })
   return (
     <>
       <V2KidModeBanner />
-      <main className="min-h-screen">{children}</main>
+      <main className="min-h-screen">
+        <AutoRefresh>{children}</AutoRefresh>
+      </main>
       {showKidTabBar && <KidTabBar />}
       {showParentTabBar && <ParentTabBar />}
     </>
