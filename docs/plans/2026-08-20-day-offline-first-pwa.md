@@ -30,8 +30,8 @@ once when connectivity returns.
   and retain the existing server event-ID deduplication.
 - [x] Pass tests, changed-file lint, production build, and local offline browser
   verification.
-- [ ] Commit `main`, push `origin main`, and verify the production deployment.
-- [ ] Hand off the production build for real iPhone/iPad airplane-mode acceptance.
+- [x] Commit `main`, push `origin main`, and verify the production deployment.
+- [x] Hand off the production build for real iPhone/iPad airplane-mode acceptance.
 
 ## Evidence
 
@@ -79,3 +79,15 @@ verification here as each step completes.
   Verified service-worker scope `/day`, a cached `/day` shell, offline cold
   reload, offline task completion (10 to 11 points), one durable outbox event,
   persistence across a second offline reload, and cached font availability.
+
+### Production deployment — 2026-08-21
+
+- Pushed local `main` through `428fce9` to `origin/main`; no Preview deployment
+  was created.
+- Vercel production deployment `dpl_J5Mf2oTdmiemt7WqEabUHchertVi` for commit
+  `428fce9d512161afc1ce7ed66ed9cb51850f6a43` reached `READY`.
+- Production deployment URL:
+  `https://chore-points-q8vfsy6a3-sunshineo-gmailcoms-projects.vercel.app`.
+- The remaining acceptance is the user's real iPhone/iPad sequence: visit
+  `/day` online once, close it, enable airplane mode, reopen from the Home
+  Screen, perform operations, then restore connectivity and confirm upload.
