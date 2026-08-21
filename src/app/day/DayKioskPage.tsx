@@ -61,6 +61,8 @@ const TILE_COLORS = [
 
 type Celebration = { emoji: string; value: number };
 
+const DAY_REFRESH_INTERVAL_MS = 10_000;
+
 function getChoreEmoji(task: { emoji: string; title: string }): string {
   if (task.emoji) {
     return task.emoji;
@@ -254,6 +256,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const [undoMode, setUndoMode] = useState(false);
   const loadSequenceRef = useRef(0);
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncInProgressRef = useRef(false);
 
   const fallbackEarliestDate = useMemo(() => {
     const nowDate = getDateInPacific(new Date());
@@ -312,7 +315,9 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   }, [kidId, token, selectedDateKey]);
 
   const syncAndRefresh = useCallback(async () => {
-    if (!window.navigator.onLine) return;
+    if (!window.navigator.onLine || document.hidden || syncInProgressRef.current) return;
+
+    syncInProgressRef.current = true;
     try {
       const result = await drainDayOutbox({ kidId, token });
       if (!result.completed) return;
@@ -321,6 +326,8 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       setErrorMessage(null);
     } catch {
       // Keep the local snapshot as-is; the next online/focus event retries.
+    } finally {
+      syncInProgressRef.current = false;
     }
   }, [applyPayload, fetchRemoteState, kidId, token]);
 
@@ -406,10 +413,12 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     window.addEventListener("online", refreshWhenVisible);
     window.addEventListener("focus", refreshWhenVisible);
     document.addEventListener("visibilitychange", refreshWhenVisible);
+    const refreshInterval = window.setInterval(refreshWhenVisible, DAY_REFRESH_INTERVAL_MS);
     return () => {
       window.removeEventListener("online", refreshWhenVisible);
       window.removeEventListener("focus", refreshWhenVisible);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.clearInterval(refreshInterval);
     };
   }, [syncAndRefresh]);
 
