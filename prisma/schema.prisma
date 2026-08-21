@@ -6,18 +6,10 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id   String  @id @default(cuid())
-  name String?
-}
-
 model PointEntry {
   id          String   @id @default(cuid())
-  kidId       String
   points      Int
   note        String?
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
-
-  @@index([kidId])
 }

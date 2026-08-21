@@ -1,12 +1,12 @@
 # GemSteps Day
 
-A single-child, offline-first daily tasks and rewards app.
+A singleton, offline-first daily tasks and rewards app.
 
 ## Routes
 
 - `/` redirects to `/day`.
 - `/day` is the only user interface.
-- `GET /api/day` loads the child's points, tasks, and rewards.
+- `GET /api/day` loads points, tasks, and rewards.
 - `POST /api/day/sync` applies queued task and reward events.
 
 ## Required environment
@@ -14,7 +14,7 @@ A single-child, offline-first daily tasks and rewards app.
 - `DATABASE_URL`
 - `DAY_TOKEN`, or `DAY_SECRET`/`NEXTAUTH_SECRET` for derived tokens
 
-The database must contain exactly one user: the child shown on `/day`.
+The database contains only day point entries; there is no user or child model.
 
 ## Development
 

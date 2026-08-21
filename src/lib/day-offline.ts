@@ -45,7 +45,6 @@ export function applyDayEventToPayload(
     rewards: base.rewards.map((reward) => ({ ...reward })),
     totals: { ...base.totals },
     selectedDay: { ...base.selectedDay },
-    kid: { ...base.kid },
   };
 
   const deltaPoints = safeNumber(event.points) * multiplier;
@@ -93,6 +92,5 @@ export function deriveDayPayload(base: DayKioskPayload, dateKey: string): DayKio
     tasks: base.tasks.map((task) => ({ ...task, completed: false, completedCount: 0 })),
     rewards: base.rewards.map((reward) => ({ ...reward, redeemedCount: 0 })),
     totals: { ...base.totals },
-    kid: { ...base.kid },
   };
 }

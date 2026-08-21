@@ -1,4 +1,5 @@
 import "fake-indexeddb/auto";
+import Dexie from "dexie";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DayApiPayload, DaySyncEvent } from "@/lib/day-kiosk";
 import {
@@ -10,11 +11,8 @@ import {
 } from "@/lib/day-offline-db";
 import { drainDayOutbox } from "@/lib/day-sync-controller";
 
-const kidId = "kid-1";
-
 function payload(dateKey = "2026-08-20"): DayApiPayload {
   return {
-    kid: { id: kidId, name: "Test Kid" },
     earliestDate: "2026-08-01",
     totals: { totalEarned: 10, totalSpent: 0, totalNet: 10 },
     selectedDate: dateKey,
@@ -65,29 +63,63 @@ afterAll(() => {
 });
 
 describe("day offline database", () => {
+  it("upgrades the old child-keyed cache without losing queued work", async () => {
+    await dayOfflineDb.delete();
+    const legacyDb = new Dexie("gemsteps-day");
+    legacyDb.version(1).stores({
+      daySnapshots: "&key,kidId,dateKey",
+      outbox: "&id,kidId,order",
+    });
+    await legacyDb.open();
+    await legacyDb.table("daySnapshots").put({
+      key: "kid-1:2026-08-20",
+      kidId: "kid-1",
+      dateKey: "2026-08-20",
+      payload: payload(),
+    });
+    await legacyDb.table("outbox").put({
+      id: "event-1",
+      kidId: "kid-1",
+      order: 1,
+      event: taskEvent(),
+    });
+    legacyDb.close();
+
+    await dayOfflineDb.open();
+
+    expect((await loadDaySnapshot("2026-08-20"))?.totals.totalNet).toBe(10);
+    expect(await countDayOutboxEvents()).toBe(1);
+    expect(await dayOfflineDb.daySnapshots.toArray()).toEqual([
+      expect.objectContaining({ key: "2026-08-20", dateKey: "2026-08-20" }),
+    ]);
+    expect(await dayOfflineDb.outbox.toArray()).toEqual([
+      expect.not.objectContaining({ kidId: expect.anything() }),
+    ]);
+  });
+
   it("stores and reads a remote snapshot", async () => {
-    await storeRemoteDayPayload(kidId, payload());
+    await storeRemoteDayPayload(payload());
 
-    const stored = await loadDaySnapshot(kidId, "2026-08-20");
+    const stored = await loadDaySnapshot("2026-08-20");
 
-    expect(stored?.kid.id).toBe(kidId);
+    expect(stored?.selectedDate).toBe("2026-08-20");
     expect(stored?.totals.totalNet).toBe(10);
   });
 
   it("atomically updates the snapshot and adds an outbox event", async () => {
-    await storeRemoteDayPayload(kidId, payload());
+    await storeRemoteDayPayload(payload());
 
-    const optimistic = await enqueueDayEvent(kidId, taskEvent());
+    const optimistic = await enqueueDayEvent(taskEvent());
 
     expect(optimistic.totals.totalNet).toBe(11);
     expect(optimistic.tasks[0]).toMatchObject({ completed: true, completedCount: 1 });
-    expect(await countDayOutboxEvents(kidId)).toBe(1);
+    expect(await countDayOutboxEvents()).toBe(1);
   });
 
   it("derives a new day from the latest cached snapshot", async () => {
-    await storeRemoteDayPayload(kidId, payload());
+    await storeRemoteDayPayload(payload());
 
-    const nextDay = await loadDaySnapshot(kidId, "2026-08-21");
+    const nextDay = await loadDaySnapshot("2026-08-21");
 
     expect(nextDay).toMatchObject({
       selectedDate: "2026-08-21",
@@ -100,8 +132,8 @@ describe("day offline database", () => {
 
 describe("day outbox sync", () => {
   it("removes an event only after the server accepts it", async () => {
-    await storeRemoteDayPayload(kidId, payload());
-    await enqueueDayEvent(kidId, taskEvent());
+    await storeRemoteDayPayload(payload());
+    await enqueueDayEvent(taskEvent());
     const fetchImpl = vi.fn(async () =>
       new Response(JSON.stringify({ applied: 1, totalNet: 11, failed: [], failedEvents: [] }), {
         status: 200,
@@ -109,7 +141,7 @@ describe("day outbox sync", () => {
       }),
     );
 
-    const result = await drainDayOutbox({ kidId, token: "token", fetchImpl });
+    const result = await drainDayOutbox({ token: "token", fetchImpl });
 
     expect(result).toEqual({ completed: true, rejected: 0 });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -117,13 +149,13 @@ describe("day outbox sync", () => {
       "/api/day/sync?token=token",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(await countDayOutboxEvents(kidId)).toBe(0);
+    expect(await countDayOutboxEvents()).toBe(0);
   });
 
   it("submits events in the same order they were written", async () => {
-    await storeRemoteDayPayload(kidId, payload());
-    await enqueueDayEvent(kidId, taskEvent("event-1"));
-    await enqueueDayEvent(kidId, taskEvent("event-2"));
+    await storeRemoteDayPayload(payload());
+    await enqueueDayEvent(taskEvent("event-1"));
+    await enqueueDayEvent(taskEvent("event-2"));
     const submitted: string[] = [];
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as { events: DaySyncEvent[] };
@@ -134,28 +166,28 @@ describe("day outbox sync", () => {
       });
     });
 
-    await drainDayOutbox({ kidId, token: "token", fetchImpl });
+    await drainDayOutbox({ token: "token", fetchImpl });
 
     expect(submitted).toEqual(["event-1", "event-2"]);
   });
 
   it("keeps an event when the network request fails", async () => {
-    await storeRemoteDayPayload(kidId, payload());
-    await enqueueDayEvent(kidId, taskEvent());
+    await storeRemoteDayPayload(payload());
+    await enqueueDayEvent(taskEvent());
     const fetchImpl = vi.fn(async () => {
       throw new TypeError("offline");
     });
 
-    const result = await drainDayOutbox({ kidId, token: "token", fetchImpl });
+    const result = await drainDayOutbox({ token: "token", fetchImpl });
 
     expect(result).toEqual({ completed: false, rejected: 0 });
-    expect(await countDayOutboxEvents(kidId)).toBe(1);
-    expect((await loadDaySnapshot(kidId, "2026-08-20"))?.totals.totalNet).toBe(11);
+    expect(await countDayOutboxEvents()).toBe(1);
+    expect((await loadDaySnapshot("2026-08-20"))?.totals.totalNet).toBe(11);
   });
 
   it("rolls back and removes an event rejected by the server", async () => {
-    await storeRemoteDayPayload(kidId, payload());
-    await enqueueDayEvent(kidId, taskEvent());
+    await storeRemoteDayPayload(payload());
+    await enqueueDayEvent(taskEvent());
     const fetchImpl = vi.fn(async () =>
       new Response(
         JSON.stringify({ totalNet: 10, failed: ["event-1"], failedEvents: ["event-1"] }),
@@ -163,11 +195,11 @@ describe("day outbox sync", () => {
       ),
     );
 
-    const result = await drainDayOutbox({ kidId, token: "token", fetchImpl });
+    const result = await drainDayOutbox({ token: "token", fetchImpl });
 
     expect(result).toEqual({ completed: true, rejected: 1 });
-    expect(await countDayOutboxEvents(kidId)).toBe(0);
-    expect(await loadDaySnapshot(kidId, "2026-08-20")).toMatchObject({
+    expect(await countDayOutboxEvents()).toBe(0);
+    expect(await loadDaySnapshot("2026-08-20")).toMatchObject({
       totals: { totalNet: 10 },
       tasks: [{ completed: false, completedCount: 0 }],
     });

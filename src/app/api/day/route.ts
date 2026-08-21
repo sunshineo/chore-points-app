@@ -12,7 +12,6 @@ import {
   parseMarker,
 } from "@/lib/day-kiosk";
 import { verifyDayToken } from "@/lib/day-auth";
-import { getDayKid } from "@/lib/day-child";
 
 function parseDateParam(raw: string | null): string {
   if (!raw) return getDateKeyPT(new Date());
@@ -28,12 +27,6 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    const kid = await getDayKid();
-
-    if (!kid) {
-      return NextResponse.json({ error: "Kid not found" }, { status: 404 });
-    }
-
     const date = parseDateParam(new URL(req.url).searchParams.get("date"));
 
     const nowDate = getDateInPacific(new Date());
@@ -42,7 +35,6 @@ export async function GET(req: Request) {
     const fallbackEarliest = getDateKeyPT(fallbackDate);
 
     const entries = await prisma.pointEntry.findMany({
-      where: { kidId: kid.id },
       orderBy: { createdAt: "desc" },
       select: {
         points: true,
@@ -132,7 +124,6 @@ export async function GET(req: Request) {
     }));
 
     return NextResponse.json({
-      kid: { id: kid.id, name: kid.name },
       earliestDate,
       totals,
       selectedDate: date,

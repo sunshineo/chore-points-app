@@ -244,7 +244,7 @@ function RainParticle({ emoji, index }: { emoji: string; index: number }) {
   );
 }
 
-export default function DayKioskPage({ kidId, token }: { kidId: string; token: string }) {
+export default function DayKioskPage({ token }: { token: string }) {
   const [data, setData] = useState<KioskApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
@@ -311,15 +311,15 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       throw new Error(body?.error ?? `加载失败：${response.status}`);
     }
 
-    return storeRemoteDayPayload(kidId, (await response.json()) as KioskApiResponse);
-  }, [kidId, token, selectedDateKey]);
+    return storeRemoteDayPayload((await response.json()) as KioskApiResponse);
+  }, [token, selectedDateKey]);
 
   const syncAndRefresh = useCallback(async () => {
     if (!window.navigator.onLine || document.hidden || syncInProgressRef.current) return;
 
     syncInProgressRef.current = true;
     try {
-      const result = await drainDayOutbox({ kidId, token });
+      const result = await drainDayOutbox({ token });
       if (!result.completed) return;
       const remote = await fetchRemoteState();
       applyPayload(remote);
@@ -329,7 +329,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     } finally {
       syncInProgressRef.current = false;
     }
-  }, [applyPayload, fetchRemoteState, kidId, token]);
+  }, [applyPayload, fetchRemoteState, token]);
 
   const loadState = useCallback(async () => {
     const sequence = ++loadSequenceRef.current;
@@ -338,14 +338,14 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
     let cached: KioskApiResponse | null = null;
     try {
-      cached = await loadDaySnapshot(kidId, selectedDateKey);
+      cached = await loadDaySnapshot(selectedDateKey);
       if (cached && sequence === loadSequenceRef.current) {
         applyPayload(cached);
         setLoading(false);
       }
 
       if (window.navigator.onLine) {
-        const result = await drainDayOutbox({ kidId, token });
+        const result = await drainDayOutbox({ token });
         if (result.completed) {
           const remote = await fetchRemoteState();
           if (sequence === loadSequenceRef.current) applyPayload(remote);
@@ -358,7 +358,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     } finally {
       if (sequence === loadSequenceRef.current) setLoading(false);
     }
-  }, [applyPayload, fetchRemoteState, kidId, selectedDateKey, token]);
+  }, [applyPayload, fetchRemoteState, selectedDateKey, token]);
 
   const runCelebration = useCallback((entryEmoji: string, value: number) => {
     if (celebrationTimerRef.current) {
@@ -390,7 +390,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const enqueueAndApplyEvent = useCallback(async (event: DaySyncEvent): Promise<boolean> => {
     if (!data) return false;
     try {
-      const payload = await enqueueDayEvent(kidId, event);
+      const payload = await enqueueDayEvent(event);
       applyPayload(payload);
       setErrorMessage(null);
       void syncAndRefresh();
@@ -399,7 +399,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
       setErrorMessage(error instanceof Error ? error.message : "本地保存失败");
       return false;
     }
-  }, [applyPayload, data, kidId, syncAndRefresh]);
+  }, [applyPayload, data, syncAndRefresh]);
 
   useEffect(() => {
     void loadState();

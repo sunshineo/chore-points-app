@@ -12,7 +12,6 @@ import {
   parseMarker,
 } from "@/lib/day-kiosk";
 import { verifyDayToken } from "@/lib/day-auth";
-import { getDayKid } from "@/lib/day-child";
 
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const REWARD_TYPES = new Set(["task", "reward"]);
@@ -48,12 +47,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Events are required" }, { status: 400 });
     }
 
-    const kid = await getDayKid();
-
-    if (!kid) {
-      return NextResponse.json({ error: "Kid not found" }, { status: 404 });
-    }
-
     const result = {
       applied: 0,
       skipped: 0,
@@ -63,7 +56,6 @@ export async function POST(req: Request) {
 
     const response = await prisma.$transaction(async (tx) => {
       const allEntries = await tx.pointEntry.findMany({
-        where: { kidId: kid.id },
         select: { points: true, note: true },
       });
 
@@ -131,7 +123,6 @@ export async function POST(req: Request) {
 
         const existing = await tx.pointEntry.findFirst({
           where: {
-            kidId: kid.id,
             note: { contains: eventMarker(eventId) },
           },
           select: { id: true },
@@ -220,7 +211,6 @@ export async function POST(req: Request) {
         const eventNote = `${event.note.trim()}${marker}${dateMarker(eventDateKey)}${eventMarker(eventId)}`;
         await tx.pointEntry.create({
           data: {
-            kidId: kid.id,
             points: event.points,
             note: eventNote,
             date: Number.isFinite(new Date(event.date).getTime())

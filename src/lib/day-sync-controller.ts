@@ -17,18 +17,17 @@ export type DayOutboxDrainResult = {
 };
 
 type DrainOptions = {
-  kidId: string;
   token: string;
   fetchImpl?: typeof fetch;
 };
 
-const activeDrains = new Map<string, Promise<DayOutboxDrainResult>>();
+let activeDrain: Promise<DayOutboxDrainResult> | null = null;
 
-async function runDrain({ kidId, token, fetchImpl = fetch }: DrainOptions): Promise<DayOutboxDrainResult> {
+async function runDrain({ token, fetchImpl = fetch }: DrainOptions): Promise<DayOutboxDrainResult> {
   let rejected = 0;
 
   while (true) {
-    const record = await getOldestDayOutboxEvent(kidId);
+    const record = await getOldestDayOutboxEvent();
     if (!record) return { completed: true, rejected };
 
     let response: Response;
@@ -64,18 +63,17 @@ async function runDrain({ kidId, token, fetchImpl = fetch }: DrainOptions): Prom
 
 export async function drainDayOutbox(options: DrainOptions): Promise<DayOutboxDrainResult> {
   while (true) {
-    const active = activeDrains.get(options.kidId);
-    if (active) {
-      await active;
+    if (activeDrain) {
+      await activeDrain;
       continue;
     }
 
     const task = runDrain(options);
-    activeDrains.set(options.kidId, task);
+    activeDrain = task;
     try {
       return await task;
     } finally {
-      if (activeDrains.get(options.kidId) === task) activeDrains.delete(options.kidId);
+      if (activeDrain === task) activeDrain = null;
     }
   }
 }

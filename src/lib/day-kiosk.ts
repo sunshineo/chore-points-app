@@ -23,10 +23,6 @@ export type DayApiTask = DayTask & {
 };
 
 export type DayApiPayload = {
-  kid: {
-    id: string;
-    name: string | null;
-  };
   earliestDate: string;
   totals: {
     totalEarned: number;

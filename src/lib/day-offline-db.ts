@@ -9,17 +9,18 @@ import {
 
 export type DaySnapshotRecord = {
   key: string;
-  kidId: string;
   dateKey: string;
   payload: DayKioskPayload;
 };
 
 export type DayOutboxRecord = {
   id: string;
-  kidId: string;
   order: number;
   event: DaySyncEvent;
 };
+
+type LegacyDaySnapshotRecord = DaySnapshotRecord & { kidId?: string };
+type LegacyDayOutboxRecord = DayOutboxRecord & { kidId?: string };
 
 class DayOfflineDatabase extends Dexie {
   daySnapshots!: EntityTable<DaySnapshotRecord, "key">;
@@ -31,73 +32,85 @@ class DayOfflineDatabase extends Dexie {
       daySnapshots: "&key,kidId,dateKey",
       outbox: "&id,kidId,order",
     });
+    this.version(2)
+      .stores({
+        daySnapshots: "&key,dateKey",
+        outbox: "&id,order",
+      })
+      .upgrade(async (transaction) => {
+        const snapshotTable = transaction.table<LegacyDaySnapshotRecord, string>("daySnapshots");
+        const outboxTable = transaction.table<LegacyDayOutboxRecord, string>("outbox");
+        const legacySnapshots = await snapshotTable.toArray();
+        const legacyOutbox = await outboxTable.toArray();
+
+        const snapshotsByDate = new Map<string, DaySnapshotRecord>();
+        for (const record of legacySnapshots) {
+          snapshotsByDate.set(record.dateKey, {
+            key: record.dateKey,
+            dateKey: record.dateKey,
+            payload: record.payload,
+          });
+        }
+
+        await snapshotTable.clear();
+        await outboxTable.clear();
+        await snapshotTable.bulkPut([...snapshotsByDate.values()]);
+        await outboxTable.bulkPut(
+          legacyOutbox.map(({ id, order, event }) => ({ id, order, event })),
+        );
+      });
   }
 }
 
 export const dayOfflineDb = new DayOfflineDatabase();
 
-function snapshotKey(kidId: string, dateKey: string): string {
-  return `${kidId}:${dateKey}`;
-}
-
-function snapshotRecord(kidId: string, payload: DayKioskPayload): DaySnapshotRecord {
+function snapshotRecord(payload: DayKioskPayload): DaySnapshotRecord {
   return {
-    key: snapshotKey(kidId, payload.selectedDate),
-    kidId,
+    key: payload.selectedDate,
     dateKey: payload.selectedDate,
     payload,
   };
 }
 
-async function pendingEventsForKid(kidId: string): Promise<DayOutboxRecord[]> {
-  const records = await dayOfflineDb.outbox.where("kidId").equals(kidId).sortBy("order");
-  return records.sort((left, right) => left.order - right.order);
+async function pendingEvents(): Promise<DayOutboxRecord[]> {
+  return dayOfflineDb.outbox.orderBy("order").toArray();
 }
 
-export async function loadDaySnapshot(
-  kidId: string,
-  dateKey: string,
-): Promise<DayKioskPayload | null> {
-  const exact = await dayOfflineDb.daySnapshots.get(snapshotKey(kidId, dateKey));
+export async function loadDaySnapshot(dateKey: string): Promise<DayKioskPayload | null> {
+  const exact = await dayOfflineDb.daySnapshots.get(dateKey);
   if (exact) return normalizeDayPayload(exact.payload);
 
-  const snapshots = await dayOfflineDb.daySnapshots.where("kidId").equals(kidId).sortBy("dateKey");
+  const snapshots = await dayOfflineDb.daySnapshots.orderBy("dateKey").toArray();
   const latest = snapshots.at(-1);
   if (!latest) return null;
 
   const derived = deriveDayPayload(normalizeDayPayload(latest.payload), dateKey);
-  await dayOfflineDb.daySnapshots.put(snapshotRecord(kidId, derived));
+  await dayOfflineDb.daySnapshots.put(snapshotRecord(derived));
   return derived;
 }
 
-export async function storeRemoteDayPayload(
-  kidId: string,
-  payload: DayKioskPayload,
-): Promise<DayKioskPayload> {
+export async function storeRemoteDayPayload(payload: DayKioskPayload): Promise<DayKioskPayload> {
   return dayOfflineDb.transaction("rw", dayOfflineDb.daySnapshots, dayOfflineDb.outbox, async () => {
     let merged = normalizeDayPayload(payload);
-    const pending = await pendingEventsForKid(kidId);
+    const pending = await pendingEvents();
     for (const record of pending) {
       merged = applyDayEventToPayload(merged, record.event);
     }
-    await dayOfflineDb.daySnapshots.put(snapshotRecord(kidId, merged));
+    await dayOfflineDb.daySnapshots.put(snapshotRecord(merged));
     return merged;
   });
 }
 
-export async function enqueueDayEvent(
-  kidId: string,
-  event: DaySyncEvent,
-): Promise<DayKioskPayload> {
+export async function enqueueDayEvent(event: DaySyncEvent): Promise<DayKioskPayload> {
   return dayOfflineDb.transaction("rw", dayOfflineDb.daySnapshots, dayOfflineDb.outbox, async () => {
-    const snapshots = await dayOfflineDb.daySnapshots.where("kidId").equals(kidId).toArray();
+    const snapshots = await dayOfflineDb.daySnapshots.toArray();
     if (snapshots.length === 0) throw new Error("No local day snapshot is available");
 
     let selectedPayload: DayKioskPayload | null = null;
     const updated = snapshots.map((record) => {
       const payload = applyDayEventToPayload(normalizeDayPayload(record.payload), event);
       if (record.dateKey === event.dateKey) selectedPayload = payload;
-      return snapshotRecord(kidId, payload);
+      return snapshotRecord(payload);
     });
 
     if (!selectedPayload) {
@@ -107,14 +120,13 @@ export async function enqueueDayEvent(
         deriveDayPayload(normalizeDayPayload(latest.payload), event.dateKey),
         event,
       );
-      updated.push(snapshotRecord(kidId, selectedPayload));
+      updated.push(snapshotRecord(selectedPayload));
     }
 
     await dayOfflineDb.daySnapshots.bulkPut(updated);
     const latestOutboxRecord = await dayOfflineDb.outbox.orderBy("order").last();
     await dayOfflineDb.outbox.add({
       id: event.id,
-      kidId,
       order: (latestOutboxRecord?.order ?? 0) + 1,
       event,
     });
@@ -123,8 +135,8 @@ export async function enqueueDayEvent(
   });
 }
 
-export async function getOldestDayOutboxEvent(kidId: string): Promise<DayOutboxRecord | null> {
-  return (await pendingEventsForKid(kidId))[0] ?? null;
+export async function getOldestDayOutboxEvent(): Promise<DayOutboxRecord | null> {
+  return (await dayOfflineDb.outbox.orderBy("order").first()) ?? null;
 }
 
 export async function deleteDayOutboxEvent(id: string): Promise<void> {
@@ -133,11 +145,10 @@ export async function deleteDayOutboxEvent(id: string): Promise<void> {
 
 export async function rejectDayOutboxEvent(record: DayOutboxRecord): Promise<void> {
   await dayOfflineDb.transaction("rw", dayOfflineDb.daySnapshots, dayOfflineDb.outbox, async () => {
-    const snapshots = await dayOfflineDb.daySnapshots.where("kidId").equals(record.kidId).toArray();
+    const snapshots = await dayOfflineDb.daySnapshots.toArray();
     await dayOfflineDb.daySnapshots.bulkPut(
       snapshots.map((snapshot) =>
         snapshotRecord(
-          record.kidId,
           applyDayEventToPayload(normalizeDayPayload(snapshot.payload), record.event, -1),
         ),
       ),
@@ -146,6 +157,6 @@ export async function rejectDayOutboxEvent(record: DayOutboxRecord): Promise<voi
   });
 }
 
-export async function countDayOutboxEvents(kidId: string): Promise<number> {
-  return dayOfflineDb.outbox.where("kidId").equals(kidId).count();
+export async function countDayOutboxEvents(): Promise<number> {
+  return dayOfflineDb.outbox.count();
 }
