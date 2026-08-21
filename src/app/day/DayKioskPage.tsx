@@ -3,12 +3,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DAY_TIMEZONE,
-  DayApiPayload,
   DayApiTask,
   DaySyncEvent,
   getDateKeyPT,
   getDateInPacific,
 } from "@/lib/day-kiosk";
+import {
+  enqueueDayEvent,
+  loadDaySnapshot,
+  storeRemoteDayPayload,
+} from "@/lib/day-offline-db";
+import type { DayKioskPayload } from "@/lib/day-offline";
+import { drainDayOutbox } from "@/lib/day-sync-controller";
 
 type TabKey = "tasks" | "rewards";
 
@@ -20,9 +26,7 @@ type KioskResponseBody = {
   selectedDate?: string;
 };
 
-type KioskApiResponse = DayApiPayload & {
-  rewards: Array<DayApiPayload["rewards"][number] & { completed?: boolean }>;
-};
+type KioskApiResponse = DayKioskPayload;
 
 type KioskTileProps = {
   task: DayTask;
@@ -55,147 +59,7 @@ const TILE_COLORS = [
   "from-red-400 to-red-500",
 ];
 
-type SyncResult = {
-  failed?: string[];
-  failedEvents?: string[];
-  skipped?: number;
-  applied?: number;
-  totalNet?: number;
-  error?: string;
-};
-
-type QueuedSyncEvent = DaySyncEvent & { enqueuedAt: string };
 type Celebration = { emoji: string; value: number };
-
-const QUEUE_STORAGE_PREFIX = "day-kiosk-offline-queue";
-
-function getQueueStorageKey(kidId: string): string {
-  return `${QUEUE_STORAGE_PREFIX}:${kidId}`;
-}
-
-function safeParseNumber(value: unknown): number {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : 0;
-}
-
-function normalizeQueuedEvents(rawEvents: unknown): QueuedSyncEvent[] {
-  if (!Array.isArray(rawEvents)) {
-    return [];
-  }
-
-  return rawEvents
-    .map((rawEvent) => {
-      if (typeof rawEvent !== "object" || rawEvent === null) return null;
-      const item = rawEvent as Record<string, unknown>;
-      if (item.type !== "task" && item.type !== "reward") return null;
-      if (typeof item.id !== "string" || item.id.trim().length === 0) return null;
-      if (typeof item.itemId !== "string" || item.itemId.trim().length === 0) return null;
-      if (typeof item.note !== "string" || item.note.trim().length === 0) return null;
-      if (typeof item.dateKey !== "string" || item.dateKey.trim().length === 0) return null;
-      if (typeof item.date !== "string" || item.date.trim().length === 0) return null;
-      const points = Number(item.points);
-      if (!Number.isFinite(points) || points === 0) return null;
-      const enqueuedAt = typeof item.enqueuedAt === "string" ? item.enqueuedAt : new Date().toISOString();
-      return {
-        id: item.id,
-        type: item.type,
-        itemId: item.itemId,
-        points,
-        dateKey: item.dateKey,
-        date: item.date,
-        note: item.note,
-        enqueuedAt,
-      };
-    })
-    .filter((item): item is QueuedSyncEvent => item !== null);
-}
-
-function loadQueuedEvents(kidId: string): QueuedSyncEvent[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const key = getQueueStorageKey(kidId);
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return normalizeQueuedEvents(parsed);
-  } catch (_error) {
-    return [];
-  }
-}
-
-function saveQueuedEvents(kidId: string, events: QueuedSyncEvent[]) {
-  if (typeof window === "undefined") return;
-  const key = getQueueStorageKey(kidId);
-  window.localStorage.setItem(key, JSON.stringify(events));
-}
-
-function applyQueuedEventToState(
-  base: KioskApiResponse,
-  event: DaySyncEvent,
-  multiplier: number,
-): KioskApiResponse {
-  const next: KioskApiResponse = {
-    ...base,
-    tasks: [...base.tasks],
-    rewards: [...base.rewards],
-    totals: { ...base.totals },
-    selectedDay: { ...base.selectedDay },
-    kid: base.kid,
-  };
-
-  const deltaPoints = safeParseNumber(event.points) * multiplier;
-  if (deltaPoints === 0) {
-    return next;
-  }
-
-  if (deltaPoints > 0) {
-    next.totals.totalEarned += deltaPoints;
-    next.selectedDay.earned += event.dateKey === next.selectedDate ? deltaPoints : 0;
-  } else {
-    next.totals.totalSpent += Math.abs(deltaPoints);
-    next.selectedDay.spent += event.dateKey === next.selectedDate ? Math.abs(deltaPoints) : 0;
-  }
-
-  next.totals.totalNet += deltaPoints;
-  next.selectedDay.net += event.dateKey === next.selectedDate ? deltaPoints : 0;
-
-  if (event.dateKey !== next.selectedDate) {
-    return next;
-  }
-
-  if (event.type === "task") {
-    const index = next.tasks.findIndex((task) => task.id === event.itemId);
-    if (index >= 0) {
-      const updatedTask = { ...next.tasks[index] };
-      const perTaskPoints = safeParseNumber(updatedTask.defaultPoints);
-      const countDelta = perTaskPoints > 0 ? deltaPoints / perTaskPoints : 0;
-      updatedTask.completedCount = Math.max(0, Math.round((updatedTask.completedCount ?? 0) + countDelta));
-      updatedTask.completed = updatedTask.completedCount > 0;
-      next.tasks[index] = updatedTask;
-    }
-  }
-
-  if (event.type === "reward") {
-    const index = next.rewards.findIndex((reward) => reward.id === event.itemId);
-    if (index >= 0) {
-      const updatedReward = { ...next.rewards[index] };
-      const redeemedDelta = deltaPoints < 0 ? 1 : -1;
-      updatedReward.redeemedCount = Math.max(0, (updatedReward.redeemedCount ?? 0) + redeemedDelta);
-      next.rewards[index] = updatedReward;
-    }
-  }
-
-  return next;
-}
-
-function applyQueuedEventsToState(base: KioskApiResponse, events: QueuedSyncEvent[]): KioskApiResponse {
-  let next: KioskApiResponse = base;
-  for (const event of events) {
-    next = applyQueuedEventToState(next, event, 1);
-  }
-  return next;
-}
 
 function getChoreEmoji(task: { emoji: string; title: string }): string {
   if (task.emoji) {
@@ -356,11 +220,11 @@ function RewardSection({
   );
 }
 
-function RainParticle({ emoji }: { emoji: string }) {
-  const left = useRef(Math.random() * 100).current;
-  const delay = useRef(Math.random() * 0.8).current;
-  const duration = useRef(1.5 + Math.random() * 1).current;
-  const size = useRef(20 + Math.random() * 20).current;
+function RainParticle({ emoji, index }: { emoji: string; index: number }) {
+  const left = (index * 37 + 11) % 100;
+  const delay = ((index * 17) % 80) / 100;
+  const duration = 1.5 + ((index * 29) % 100) / 100;
+  const size = 20 + ((index * 31) % 20);
 
   return (
     <span
@@ -380,7 +244,6 @@ function RainParticle({ emoji }: { emoji: string }) {
 
 export default function DayKioskPage({ kidId, token }: { kidId: string; token: string }) {
   const [data, setData] = useState<KioskApiResponse | null>(null);
-  const [pendingEvents, setPendingEvents] = useState<QueuedSyncEvent[]>(() => loadQueuedEvents(kidId));
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
   const [selectedDateOffset, setSelectedDateOffset] = useState(0);
@@ -389,8 +252,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   const [displayedPoints, setDisplayedPoints] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
   const [undoMode, setUndoMode] = useState(false);
-  const pendingEventsRef = useRef(pendingEvents);
-  const syncingRef = useRef(false);
+  const loadSequenceRef = useRef(0);
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fallbackEarliestDate = useMemo(() => {
@@ -429,165 +291,67 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
   const isToday = selectedDateOffset === 0;
 
-  useEffect(() => {
-    pendingEventsRef.current = pendingEvents;
-  }, [pendingEvents]);
+  const applyPayload = useCallback((payload: KioskApiResponse) => {
+    setData(payload);
+    setTotalPoints(payload.totals.totalNet);
+    setDisplayedPoints((current) => current || payload.totals.totalNet);
+  }, []);
 
-  useEffect(() => {
-    saveQueuedEvents(kidId, pendingEvents);
-  }, [kidId, pendingEvents]);
-
-  const loadState = useCallback(async (showSpinner = true) => {
-    if (showSpinner) {
-      setLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const response = await fetch(
-        `/api/day/${encodeURIComponent(kidId)}?token=${encodeURIComponent(token)}&date=${encodeURIComponent(selectedDateKey)}`,
-        { cache: "no-store" },
-      );
-
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as KioskResponseBody;
-        throw new Error(body?.error ?? `加载失败：${response.status}`);
-      }
-
-      const payload = (await response.json()) as KioskApiResponse;
-      const safeTasks = payload.tasks.map((task) => ({
-        ...task,
-        completed: Boolean(task.completed),
-        completedCount: Number(task.completedCount || 0),
-        defaultPoints: Number(task.defaultPoints || 0),
-      }));
-
-      const safeRewards = payload.rewards.map((reward) => ({
-        ...reward,
-        cost: Number(reward.cost || 0),
-      }));
-
-      const normalized = {
-        ...payload,
-        tasks: safeTasks,
-        rewards: safeRewards,
-        totals: {
-          totalEarned: Number(payload.totals?.totalEarned ?? 0),
-          totalSpent: Number(payload.totals?.totalSpent ?? 0),
-          totalNet: Number(payload.totals?.totalNet ?? 0),
-        },
-        selectedDay: {
-          earned: Number(payload.selectedDay?.earned ?? 0),
-          spent: Number(payload.selectedDay?.spent ?? 0),
-          net: Number(payload.selectedDay?.net ?? 0),
-        },
-      } as KioskApiResponse;
-
-      const mergedData = applyQueuedEventsToState(normalized, pendingEventsRef.current);
-      setData(mergedData);
-      setTotalPoints(mergedData.totals.totalNet);
-      setDisplayedPoints((prev) => prev || mergedData.totals.totalNet);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "加载失败");
-    } finally {
-      if (showSpinner) {
-        setLoading(false);
-      }
-    }
-  }, [kidId, token, selectedDateKey]);
-
-  const syncEvents = useCallback(async (events: QueuedSyncEvent[]) => {
-    if (events.length === 0) return null;
-    const response = await fetch(`/api/day/sync/${encodeURIComponent(kidId)}?token=${encodeURIComponent(token)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ events }),
-    });
-
-    const result = (await response.json().catch(() => null)) as SyncResult | null;
-
-    const safeResult: SyncResult = result && typeof result === "object" ? result : {};
+  const fetchRemoteState = useCallback(async (): Promise<KioskApiResponse> => {
+    const response = await fetch(
+      `/api/day/${encodeURIComponent(kidId)}?token=${encodeURIComponent(token)}&date=${encodeURIComponent(selectedDateKey)}`,
+      { cache: "no-store" },
+    );
 
     if (!response.ok) {
-      return {
-        ...safeResult,
-        failed: safeResult?.failed ?? [events[0]?.id],
-        error: safeResult?.error || `同步失败：${response.status}`,
-      };
+      const body = (await response.json().catch(() => null)) as KioskResponseBody;
+      throw new Error(body?.error ?? `加载失败：${response.status}`);
     }
 
-    return safeResult;
-  }, [kidId, token]);
+    return storeRemoteDayPayload(kidId, (await response.json()) as KioskApiResponse);
+  }, [kidId, token, selectedDateKey]);
 
-  const drainPendingEvents = useCallback(async () => {
-    if (syncingRef.current) return;
-    let queue = [...pendingEventsRef.current];
-    if (queue.length === 0) return;
-    if (typeof window !== "undefined" && !window.navigator.onLine) {
-      setErrorMessage("当前离线，操作已暂存，恢复联网后自动上传");
-      return;
-    }
-
-    syncingRef.current = true;
-    
-
+  const syncAndRefresh = useCallback(async () => {
+    if (!window.navigator.onLine) return;
     try {
-      while (queue.length > 0) {
-        if (typeof window !== "undefined" && !window.navigator.onLine) {
-          setErrorMessage("当前离线，操作已暂存，恢复联网后自动上传");
-          break;
-        }
-
-        const event = queue[0];
-        const result = await syncEvents([event]);
-        const isFailed = (result?.failed ?? []).includes(event.id) || (result?.failedEvents ?? []).includes(event.id);
-
-        if (!result || typeof result.totalNet !== "number") {
-          setErrorMessage("同步失败，操作已暂存，稍后重试");
-          break;
-        }
-
-        if (isFailed) {
-          queue = queue.filter((item) => item.id !== event.id);
-          pendingEventsRef.current = queue;
-          setPendingEvents(queue);
-          setData((prev) => (prev ? applyQueuedEventToState(prev, event, -1) : prev));
-          setTotalPoints((prev) => prev - event.points);
-          setErrorMessage("同步校验失败，已回退该操作");
-          continue;
-        }
-
-        queue = queue.slice(1);
-        pendingEventsRef.current = queue;
-        setPendingEvents(queue);
-
-        const nextTotalNet = safeParseNumber(result.totalNet);
-        setTotalPoints(nextTotalNet);
-        setData((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            totals: {
-              ...prev.totals,
-              totalNet: nextTotalNet,
-            },
-          };
-        });
-      }
-
-      if (pendingEventsRef.current.length === 0) {
-        setErrorMessage(null);
-      }
-    } catch (_error) {
-      setErrorMessage("同步失败，操作已暂存，稍后重试");
-    } finally {
-      
-      syncingRef.current = false;
-      if (queue.length === 0 && typeof window !== "undefined" && window.navigator.onLine) {
-        // Keep data updates optimistic/local; avoid forcing a full loading state refresh.
-      }
+      const result = await drainDayOutbox({ kidId, token });
+      if (!result.completed) return;
+      const remote = await fetchRemoteState();
+      applyPayload(remote);
+      setErrorMessage(null);
+    } catch {
+      // Keep the local snapshot as-is; the next online/focus event retries.
     }
-  }, [loadState, syncEvents]);
+  }, [applyPayload, fetchRemoteState, kidId, token]);
+
+  const loadState = useCallback(async () => {
+    const sequence = ++loadSequenceRef.current;
+    setLoading(true);
+    setErrorMessage(null);
+
+    let cached: KioskApiResponse | null = null;
+    try {
+      cached = await loadDaySnapshot(kidId, selectedDateKey);
+      if (cached && sequence === loadSequenceRef.current) {
+        applyPayload(cached);
+        setLoading(false);
+      }
+
+      if (window.navigator.onLine) {
+        const result = await drainDayOutbox({ kidId, token });
+        if (result.completed) {
+          const remote = await fetchRemoteState();
+          if (sequence === loadSequenceRef.current) applyPayload(remote);
+        }
+      }
+    } catch (error) {
+      if (!cached && sequence === loadSequenceRef.current) {
+        setErrorMessage(error instanceof Error ? error.message : "加载失败");
+      }
+    } finally {
+      if (sequence === loadSequenceRef.current) setLoading(false);
+    }
+  }, [applyPayload, fetchRemoteState, kidId, selectedDateKey, token]);
 
   const runCelebration = useCallback((entryEmoji: string, value: number) => {
     if (celebrationTimerRef.current) {
@@ -616,43 +380,38 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
     };
   }, []);
 
-  const enqueueAndApplyEvent = useCallback(
-    (event: DaySyncEvent) => {
-      if (!data) return;
-      const pending: QueuedSyncEvent = { ...event, enqueuedAt: new Date().toISOString() };
-
-      setData((prev) => {
-        if (!prev) return prev;
-        const next = applyQueuedEventToState(prev, pending, 1);
-        setTotalPoints(next.totals.totalNet);
-        return next;
-      });
-
-      const nextQueue = [...pendingEventsRef.current, pending];
-      pendingEventsRef.current = nextQueue;
-      setPendingEvents(nextQueue);
+  const enqueueAndApplyEvent = useCallback(async (event: DaySyncEvent): Promise<boolean> => {
+    if (!data) return false;
+    try {
+      const payload = await enqueueDayEvent(kidId, event);
+      applyPayload(payload);
       setErrorMessage(null);
-      void drainPendingEvents();
-    },
-    [data, drainPendingEvents],
-  );
+      void syncAndRefresh();
+      return true;
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "本地保存失败");
+      return false;
+    }
+  }, [applyPayload, data, kidId, syncAndRefresh]);
 
   useEffect(() => {
-    void loadState(true);
-    void drainPendingEvents();
-  }, [loadState, drainPendingEvents, selectedDateKey]);
+    void loadState();
+  }, [loadState]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handleOnline = () => {
-      void drainPendingEvents();
+    const refreshWhenVisible = () => {
+      if (!document.hidden) void syncAndRefresh();
     };
 
-    window.addEventListener("online", handleOnline);
+    window.addEventListener("online", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
-      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("online", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
-  }, [drainPendingEvents]);
+  }, [syncAndRefresh]);
 
   useEffect(() => {
     const start = displayedPoints;
@@ -677,7 +436,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
   }, [displayedPoints, totalPoints]);
 
   const handleTaskTap = useCallback(
-    (task: DayTask) => {
+    async (task: DayTask) => {
       if (!data || !isToday) return;
       const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const notePrefix = "完成任务";
@@ -690,14 +449,15 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         date: new Date().toISOString(),
         note: `${notePrefix}：${task.title} [day-task:${task.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
-      enqueueAndApplyEvent(event);
-      runCelebration(task.emoji, task.defaultPoints);
+      if (await enqueueAndApplyEvent(event)) {
+        runCelebration(task.emoji, task.defaultPoints);
+      }
     },
     [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
   );
 
   const handleTaskUndo = useCallback(
-    (task: DayTask) => {
+    async (task: DayTask) => {
       if (!data || !isToday) return;
       if (Number(task.completedCount ?? 0) <= 0) return;
       clearCelebration();
@@ -712,13 +472,13 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         date: new Date().toISOString(),
         note: `${notePrefix}：${task.title} [day-task:${task.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
-      enqueueAndApplyEvent(event);
+      await enqueueAndApplyEvent(event);
     },
     [clearCelebration, data, isToday, enqueueAndApplyEvent, selectedDateKey],
   );
 
   const handleRewardRedeem = useCallback(
-    (reward: KioskApiResponse["rewards"][number]) => {
+    async (reward: KioskApiResponse["rewards"][number]) => {
       if (!data || !isToday) return;
       if (reward.stock !== null && reward.stock <= 0) return;
       if (totalNetPoints < reward.cost) return;
@@ -734,14 +494,15 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         date: new Date().toISOString(),
         note: `${notePrefix}：${reward.title} [day-reward:${reward.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
-      enqueueAndApplyEvent(event);
-      runCelebration(reward.emoji, -reward.cost);
+      if (await enqueueAndApplyEvent(event)) {
+        runCelebration(reward.emoji, -reward.cost);
+      }
     },
     [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey, totalNetPoints],
   );
 
   const handleRewardUndo = useCallback(
-    (reward: KioskApiResponse["rewards"][number]) => {
+    async (reward: KioskApiResponse["rewards"][number]) => {
       if (!data || !isToday) return;
       const redeemedCount = Number(reward.redeemedCount ?? 0);
       if (redeemedCount <= 0) return;
@@ -758,7 +519,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
         date: new Date().toISOString(),
         note: `${notePrefix}：${reward.title} [day-reward:${reward.id}][day-date:${selectedDateKey}][day-event:${eventId}]`,
       };
-      enqueueAndApplyEvent(event);
+      await enqueueAndApplyEvent(event);
     },
     [clearCelebration, data, isToday, enqueueAndApplyEvent, selectedDateKey],
   );
@@ -928,7 +689,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
                 <div className="relative h-full w-full overflow-hidden">
                   <div className="absolute inset-0 overflow-hidden">
                     {Array.from({ length: 16 }).map((_, i) => (
-                      <RainParticle key={i} emoji={celebration.emoji} />
+                      <RainParticle key={i} emoji={celebration.emoji} index={i} />
                     ))}
                   </div>
                   <div className="kiosk-celebration-fade absolute left-1/2 top-1/2 text-center">

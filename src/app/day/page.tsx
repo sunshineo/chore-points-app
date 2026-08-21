@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SerwistProvider } from "@serwist/next/react";
 import { Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -62,5 +63,15 @@ export default async function DayPage() {
     );
   }
 
-  return <DayKioskPage kidId={kidId} token={token} />;
+  return (
+    <SerwistProvider
+      swUrl="/sw.js"
+      disable={process.env.NODE_ENV !== "production"}
+      cacheOnNavigation={false}
+      reloadOnOnline={false}
+      options={{ scope: "/day" }}
+    >
+      <DayKioskPage kidId={kidId} token={token} />
+    </SerwistProvider>
+  );
 }
