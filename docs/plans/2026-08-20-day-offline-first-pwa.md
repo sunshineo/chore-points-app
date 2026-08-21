@@ -49,6 +49,10 @@ verification here as each step completes.
 
 ### Implementation and local verification — 2026-08-21
 
+- Implementation commit: `220eba2` (`feat: make day kiosk offline first`).
+- Changed files: `/day` page and kiosk component, three offline data/sync
+  modules, Serwist worker/configuration, focused tests, package manifests, and
+  generated-file ignore configuration.
 - Added `daySnapshots` and `outbox` to the `gemsteps-day` Dexie database.
   Snapshot updates and outbox inserts happen in the same IndexedDB transaction.
 - Removed the old `day-kiosk-offline-queue:*` localStorage implementation. A
