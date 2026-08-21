@@ -12,9 +12,8 @@ A singleton, offline-first daily tasks and rewards app.
 ## Required environment
 
 - `DATABASE_URL`
-- `DAY_TOKEN`, or `DAY_SECRET`/`NEXTAUTH_SECRET` for derived tokens
 
-The database contains only day point entries; there is no user or child model.
+The database contains only structured day point events; there is no user or child model.
 
 ## Development
 

@@ -4,26 +4,18 @@ import {
   rejectDayOutboxEvent,
 } from "@/lib/day-offline-db";
 
-type DaySyncResponse = {
-  failed?: string[];
-  failedEvents?: string[];
-  totalNet?: number;
-  error?: string;
-};
-
-export type DayOutboxDrainResult = {
+type DayOutboxDrainResult = {
   completed: boolean;
   rejected: number;
 };
 
 type DrainOptions = {
-  token: string;
   fetchImpl?: typeof fetch;
 };
 
 let activeDrain: Promise<DayOutboxDrainResult> | null = null;
 
-async function runDrain({ token, fetchImpl = fetch }: DrainOptions): Promise<DayOutboxDrainResult> {
+async function runDrain({ fetchImpl = fetch }: DrainOptions): Promise<DayOutboxDrainResult> {
   let rejected = 0;
 
   while (true) {
@@ -32,36 +24,27 @@ async function runDrain({ token, fetchImpl = fetch }: DrainOptions): Promise<Day
 
     let response: Response;
     try {
-      response = await fetchImpl(
-        `/api/day/sync?token=${encodeURIComponent(token)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ events: [record.event] }),
-        },
-      );
+      response = await fetchImpl("/api/day/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record.event),
+      });
     } catch {
       return { completed: false, rejected };
     }
 
-    const result = (await response.json().catch(() => null)) as DaySyncResponse | null;
-    const failed = new Set([...(result?.failed ?? []), ...(result?.failedEvents ?? [])]);
-
-    if (failed.has(record.id)) {
+    if (response.status === 409 || response.status === 400) {
       await rejectDayOutboxEvent(record);
       rejected += 1;
       continue;
     }
 
-    if (!response.ok || typeof result?.totalNet !== "number") {
-      return { completed: false, rejected };
-    }
-
+    if (!response.ok) return { completed: false, rejected };
     await deleteDayOutboxEvent(record.id);
   }
 }
 
-export async function drainDayOutbox(options: DrainOptions): Promise<DayOutboxDrainResult> {
+export async function drainDayOutbox(options: DrainOptions = {}): Promise<DayOutboxDrainResult> {
   while (true) {
     if (activeDrain) {
       await activeDrain;

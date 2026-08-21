@@ -3,255 +3,99 @@ import { prisma } from "@/lib/db";
 import {
   DEFAULT_DAY_REWARDS,
   DEFAULT_DAY_TASKS,
-  dateMarker,
-  eventMarker,
-  rewardMarker,
-  taskMarker,
-  DaySyncEvent,
-  parseDateFromNote,
-  parseMarker,
+  type DaySyncEvent,
 } from "@/lib/day-kiosk";
-import { verifyDayToken } from "@/lib/day-auth";
 
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const REWARD_TYPES = new Set(["task", "reward"]);
-const TASK_IDS = new Set(DEFAULT_DAY_TASKS.map((task) => task.id));
-const REWARD_IDS = new Set(DEFAULT_DAY_REWARDS.map((reward) => reward.id));
+const TASK_POINTS = new Map(DEFAULT_DAY_TASKS.map((task) => [task.id, task.defaultPoints]));
+const REWARD_COSTS = new Map(DEFAULT_DAY_REWARDS.map((reward) => [reward.id, reward.cost]));
 
-function parseDateKey(raw: string | null): string | null {
-  if (!raw) return null;
-  const trimmed = raw.trim();
-  return DATE_KEY_RE.test(trimmed) ? trimmed : null;
-}
+function isValidEvent(value: unknown): value is DaySyncEvent {
+  if (!value || typeof value !== "object") return false;
+  const event = value as Partial<DaySyncEvent>;
+  const expectedPoints = event.type === "task"
+    ? TASK_POINTS.get(event.itemId ?? "")
+    : event.type === "reward"
+      ? REWARD_COSTS.get(event.itemId ?? "")
+      : undefined;
 
-function dateFromDateKey(dateKey: string): Date {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-}
-
-function isSafeId(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
+  return (
+    typeof event.id === "string" &&
+    event.id.length > 0 &&
+    typeof event.itemId === "string" &&
+    expectedPoints !== undefined &&
+    typeof event.points === "number" &&
+    event.points !== 0 &&
+    Math.abs(event.points) === expectedPoints &&
+    typeof event.dateKey === "string" &&
+    DATE_KEY_RE.test(event.dateKey) &&
+    typeof event.date === "string" &&
+    Number.isFinite(new Date(event.date).getTime())
+  );
 }
 
 export async function POST(req: Request) {
   try {
-    const token = new URL(req.url).searchParams.get("token") || "";
-    if (!verifyDayToken(token)) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    const event = await req.json().catch(() => null);
+    if (!isValidEvent(event)) {
+      return NextResponse.json({ error: "Invalid event" }, { status: 400 });
     }
 
-    const payload = (await req.json().catch(() => null)) as { events?: DaySyncEvent[] } | null;
-    const rawEvents = payload?.events;
+    const outcome = await prisma.$transaction(async (tx) => {
+      const existing = await tx.pointEntry.findUnique({
+        where: { id: event.id },
+        select: { id: true },
+      });
+      if (existing) return "duplicate";
 
-    if (!Array.isArray(rawEvents) || rawEvents.length === 0) {
-      return NextResponse.json({ error: "Events are required" }, { status: 400 });
-    }
-
-    const result = {
-      applied: 0,
-      skipped: 0,
-      failedEvents: [] as string[],
-      failed: [] as string[],
-    };
-
-    const response = await prisma.$transaction(async (tx) => {
-      const allEntries = await tx.pointEntry.findMany({
-        select: { points: true, note: true },
+      const entries = await tx.pointEntry.findMany({
+        select: {
+          type: true,
+          itemId: true,
+          points: true,
+          dateKey: true,
+        },
       });
 
-      const taskPointsByDate = new Map<string, number>();
-      const rewardPointsByDate = new Map<string, number>();
+      const currentItemPoints = entries.reduce((sum, entry) => {
+        return entry.type === event.type &&
+          entry.itemId === event.itemId &&
+          entry.dateKey === event.dateKey
+          ? sum + entry.points
+          : sum;
+      }, 0);
+      const currentTotal = entries.reduce((sum, entry) => sum + entry.points, 0);
+      const nextItemPoints = currentItemPoints + event.points;
+      const nextTotal = currentTotal + event.points;
 
-      allEntries.forEach((entry) => {
-        const points = Number(entry.points);
-        if (!Number.isFinite(points) || !entry.note) {
-          return;
-        }
-
-        const dateKey = parseDateFromNote(entry.note);
-        if (!dateKey) {
-          return;
-        }
-
-        const taskId = parseMarker("task", entry.note);
-        if (taskId) {
-          const key = `${dateKey}|${taskId}`;
-          taskPointsByDate.set(key, (taskPointsByDate.get(key) ?? 0) + points);
-          return;
-        }
-
-        const rewardId = parseMarker("reward", entry.note);
-        if (rewardId) {
-          const key = `${dateKey}|${rewardId}`;
-          rewardPointsByDate.set(key, (rewardPointsByDate.get(key) ?? 0) + points);
-        }
-      });
-
-      let runningNet = allEntries.reduce((sum, entry) => sum + Number(entry.points), 0);
-      const dedupe = new Set<string>();
-
-      for (const event of rawEvents) {
-        if (
-          !isSafeId(event?.id) ||
-          !REWARD_TYPES.has(event.type) ||
-          !isSafeId(event.itemId) ||
-          !isSafeId(event.note) ||
-          typeof event.points !== "number" ||
-          typeof event.date !== "string" ||
-          !isSafeId(event.dateKey) ||
-          !parseDateKey(event.dateKey)
-        ) {
-          if (isSafeId(event?.id)) {
-            result.failedEvents.push(event.id);
-          }
-          continue;
-        }
-
-        if (dedupe.has(event.id)) {
-          result.skipped += 1;
-          continue;
-        }
-        dedupe.add(event.id);
-
-        const eventId = event.id;
-        const eventDateKey = parseDateKey(event.dateKey);
-        if (!eventDateKey) {
-          result.failedEvents.push(eventId);
-          result.failed.push(eventId);
-          continue;
-        }
-
-        const existing = await tx.pointEntry.findFirst({
-          where: {
-            note: { contains: eventMarker(eventId) },
-          },
-          select: { id: true },
-        });
-
-        if (existing) {
-          result.skipped += 1;
-          continue;
-        }
-
-        const taskDefaults = new Map(DEFAULT_DAY_TASKS.map((task) => [task.id, task.defaultPoints]));
-        const rewardDefaults = new Map(DEFAULT_DAY_REWARDS.map((reward) => [reward.id, reward.cost]));
-
-        if (event.type === "task") {
-          if (
-            !TASK_IDS.has(event.itemId) ||
-            !Number.isFinite(event.points) ||
-            event.points === 0
-          ) {
-            result.failedEvents.push(eventId);
-            result.failed.push(eventId);
-            continue;
-          }
-
-          const expectedPoints = taskDefaults.get(event.itemId);
-          if (
-            expectedPoints == null ||
-            !Number.isFinite(expectedPoints) ||
-            expectedPoints <= 0 ||
-            Math.abs(event.points) !== expectedPoints
-          ) {
-            result.failedEvents.push(eventId);
-            result.failed.push(eventId);
-            continue;
-          }
-
-          const key = `${eventDateKey}|${event.itemId}`;
-          const projectedTask = (taskPointsByDate.get(key) ?? 0) + event.points;
-          if (projectedTask < 0) {
-            result.failedEvents.push(eventId);
-            result.failed.push(eventId);
-            continue;
-          }
-          taskPointsByDate.set(key, projectedTask);
-        }
-
-        if (event.type === "reward") {
-          if (!REWARD_IDS.has(event.itemId) || !Number.isFinite(event.points) || event.points === 0) {
-            result.failedEvents.push(eventId);
-            result.failed.push(eventId);
-            continue;
-          }
-
-          const rewardCost = rewardDefaults.get(event.itemId);
-          if (
-            rewardCost == null ||
-            !Number.isFinite(rewardCost) ||
-            rewardCost <= 0 ||
-            Math.abs(event.points) !== rewardCost
-          ) {
-            result.failedEvents.push(eventId);
-            result.failed.push(eventId);
-            continue;
-          }
-
-          const key = `${eventDateKey}|${event.itemId}`;
-          const projectedReward = (rewardPointsByDate.get(key) ?? 0) + event.points;
-          if (projectedReward > 0) {
-            result.failedEvents.push(eventId);
-            result.failed.push(eventId);
-            continue;
-          }
-          rewardPointsByDate.set(key, projectedReward);
-        }
-
-        const projectedNet = runningNet + event.points;
-        if (projectedNet < 0) {
-          result.failedEvents.push(eventId);
-          result.failed.push(eventId);
-          continue;
-        }
-
-        const marker = event.type === "task" ? taskMarker(event.itemId) : rewardMarker(event.itemId);
-
-        const safeDate = dateFromDateKey(eventDateKey);
-        const eventNote = `${event.note.trim()}${marker}${dateMarker(eventDateKey)}${eventMarker(eventId)}`;
-        await tx.pointEntry.create({
-          data: {
-            points: event.points,
-            note: eventNote,
-            date: Number.isFinite(new Date(event.date).getTime())
-              ? new Date(event.date)
-              : safeDate,
-          },
-        });
-
-        runningNet = projectedNet;
-        result.applied += 1;
+      if (
+        nextTotal < 0 ||
+        (event.type === "task" && nextItemPoints < 0) ||
+        (event.type === "reward" && nextItemPoints > 0)
+      ) {
+        return "rejected";
       }
 
-      return { ...result, totalNet: runningNet };
+      await tx.pointEntry.create({
+        data: {
+          id: event.id,
+          type: event.type,
+          itemId: event.itemId,
+          points: event.points,
+          dateKey: event.dateKey,
+          date: new Date(event.date),
+        },
+      });
+      return "applied";
     });
 
-    if (response.failed.length > 0) {
-      return NextResponse.json(
-        {
-          error: "无法应用这次操作，请重试",
-          failedEvents: response.failedEvents,
-          failed: response.failed,
-          skipped: response.skipped,
-          applied: response.applied,
-          totalNet: response.totalNet,
-        },
-        { status: 409 },
-      );
+    if (outcome === "rejected") {
+      return NextResponse.json({ error: "Event rejected" }, { status: 409 });
     }
 
-    return NextResponse.json({
-      skipped: response.skipped,
-      applied: response.applied,
-      totalNet: response.totalNet,
-      failedEvents: response.failedEvents,
-      failed: response.failed,
-    });
+    return new Response(null, { status: 204 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Something went wrong";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -7,9 +7,13 @@ datasource db {
 }
 
 model PointEntry {
-  id          String   @id @default(cuid())
+  id          String   @id
+  type        String
+  itemId      String
   points      Int
-  note        String?
-  date        DateTime @default(now())
+  dateKey     String
+  date        DateTime
   createdAt   DateTime @default(now())
+
+  @@index([dateKey])
 }

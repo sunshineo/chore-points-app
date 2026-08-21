@@ -10,33 +10,24 @@ export type DayTask = {
 export type DayReward = {
   id: string;
   title: string;
-  description: string;
   emoji: string;
   cost: number;
-  stock: number | null;
-  redeemedCount?: number;
 };
 
 export type DayApiTask = DayTask & {
-  completed: boolean;
   completedCount: number;
 };
 
+type DayApiReward = DayReward & {
+  redeemedCount: number;
+};
+
 export type DayApiPayload = {
-  earliestDate: string;
-  totals: {
-    totalEarned: number;
-    totalSpent: number;
-    totalNet: number;
-  };
+  totalNet: number;
   selectedDate: string;
-  selectedDay: {
-    earned: number;
-    spent: number;
-    net: number;
-  };
+  selectedDayNet: number;
   tasks: DayApiTask[];
-  rewards: DayReward[];
+  rewards: DayApiReward[];
 };
 
 export type DaySyncEvent = {
@@ -46,13 +37,7 @@ export type DaySyncEvent = {
   points: number;
   dateKey: string;
   date: string;
-  note: string;
 };
-
-export const TASK_MARKER_PREFIX = "day-task:";
-export const REWARD_MARKER_PREFIX = "day-reward:";
-export const DATE_MARKER_PREFIX = "day-date:";
-export const EVENT_MARKER_PREFIX = "day-event:";
 
 export function getDateInPacific(now = new Date()): Date {
   const text = now.toLocaleString("en-US", { timeZone: DAY_TIMEZONE });
@@ -61,17 +46,6 @@ export function getDateInPacific(now = new Date()): Date {
 
 export function getDateKeyPT(now = new Date()): string {
   return getDateInPacific(now).toLocaleDateString("en-CA", { timeZone: DAY_TIMEZONE });
-}
-
-export function formatDateLabel(date: Date): string {
-  const resolved = getDateInPacific(date);
-  const month = resolved.getMonth() + 1;
-  const day = resolved.getDate();
-  const weekday = resolved.toLocaleDateString("zh-CN", {
-    timeZone: DAY_TIMEZONE,
-    weekday: "long",
-  });
-  return `${month}月${day}日 ${weekday}`;
 }
 
 export const DEFAULT_DAY_TASKS: DayTask[] = [
@@ -109,76 +83,37 @@ export const DEFAULT_DAY_REWARDS: DayReward[] = [
   {
     id: "reward-ice-stick",
     title: "冰棍或棒棒糖",
-    description: "冰棍或棒棒糖",
     emoji: "🍭",
     cost: 5,
-    stock: null,
   },
   {
     id: "reward-ice-cream",
     title: "冰淇淋",
-    description: "冰淇淋",
     emoji: "🍦",
     cost: 10,
-    stock: null,
   },
   {
     id: "reward-sweet",
     title: "甜点",
-    description: "甜食",
     emoji: "🍰",
     cost: 15,
-    stock: null,
   },
   {
     id: "reward-tv",
     title: "15分钟看电视",
-    description: "看电视时间",
     emoji: "📺",
     cost: 15,
-    stock: null,
   },
   {
     id: "reward-car-tv",
     title: "在车上看电视",
-    description: "在车上看电视",
     emoji: "🚗",
     cost: 15,
-    stock: null,
   },
   {
     id: "reward-game",
     title: "15分钟游戏",
-    description: "游戏时间",
     emoji: "🎮",
     cost: 15,
-    stock: null,
   },
 ];
-
-export function taskMarker(taskId: string): string {
-  return `[${TASK_MARKER_PREFIX}${taskId}]`;
-}
-
-export function rewardMarker(rewardId: string): string {
-  return `[${REWARD_MARKER_PREFIX}${rewardId}]`;
-}
-
-export function dateMarker(dateKey: string): string {
-  return `[${DATE_MARKER_PREFIX}${dateKey}]`;
-}
-
-export function eventMarker(eventId: string): string {
-  return `[${EVENT_MARKER_PREFIX}${eventId}]`;
-}
-
-export function parseMarker(prefix: "task" | "reward", note: string | null | undefined): string | null {
-  const target = prefix === "task" ? TASK_MARKER_PREFIX : REWARD_MARKER_PREFIX;
-  const match = note?.match(new RegExp(`\\[${target}([^\\]]+)\\]`));
-  return match ? match[1] : null;
-}
-
-export function parseDateFromNote(note: string | null | undefined): string | null {
-  const match = note?.match(/\[day-date:([^\]]+)\]/);
-  return match ? match[1] : null;
-}
