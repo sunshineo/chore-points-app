@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { SerwistProvider } from "@serwist/next/react";
-import { Role } from "@prisma/client";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getDefaultDayToken } from "@/lib/day-auth";
 import DayKioskPage from "./DayKioskPage";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "GemSteps Day",
@@ -17,37 +17,16 @@ export const metadata: Metadata = {
   },
 };
 
-async function getDefaultKidId() {
-  const configuredKidId = process.env.NEXT_PUBLIC_DAY_KID_ID || process.env.NEXT_PUBLIC_KIOSK_KID_ID;
-  if (configuredKidId) {
-    return configuredKidId;
-  }
-
-  const session = await auth();
-  if (session?.user?.familyId) {
-    const familyKid = await prisma.user.findFirst({
-      where: {
-        familyId: session.user.familyId,
-        role: Role.KID,
-      },
-      select: { id: true },
-      orderBy: { createdAt: "asc" },
-    });
-    if (familyKid?.id) {
-      return familyKid.id;
-    }
-  }
-
-  const globalKid = await prisma.user.findFirst({
-    where: { role: Role.KID },
+async function getOnlyKidId() {
+  const kid = await prisma.user.findFirst({
+    where: { role: "KID" },
     select: { id: true },
-    orderBy: { createdAt: "asc" },
   });
-  return globalKid?.id ?? null;
+  return kid?.id ?? null;
 }
 
 export default async function DayPage() {
-  const kidId = await getDefaultKidId();
+  const kidId = await getOnlyKidId();
   const token = process.env.NEXT_PUBLIC_DAY_TOKEN || process.env.NEXT_PUBLIC_KIOSK_TOKEN || getDefaultDayToken();
 
   if (!kidId) {
