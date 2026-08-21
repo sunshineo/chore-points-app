@@ -1,130 +1,26 @@
-# GemSteps - Build Great Habits
+# GemSteps Day
 
-A family engagement platform for tracking chores, earning points, and building lasting habits. Built with Next.js, TypeScript, and PostgreSQL.
+A single-child, offline-first daily tasks and rewards app.
 
-## Features
+## Routes
 
-### Core Features
+- `/` redirects to `/day`.
+- `/day` is the only user interface.
+- `GET /api/day` loads the child's points, tasks, and rewards.
+- `POST /api/day/sync` applies queued task and reward events.
 
-- **Chores Management** - Parents create and manage chores with default point values and icons
-- **Points System** - Award points for completed chores with photo evidence and notes
-- **Rewards & Redemption** - Kids redeem points for custom rewards with parent approval workflow
-- **Badge System** - Two types of badges:
-  - *Chore-Level Badges*: Progressive levels (Starter → Legendary) for repeated chore completion
-  - *Achievement Badges*: Unlocked for streaks, milestones, and special accomplishments
+## Required environment
 
-### Learning Center
+- `DATABASE_URL`
+- `DAY_TOKEN`, or `DAY_SECRET`/`NEXTAUTH_SECRET` for derived tokens
 
-- **Sight Words** - Flashcard-style learning with quizzes and progress tracking
-- **Daily Math** - Addition and subtraction practice with point rewards
-- **Bilingual Support** - Full English and Chinese language support
+The database must contain exactly one user: the child shown on `/day`.
 
-### Meal Planning
+## Development
 
-- **Weekly Calendar View** - Day-centric meal tracking with Saturday-Friday weeks
-- **Daily Meal Logging** - Record breakfast, lunch, dinner, and snacks for each day
-- **Daily Items** - Track recurring items like fruits, milk, vitamins (not tied to specific meals)
-- **Dish Library** - Create dishes with photos and ingredients for easy reuse
-- **Weekly Voting** - Family members vote on preferred meals for the week
-- **Meal Planning Page** - Step-by-step planning workflow:
-  1. Review voting results to see family preferences
-  2. Select weekly staples (daily items auto-added to logs)
-  3. Plan meals day-by-day for the upcoming week
-  4. Get AI-powered health feedback on nutrition balance
-- **Auto-Convert** - Planned meals automatically become daily records when the day arrives
-- **AI Health Feedback** - Nutritional analysis with breakdown by food groups and suggestions
-
-### Family Features
-
-- **Photo Gallery** - Store and browse family memories with captions
-- **Google Calendar Integration** - Sync and view family events
-- **Family Todo List** - Shared tasks with assignments and due dates
-
-### User Roles
-
-- **Parents**: Full access to manage chores, rewards, badges, meals, and approve redemptions
-- **Kids**: View points, complete learning activities, redeem rewards, participate in meal voting
-- **Kid Mode**: Parents can preview the kid experience without switching accounts
-
-## Tech Stack
-
-- **Framework**: Next.js 16 with App Router
-- **Language**: TypeScript
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: NextAuth.js v5 (Email, Google OAuth)
-- **Styling**: Tailwind CSS
-- **Storage**: Vercel Blob
-- **AI**: Anthropic Claude SDK
-- **i18n**: next-intl (English/Chinese)
-- **Testing**: Vitest
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- PostgreSQL database (or use Neon/Supabase)
-
-### Setup
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Update `.env` with your credentials:
-   - `DATABASE_URL` - PostgreSQL connection string
-   - `NEXTAUTH_SECRET` - Generate with `openssl rand -base64 32`
-   - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` - For Google OAuth & Calendar
-   - `BLOB_READ_WRITE_TOKEN` - For Vercel Blob storage
-   - `ANTHROPIC_API_KEY` - For AI features (optional)
-
-4. Generate Prisma client and run migrations:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev
-   ```
-
-5. Run the development server:
-   ```bash
-   npm run dev
-   ```
-
-6. Open [http://localhost:3000](http://localhost:3000)
-
-## Project Structure
-
-```
-src/
-├── app/                 # Next.js App Router
-│   ├── (auth)/         # Login & signup pages
-│   ├── (kid)/          # Kid-only pages (points, learn, redeem)
-│   ├── (parent)/       # Parent-only pages (chores, rewards, ledger)
-│   └── api/            # API routes
-├── components/         # React components
-│   ├── badges/         # Badge display & notifications
-│   ├── calendar/       # Calendar views & forms
-│   ├── chores/         # Chore management
-│   ├── learn/          # Sight words & math
-│   ├── meals/          # Meal planning & voting
-│   ├── photos/         # Photo gallery
-│   ├── points/         # Points ledger & forms
-│   └── rewards/        # Rewards & redemption
-├── lib/                # Utilities & configurations
-└── messages/           # i18n translation files
+```sh
+npm install
+npm run dev
 ```
 
-## Deployment
-
-Deploy easily on [Vercel](https://vercel.com):
-
-1. Connect your GitHub repository
-2. Configure environment variables
-3. Deploy
-
-See [Next.js deployment docs](https://nextjs.org/docs/app/building-your-application/deploying) for details.
+Open [http://localhost:3000/day](http://localhost:3000/day).

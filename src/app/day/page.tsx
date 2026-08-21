@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SerwistProvider } from "@serwist/next/react";
-import { prisma } from "@/lib/db";
 import { getDefaultDayToken } from "@/lib/day-auth";
+import { getDayKid } from "@/lib/day-child";
 import DayKioskPage from "./DayKioskPage";
 
 export const dynamic = "force-dynamic";
@@ -17,25 +17,17 @@ export const metadata: Metadata = {
   },
 };
 
-async function getOnlyKidId() {
-  const kid = await prisma.user.findFirst({
-    where: { role: "KID" },
-    select: { id: true },
-  });
-  return kid?.id ?? null;
-}
-
 export default async function DayPage() {
-  const kidId = await getOnlyKidId();
-  const token = process.env.NEXT_PUBLIC_DAY_TOKEN || process.env.NEXT_PUBLIC_KIOSK_TOKEN || getDefaultDayToken();
+  const kid = await getDayKid();
+  const token = getDefaultDayToken();
 
-  if (!kidId) {
+  if (!kid) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
         <div className="max-w-xl text-center bg-white rounded-2xl border p-6 shadow-sm">
-          <h1 className="text-xl font-bold mb-2">未找到可用孩子</h1>
+          <h1 className="text-xl font-bold mb-2">未找到孩子</h1>
           <p className="text-sm text-slate-600">
-            系统里还没有创建 KID 账号。请先用管理员账号创建孩子后再访问 /day。
+            数据库中还没有孩子记录。请先添加唯一的孩子后再访问 /day。
           </p>
         </div>
       </div>
@@ -50,7 +42,7 @@ export default async function DayPage() {
       reloadOnOnline={false}
       options={{ scope: "/day" }}
     >
-      <DayKioskPage kidId={kidId} token={token} />
+      <DayKioskPage kidId={kid.id} token={token} />
     </SerwistProvider>
   );
 }

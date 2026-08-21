@@ -34,7 +34,7 @@ async function runDrain({ kidId, token, fetchImpl = fetch }: DrainOptions): Prom
     let response: Response;
     try {
       response = await fetchImpl(
-        `/api/day/sync/${encodeURIComponent(kidId)}?token=${encodeURIComponent(token)}`,
+        `/api/day/sync?token=${encodeURIComponent(token)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

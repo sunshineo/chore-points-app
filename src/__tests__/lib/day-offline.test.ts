@@ -113,6 +113,10 @@ describe("day outbox sync", () => {
 
     expect(result).toEqual({ completed: true, rejected: 0 });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "/api/day/sync?token=token",
+      expect.objectContaining({ method: "POST" }),
+    );
     expect(await countDayOutboxEvents(kidId)).toBe(0);
   });
 

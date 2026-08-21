@@ -302,7 +302,7 @@ export default function DayKioskPage({ kidId, token }: { kidId: string; token: s
 
   const fetchRemoteState = useCallback(async (): Promise<KioskApiResponse> => {
     const response = await fetch(
-      `/api/day/${encodeURIComponent(kidId)}?token=${encodeURIComponent(token)}&date=${encodeURIComponent(selectedDateKey)}`,
+      `/api/day?token=${encodeURIComponent(token)}&date=${encodeURIComponent(selectedDateKey)}`,
       { cache: "no-store" },
     );
 
