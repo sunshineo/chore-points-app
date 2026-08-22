@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import {
+  KIOSK_SESSION_COOKIE,
+  isConfiguredKioskPin,
+  isValidKioskSessionToken,
+} from "@/lib/kiosk-auth";
 import {
   DEFAULT_DAY_REWARDS,
   DEFAULT_DAY_TASKS,
@@ -10,6 +16,20 @@ import {
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TASK_POINTS = new Map(DEFAULT_DAY_TASKS.map((task) => [task.id, task.defaultPoints]));
 const REWARD_COSTS = new Map(DEFAULT_DAY_REWARDS.map((reward) => [reward.id, reward.cost]));
+
+async function requireKioskSession(): Promise<NextResponse | null> {
+  const configuredPin = process.env.KIOSK_PIN;
+  if (!isConfiguredKioskPin(configuredPin)) {
+    return NextResponse.json({ error: "KIOSK_PIN is not configured" }, { status: 503 });
+  }
+
+  const cookieStore = await cookies();
+  if (!isValidKioskSessionToken(cookieStore.get(KIOSK_SESSION_COOKIE)?.value, configuredPin)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return null;
+}
 
 function parseDateParam(raw: string | null): string {
   const trimmed = raw?.trim() ?? "";
@@ -41,6 +61,9 @@ function isValidEvent(value: unknown): value is DaySyncEvent {
 }
 
 export async function GET(req: Request) {
+  const unauthorized = await requireKioskSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const selectedDate = parseDateParam(new URL(req.url).searchParams.get("date"));
     const entries = await prisma.pointEntry.findMany({
@@ -96,6 +119,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const unauthorized = await requireKioskSession();
+  if (unauthorized) return unauthorized;
+
   try {
     const event = await req.json().catch(() => null);
     if (!isValidEvent(event)) {
