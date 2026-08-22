@@ -24,7 +24,7 @@ async function runDrain({ fetchImpl = fetch }: DrainOptions): Promise<DayOutboxD
 
     let response: Response;
     try {
-      response = await fetchImpl("/api/day/sync", {
+      response = await fetchImpl("/api/day", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(record.event),

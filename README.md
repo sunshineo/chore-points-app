@@ -7,7 +7,7 @@ A singleton, offline-first daily tasks and rewards app.
 - `/` redirects to `/day`.
 - `/day` is the only user interface.
 - `GET /api/day` loads points, tasks, and rewards.
-- `POST /api/day/sync` applies queued task and reward events.
+- `POST /api/day` applies queued task and reward events.
 
 ## Required environment
 

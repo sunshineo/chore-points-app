@@ -100,7 +100,7 @@ describe("day outbox sync", () => {
     expect(result).toEqual({ completed: true, rejected: 0 });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(fetchImpl).toHaveBeenCalledWith(
-      "/api/day/sync",
+      "/api/day",
       expect.objectContaining({ method: "POST" }),
     );
     expect(await dayOfflineDb.outbox.count()).toBe(0);
