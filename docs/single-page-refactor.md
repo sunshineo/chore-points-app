@@ -46,7 +46,7 @@ previous key was removed only after the replacement was available.
       `apple-mobile-web-app-capable` metadata.
 - [x] Add explicit iOS standalone metadata and a stable root manifest ID.
 - [x] Verify the production build output and generated install metadata.
-- [ ] Push the fix to `main` and confirm the production deployment.
+- [x] Push the fix to `main` and confirm the production deployment.
 
 Verification evidence:
 
@@ -56,3 +56,6 @@ Verification evidence:
 - Generated HTML contains both `apple-mobile-web-app-capable=yes` and
   `mobile-web-app-capable=yes`.
 - Manifest identity, start URL, and scope are `/`; display mode is `standalone`.
+- Fix commit: `cc235d6`.
+- Production deployment: `dpl_BHKnucR4txUmKZ5dDQb3QHQ4uqRK`, Ready at
+  `https://chore-points-app-seven.vercel.app`.
