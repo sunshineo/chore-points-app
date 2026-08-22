@@ -11,7 +11,8 @@ and removes obsolete page-mode naming from the current source tree.
       synchronization code, authentication configuration, and PWA assets.
 - [x] Update tests and documentation.
 - [x] Run repository-wide naming checks, lint, tests, and the production build.
-- [ ] Commit and push `main`; confirm the production deployment.
+- [x] Commit the verified implementation on local `main`.
+- [ ] Push `main` and confirm the production deployment.
 
 ## Completion evidence
 
@@ -26,6 +27,7 @@ and removes obsolete page-mode naming from the current source tree.
   to `/`; both API routes remained independent.
 - Source-tree naming scan: no obsolete page-mode identifiers remain; the only
   matching source token is the standard `Intl.DateTimeFormat` `weekday` option.
+- Implementation commit: `670ed58`.
 
 ## Deployment prerequisite
 
