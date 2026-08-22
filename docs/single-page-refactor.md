@@ -12,7 +12,7 @@ and removes obsolete page-mode naming from the current source tree.
 - [x] Update tests and documentation.
 - [x] Run repository-wide naming checks, lint, tests, and the production build.
 - [x] Commit the verified implementation on local `main`.
-- [ ] Push `main` and confirm the production deployment.
+- [x] Push `main` and confirm the production deployment.
 
 ## Completion evidence
 
@@ -28,11 +28,12 @@ and removes obsolete page-mode naming from the current source tree.
 - Source-tree naming scan: no obsolete page-mode identifiers remain; the only
   matching source token is the standard `Intl.DateTimeFormat` `weekday` option.
 - Implementation commit: `670ed58`.
+- Verified push commit: `e36515e`.
+- Production deployment: `dpl_Et4SewyB5qciX7QUYpecNdERQ4LJ`, Ready at
+  `https://chore-points-app-seven.vercel.app`.
+- Production configuration now contains `GEMSTEPS_PIN` and no obsolete PIN key.
 
 ## Deployment prerequisite
 
-Production must define the Sensitive variable `GEMSTEPS_PIN` before `main` is
-pushed. Vercel does not allow an existing Sensitive variable to be renamed or
-decrypted through the authenticated CLI/API, so this value must be added by a
-person who knows the six-digit PIN. The existing production configuration has
-not been removed, keeping the current deployment operational.
+Completed. Production defines the Sensitive variable `GEMSTEPS_PIN`; the
+previous key was removed only after the replacement was available.
