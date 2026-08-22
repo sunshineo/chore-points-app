@@ -2,29 +2,29 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import {
-  KIOSK_SESSION_COOKIE,
-  isConfiguredKioskPin,
-  isValidKioskSessionToken,
-} from "@/lib/kiosk-auth";
+  SESSION_COOKIE,
+  isConfiguredPin,
+  isValidSessionToken,
+} from "@/lib/auth";
 import {
-  DEFAULT_DAY_REWARDS,
-  DEFAULT_DAY_TASKS,
+  DEFAULT_REWARDS,
+  DEFAULT_TASKS,
   getDateKeyPT,
-  type DaySyncEvent,
-} from "@/lib/day-kiosk";
+  type PointEvent,
+} from "@/lib/points";
 
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const TASK_POINTS = new Map(DEFAULT_DAY_TASKS.map((task) => [task.id, task.defaultPoints]));
-const REWARD_COSTS = new Map(DEFAULT_DAY_REWARDS.map((reward) => [reward.id, reward.cost]));
+const TASK_POINTS = new Map(DEFAULT_TASKS.map((task) => [task.id, task.defaultPoints]));
+const REWARD_COSTS = new Map(DEFAULT_REWARDS.map((reward) => [reward.id, reward.cost]));
 
-async function requireKioskSession(): Promise<NextResponse | null> {
-  const configuredPin = process.env.KIOSK_PIN;
-  if (!isConfiguredKioskPin(configuredPin)) {
-    return NextResponse.json({ error: "KIOSK_PIN is not configured" }, { status: 503 });
+async function requireSession(): Promise<NextResponse | null> {
+  const configuredPin = process.env.GEMSTEPS_PIN;
+  if (!isConfiguredPin(configuredPin)) {
+    return NextResponse.json({ error: "GEMSTEPS_PIN is not configured" }, { status: 503 });
   }
 
   const cookieStore = await cookies();
-  if (!isValidKioskSessionToken(cookieStore.get(KIOSK_SESSION_COOKIE)?.value, configuredPin)) {
+  if (!isValidSessionToken(cookieStore.get(SESSION_COOKIE)?.value, configuredPin)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -36,9 +36,9 @@ function parseDateParam(raw: string | null): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : getDateKeyPT();
 }
 
-function isValidEvent(value: unknown): value is DaySyncEvent {
+function isValidEvent(value: unknown): value is PointEvent {
   if (!value || typeof value !== "object") return false;
-  const event = value as Partial<DaySyncEvent>;
+  const event = value as Partial<PointEvent>;
   const expectedPoints = event.type === "task"
     ? TASK_POINTS.get(event.itemId ?? "")
     : event.type === "reward"
@@ -61,7 +61,7 @@ function isValidEvent(value: unknown): value is DaySyncEvent {
 }
 
 export async function GET(req: Request) {
-  const unauthorized = await requireKioskSession();
+  const unauthorized = await requireSession();
   if (unauthorized) return unauthorized;
 
   try {
@@ -76,7 +76,7 @@ export async function GET(req: Request) {
     });
 
     let totalNet = 0;
-    let selectedDayNet = 0;
+    let selectedDateNet = 0;
     const taskPoints = new Map<string, number>();
     const rewardPoints = new Map<string, number>();
 
@@ -84,12 +84,12 @@ export async function GET(req: Request) {
       totalNet += entry.points;
       if (entry.dateKey !== selectedDate) continue;
 
-      selectedDayNet += entry.points;
+      selectedDateNet += entry.points;
       const totals = entry.type === "task" ? taskPoints : rewardPoints;
       totals.set(entry.itemId, (totals.get(entry.itemId) ?? 0) + entry.points);
     }
 
-    const tasks = DEFAULT_DAY_TASKS.map((task) => ({
+    const tasks = DEFAULT_TASKS.map((task) => ({
       ...task,
       completedCount: Math.max(
         0,
@@ -97,7 +97,7 @@ export async function GET(req: Request) {
       ),
     }));
 
-    const rewards = DEFAULT_DAY_REWARDS.map((reward) => ({
+    const rewards = DEFAULT_REWARDS.map((reward) => ({
       ...reward,
       redeemedCount: Math.max(
         0,
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       totalNet,
       selectedDate,
-      selectedDayNet,
+      selectedDateNet,
       tasks,
       rewards,
     });
@@ -119,7 +119,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const unauthorized = await requireKioskSession();
+  const unauthorized = await requireSession();
   if (unauthorized) return unauthorized;
 
   try {

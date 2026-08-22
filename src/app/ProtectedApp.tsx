@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import DayKioskPage from "./DayKioskPage";
+import PointsPage from "./PointsPage";
 
 type AuthState = "checking" | "locked" | "unlocked";
 
@@ -12,7 +12,7 @@ type AuthResponse = {
   expiresAt?: number;
 };
 
-const OFFLINE_AUTH_KEY = "gemsteps-kiosk-unlocked-until";
+const OFFLINE_AUTH_KEY = "gemsteps-unlocked-until";
 const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "delete"] as const;
 
 function hasOfflineSession(): boolean {
@@ -126,7 +126,7 @@ function PinEntry({ onUnlocked }: { onUnlocked: (expiresAt: number) => void }) {
   );
 }
 
-export default function PinProtectedDay() {
+export default function ProtectedApp() {
   const [authState, setAuthState] = useState<AuthState>("checking");
 
   useEffect(() => {
@@ -171,5 +171,5 @@ export default function PinProtectedDay() {
   }
 
   if (authState === "locked") return <PinEntry onUnlocked={handleUnlocked} />;
-  return <DayKioskPage onLock={handleLock} />;
+  return <PointsPage onLock={handleLock} />;
 }

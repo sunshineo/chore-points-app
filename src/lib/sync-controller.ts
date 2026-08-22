@@ -1,10 +1,10 @@
 import {
-  deleteDayOutboxEvent,
-  getOldestDayOutboxEvent,
-  rejectDayOutboxEvent,
-} from "@/lib/day-offline-db";
+  deleteOutboxEvent,
+  getOldestOutboxEvent,
+  rejectOutboxEvent,
+} from "@/lib/offline-db";
 
-type DayOutboxDrainResult = {
+type OutboxDrainResult = {
   completed: boolean;
   rejected: number;
 };
@@ -13,18 +13,18 @@ type DrainOptions = {
   fetchImpl?: typeof fetch;
 };
 
-let activeDrain: Promise<DayOutboxDrainResult> | null = null;
+let activeDrain: Promise<OutboxDrainResult> | null = null;
 
-async function runDrain({ fetchImpl = fetch }: DrainOptions): Promise<DayOutboxDrainResult> {
+async function runDrain({ fetchImpl = fetch }: DrainOptions): Promise<OutboxDrainResult> {
   let rejected = 0;
 
   while (true) {
-    const record = await getOldestDayOutboxEvent();
+    const record = await getOldestOutboxEvent();
     if (!record) return { completed: true, rejected };
 
     let response: Response;
     try {
-      response = await fetchImpl("/api/day", {
+      response = await fetchImpl("/api/points", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(record.event),
@@ -34,17 +34,17 @@ async function runDrain({ fetchImpl = fetch }: DrainOptions): Promise<DayOutboxD
     }
 
     if (response.status === 409 || response.status === 400) {
-      await rejectDayOutboxEvent(record);
+      await rejectOutboxEvent(record);
       rejected += 1;
       continue;
     }
 
     if (!response.ok) return { completed: false, rejected };
-    await deleteDayOutboxEvent(record.id);
+    await deleteOutboxEvent(record.id);
   }
 }
 
-export async function drainDayOutbox(options: DrainOptions = {}): Promise<DayOutboxDrainResult> {
+export async function drainOutbox(options: DrainOptions = {}): Promise<OutboxDrainResult> {
   while (true) {
     if (activeDrain) {
       await activeDrain;

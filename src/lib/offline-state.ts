@@ -1,11 +1,11 @@
-import type { DayApiPayload, DaySyncEvent } from "@/lib/day-kiosk";
+import type { PointEvent, PointsState } from "@/lib/points";
 
-export function applyDayEventToPayload(
-  base: DayApiPayload,
-  event: DaySyncEvent,
+export function applyPointEvent(
+  base: PointsState,
+  event: PointEvent,
   multiplier = 1,
-): DayApiPayload {
-  const next: DayApiPayload = {
+): PointsState {
+  const next: PointsState = {
     ...base,
     tasks: base.tasks.map((task) => ({ ...task })),
     rewards: base.rewards.map((reward) => ({ ...reward })),
@@ -15,7 +15,7 @@ export function applyDayEventToPayload(
   next.totalNet += deltaPoints;
   if (event.dateKey !== next.selectedDate) return next;
 
-  next.selectedDayNet += deltaPoints;
+  next.selectedDateNet += deltaPoints;
   if (event.type === "task") {
     const task = next.tasks.find((item) => item.id === event.itemId);
     if (task) {
@@ -37,11 +37,11 @@ export function applyDayEventToPayload(
   return next;
 }
 
-export function deriveDayPayload(base: DayApiPayload, dateKey: string): DayApiPayload {
+export function deriveStateForDate(base: PointsState, dateKey: string): PointsState {
   return {
     ...base,
     selectedDate: dateKey,
-    selectedDayNet: 0,
+    selectedDateNet: 0,
     tasks: base.tasks.map((task) => ({ ...task, completedCount: 0 })),
     rewards: base.rewards.map((reward) => ({ ...reward, redeemedCount: 0 })),
   };

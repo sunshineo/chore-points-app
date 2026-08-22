@@ -1,8 +1,8 @@
 {
-  "name": "GemSteps Day",
-  "short_name": "GemSteps Day",
-  "start_url": "/day",
-  "scope": "/day",
+  "name": "GemSteps",
+  "short_name": "GemSteps",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f8fafc",

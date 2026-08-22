@@ -1,36 +1,36 @@
-export const DAY_TIMEZONE = "America/Los_Angeles";
+export const TIME_ZONE = "America/Los_Angeles";
 
-export type DayTask = {
+export type Task = {
   id: string;
   title: string;
   emoji: string;
   defaultPoints: number;
 };
 
-export type DayReward = {
+export type Reward = {
   id: string;
   title: string;
   emoji: string;
   cost: number;
 };
 
-export type DayApiTask = DayTask & {
+export type TaskProgress = Task & {
   completedCount: number;
 };
 
-type DayApiReward = DayReward & {
+type RewardProgress = Reward & {
   redeemedCount: number;
 };
 
-export type DayApiPayload = {
+export type PointsState = {
   totalNet: number;
   selectedDate: string;
-  selectedDayNet: number;
-  tasks: DayApiTask[];
-  rewards: DayApiReward[];
+  selectedDateNet: number;
+  tasks: TaskProgress[];
+  rewards: RewardProgress[];
 };
 
-export type DaySyncEvent = {
+export type PointEvent = {
   id: string;
   type: "task" | "reward";
   itemId: string;
@@ -40,15 +40,15 @@ export type DaySyncEvent = {
 };
 
 export function getDateInPacific(now = new Date()): Date {
-  const text = now.toLocaleString("en-US", { timeZone: DAY_TIMEZONE });
+  const text = now.toLocaleString("en-US", { timeZone: TIME_ZONE });
   return new Date(text);
 }
 
 export function getDateKeyPT(now = new Date()): string {
-  return getDateInPacific(now).toLocaleDateString("en-CA", { timeZone: DAY_TIMEZONE });
+  return getDateInPacific(now).toLocaleDateString("en-CA", { timeZone: TIME_ZONE });
 }
 
-export const DEFAULT_DAY_TASKS: DayTask[] = [
+export const DEFAULT_TASKS: Task[] = [
   { id: "seed-task-morning-toilet", title: "起床后上厕所", emoji: "🚽", defaultPoints: 1 },
   { id: "seed-task-face", title: "洗脸", emoji: "🚿", defaultPoints: 1 },
   { id: "seed-task-brush", title: "刷牙", emoji: "🪥", defaultPoints: 3 },
@@ -79,7 +79,7 @@ export const DEFAULT_DAY_TASKS: DayTask[] = [
   { id: "seed-task-swim", title: "上游泳课", emoji: "🏊", defaultPoints: 10 },
 ];
 
-export const DEFAULT_DAY_REWARDS: DayReward[] = [
+export const DEFAULT_REWARDS: Reward[] = [
   {
     id: "reward-ice-stick",
     title: "冰棍或棒棒糖",

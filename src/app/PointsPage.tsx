@@ -2,35 +2,35 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  DAY_TIMEZONE,
-  type DayApiPayload,
-  type DayApiTask,
-  type DaySyncEvent,
+  TIME_ZONE,
+  type PointEvent,
+  type PointsState,
+  type TaskProgress,
   getDateKeyPT,
   getDateInPacific,
-} from "@/lib/day-kiosk";
+} from "@/lib/points";
 import {
-  enqueueDayEvent,
-  loadDaySnapshot,
-  storeRemoteDayPayload,
-} from "@/lib/day-offline-db";
-import { drainDayOutbox } from "@/lib/day-sync-controller";
+  enqueuePointEvent,
+  loadSnapshot,
+  storeRemoteState,
+} from "@/lib/offline-db";
+import { drainOutbox } from "@/lib/sync-controller";
 
 type TabKey = "tasks" | "rewards";
 
-type KioskResponseBody = {
+type ApiErrorBody = {
   error?: string;
 };
 
-type KioskTileProps = {
-  task: DayApiTask;
+type ChoreTileProps = {
+  task: TaskProgress;
   onTap: () => void;
   colorIndex: number;
   disabled: boolean;
 };
 
 type RewardTileProps = {
-  reward: DayApiPayload["rewards"][number];
+  reward: PointsState["rewards"][number];
   onRedeem: () => void;
   disabled: boolean;
 };
@@ -55,9 +55,9 @@ const TILE_COLORS = [
 
 type Celebration = { emoji: string; value: number };
 
-const DAY_REFRESH_INTERVAL_MS = 10_000;
+const REFRESH_INTERVAL_MS = 10_000;
 
-function ChoreTile({ task, onTap, colorIndex, disabled }: KioskTileProps) {
+function ChoreTile({ task, onTap, colorIndex, disabled }: ChoreTileProps) {
   const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
   const completedCount = task.completedCount;
 
@@ -140,7 +140,7 @@ function TaskSection({
   onTap,
   readOnly,
   isUndoMode,
-}: { tasks: DayApiTask[]; onTap: (id: string) => void; readOnly: boolean; isUndoMode: boolean }) {
+}: { tasks: TaskProgress[]; onTap: (id: string) => void; readOnly: boolean; isUndoMode: boolean }) {
   if (tasks.length === 0) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-lg">这组还没有任务</div>;
   }
@@ -169,7 +169,7 @@ function RewardSection({
   disabled,
   isUndoMode,
 }: {
-  rewards: DayApiPayload["rewards"];
+  rewards: PointsState["rewards"];
   onRedeem: (id: string) => void;
   currentPoints: number;
   disabled: boolean;
@@ -207,7 +207,7 @@ function RainParticle({ emoji, index }: { emoji: string; index: number }) {
 
   return (
     <span
-      className="absolute pointer-events-none kiosk-gem-rain"
+      className="absolute pointer-events-none app-gem-rain"
       style={{
         left: `${left}%`,
         animationDelay: `${delay}s`,
@@ -221,8 +221,8 @@ function RainParticle({ emoji, index }: { emoji: string; index: number }) {
   );
 }
 
-export default function DayKioskPage({ onLock }: { onLock: () => void }) {
-  const [data, setData] = useState<DayApiPayload | null>(null);
+export default function PointsPage({ onLock }: { onLock: () => void }) {
+  const [data, setData] = useState<PointsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
   const [selectedDateOffset, setSelectedDateOffset] = useState(0);
@@ -236,49 +236,49 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
   const syncInProgressRef = useRef(false);
 
   const selectedDate = useMemo(() => {
-    const today = getDateInPacific(new Date()) as Date;
-    const target = new Date(today);
-    target.setDate(today.getDate() + selectedDateOffset);
+    const currentDate = getDateInPacific(new Date()) as Date;
+    const target = new Date(currentDate);
+    target.setDate(currentDate.getDate() + selectedDateOffset);
     return target;
   }, [selectedDateOffset]);
 
   const selectedDateKey = useMemo(() => getDateKeyPT(selectedDate), [selectedDate]);
   const selectedDateDateLabel = useMemo(() => {
     const month = selectedDate.getMonth() + 1;
-    const day = selectedDate.getDate();
-    return `${month}月${day}日`;
+    const dateNumber = selectedDate.getDate();
+    return `${month}月${dateNumber}日`;
   }, [selectedDate]);
-  const selectedWeekdayLabel = useMemo(
+  const selectedDateName = useMemo(
     () =>
       selectedDate.toLocaleDateString("zh-CN", {
-        timeZone: DAY_TIMEZONE,
+        timeZone: TIME_ZONE,
         weekday: "long",
       }),
     [selectedDate],
   );
-  const selectedDayNet = data?.selectedDayNet ?? 0;
+  const selectedDateNet = data?.selectedDateNet ?? 0;
   const totalNetPoints = data?.totalNet ?? 0;
 
-  const isToday = selectedDateOffset === 0;
+  const isCurrentDate = selectedDateOffset === 0;
 
-  const applyPayload = useCallback((payload: DayApiPayload) => {
-    setData(payload);
-    setTotalPoints(payload.totalNet);
-    setDisplayedPoints((current) => current || payload.totalNet);
+  const applyState = useCallback((state: PointsState) => {
+    setData(state);
+    setTotalPoints(state.totalNet);
+    setDisplayedPoints((current) => current || state.totalNet);
   }, []);
 
-  const fetchRemoteState = useCallback(async (): Promise<DayApiPayload> => {
+  const fetchRemoteState = useCallback(async (): Promise<PointsState> => {
     const response = await fetch(
-      `/api/day?date=${encodeURIComponent(selectedDateKey)}`,
+      `/api/points?date=${encodeURIComponent(selectedDateKey)}`,
       { cache: "no-store" },
     );
 
     if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as KioskResponseBody;
+      const body = (await response.json().catch(() => null)) as ApiErrorBody;
       throw new Error(body?.error ?? `加载失败：${response.status}`);
     }
 
-    return storeRemoteDayPayload((await response.json()) as DayApiPayload);
+    return storeRemoteState((await response.json()) as PointsState);
   }, [selectedDateKey]);
 
   const syncAndRefresh = useCallback(async () => {
@@ -286,36 +286,36 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
 
     syncInProgressRef.current = true;
     try {
-      const result = await drainDayOutbox();
+      const result = await drainOutbox();
       if (!result.completed) return;
       const remote = await fetchRemoteState();
-      applyPayload(remote);
+      applyState(remote);
       setErrorMessage(null);
     } catch {
       // Keep the local snapshot as-is; the next online/focus event retries.
     } finally {
       syncInProgressRef.current = false;
     }
-  }, [applyPayload, fetchRemoteState]);
+  }, [applyState, fetchRemoteState]);
 
   const loadState = useCallback(async () => {
     const sequence = ++loadSequenceRef.current;
     setLoading(true);
     setErrorMessage(null);
 
-    let cached: DayApiPayload | null = null;
+    let cached: PointsState | null = null;
     try {
-      cached = await loadDaySnapshot(selectedDateKey);
+      cached = await loadSnapshot(selectedDateKey);
       if (cached && sequence === loadSequenceRef.current) {
-        applyPayload(cached);
+        applyState(cached);
         setLoading(false);
       }
 
       if (window.navigator.onLine) {
-        const result = await drainDayOutbox();
+        const result = await drainOutbox();
         if (result.completed) {
           const remote = await fetchRemoteState();
-          if (sequence === loadSequenceRef.current) applyPayload(remote);
+          if (sequence === loadSequenceRef.current) applyState(remote);
         }
       }
     } catch (error) {
@@ -325,7 +325,7 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
     } finally {
       if (sequence === loadSequenceRef.current) setLoading(false);
     }
-  }, [applyPayload, fetchRemoteState, selectedDateKey]);
+  }, [applyState, fetchRemoteState, selectedDateKey]);
 
   const runCelebration = useCallback((entryEmoji: string, value: number) => {
     if (celebrationTimerRef.current) {
@@ -354,11 +354,11 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
     };
   }, []);
 
-  const enqueueAndApplyEvent = useCallback(async (event: DaySyncEvent): Promise<boolean> => {
+  const enqueueAndApplyEvent = useCallback(async (event: PointEvent): Promise<boolean> => {
     if (!data) return false;
     try {
-      const payload = await enqueueDayEvent(event);
-      applyPayload(payload);
+      const state = await enqueuePointEvent(event);
+      applyState(state);
       setErrorMessage(null);
       void syncAndRefresh();
       return true;
@@ -366,7 +366,7 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
       setErrorMessage(error instanceof Error ? error.message : "本地保存失败");
       return false;
     }
-  }, [applyPayload, data, syncAndRefresh]);
+  }, [applyState, data, syncAndRefresh]);
 
   useEffect(() => {
     void loadState();
@@ -380,7 +380,7 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
     window.addEventListener("online", refreshWhenVisible);
     window.addEventListener("focus", refreshWhenVisible);
     document.addEventListener("visibilitychange", refreshWhenVisible);
-    const refreshInterval = window.setInterval(refreshWhenVisible, DAY_REFRESH_INTERVAL_MS);
+    const refreshInterval = window.setInterval(refreshWhenVisible, REFRESH_INTERVAL_MS);
     return () => {
       window.removeEventListener("online", refreshWhenVisible);
       window.removeEventListener("focus", refreshWhenVisible);
@@ -412,10 +412,10 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
   }, [displayedPoints, totalPoints]);
 
   const handleTaskTap = useCallback(
-    async (task: DayApiTask) => {
-      if (!data || !isToday) return;
+    async (task: TaskProgress) => {
+      if (!data || !isCurrentDate) return;
       const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: DaySyncEvent = {
+      const event: PointEvent = {
         id: eventId,
         type: "task",
         itemId: task.id,
@@ -427,16 +427,16 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
         runCelebration(task.emoji, task.defaultPoints);
       }
     },
-    [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey],
+    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration, selectedDateKey],
   );
 
   const handleTaskUndo = useCallback(
-    async (task: DayApiTask) => {
-      if (!data || !isToday) return;
+    async (task: TaskProgress) => {
+      if (!data || !isCurrentDate) return;
       if (Number(task.completedCount ?? 0) <= 0) return;
       clearCelebration();
       const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: DaySyncEvent = {
+      const event: PointEvent = {
         id: eventId,
         type: "task",
         itemId: task.id,
@@ -446,16 +446,16 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
       };
       await enqueueAndApplyEvent(event);
     },
-    [clearCelebration, data, isToday, enqueueAndApplyEvent, selectedDateKey],
+    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent, selectedDateKey],
   );
 
   const handleRewardRedeem = useCallback(
-    async (reward: DayApiPayload["rewards"][number]) => {
-      if (!data || !isToday) return;
+    async (reward: PointsState["rewards"][number]) => {
+      if (!data || !isCurrentDate) return;
       if (totalNetPoints < reward.cost) return;
 
       const eventId = `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: DaySyncEvent = {
+      const event: PointEvent = {
         id: eventId,
         type: "reward",
         itemId: reward.id,
@@ -467,17 +467,17 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
         runCelebration(reward.emoji, -reward.cost);
       }
     },
-    [data, isToday, enqueueAndApplyEvent, runCelebration, selectedDateKey, totalNetPoints],
+    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration, selectedDateKey, totalNetPoints],
   );
 
   const handleRewardUndo = useCallback(
-    async (reward: DayApiPayload["rewards"][number]) => {
-      if (!data || !isToday) return;
+    async (reward: PointsState["rewards"][number]) => {
+      if (!data || !isCurrentDate) return;
       if (reward.redeemedCount <= 0) return;
       clearCelebration();
 
       const eventId = `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: DaySyncEvent = {
+      const event: PointEvent = {
         id: eventId,
         type: "reward",
         itemId: reward.id,
@@ -487,7 +487,7 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
       };
       await enqueueAndApplyEvent(event);
     },
-    [clearCelebration, data, isToday, enqueueAndApplyEvent, selectedDateKey],
+    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent, selectedDateKey],
   );
 
   const handleTaskCardTap = useCallback(
@@ -517,11 +517,11 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
     [data, handleRewardRedeem, handleRewardUndo, undoMode],
   );
 
-  const handlePrevDay = useCallback(() => {
+  const handlePreviousDate = useCallback(() => {
     setSelectedDateOffset((offset) => offset - 1);
   }, []);
 
-  const handleNextDay = useCallback(() => {
+  const handleNextDate = useCallback(() => {
     setSelectedDateOffset((offset) => Math.min(offset + 1, 0));
   }, []);
 
@@ -544,23 +544,23 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
   return (
     <>
       <style>{`
-        @keyframes kiosk-gem-rain-fall {
+        @keyframes app-gem-rain-fall {
           0% { transform: translateY(0) rotate(0deg); opacity: 1; }
           100% { transform: translateY(500px) rotate(360deg); opacity: 0; }
         }
-        @keyframes kiosk-emoji-bounce {
+        @keyframes app-emoji-bounce {
           0%, 100% { transform: scale(1) translateY(0); }
           50% { transform: scale(1.08) translateY(-12px); }
         }
-        @keyframes kiosk-celebration-fade {
+        @keyframes app-celebration-fade {
           0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
           10% { opacity: 1; }
           78% { transform: translate(-50%, -52%) scale(1.05); opacity: 1; }
           100% { transform: translate(-50%, -58%) scale(1.1); opacity: 0; }
         }
-        .kiosk-gem-rain { animation: kiosk-gem-rain-fall 2s ease-in forwards; }
-        .kiosk-emoji-bounce { animation: kiosk-emoji-bounce 0.7s ease-in-out; }
-        .kiosk-celebration-fade { animation: kiosk-celebration-fade 1.8s ease-out forwards; }
+        .app-gem-rain { animation: app-gem-rain-fall 2s ease-in forwards; }
+        .app-emoji-bounce { animation: app-emoji-bounce 0.7s ease-in-out; }
+        .app-celebration-fade { animation: app-celebration-fade 1.8s ease-out forwards; }
       `}</style>
 
       <div
@@ -588,28 +588,28 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
               <div className="flex-shrink-0 z-10 flex items-center justify-end gap-2 text-right">
                 <button
                   type="button"
-                  onClick={handlePrevDay}
+                  onClick={handlePreviousDate}
                   className="px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-lg"
                 >
                   前一天
                 </button>
                 <p className="text-base font-semibold text-white/95">{selectedDateDateLabel}</p>
-                <p className="text-base font-semibold text-white/95">{selectedWeekdayLabel}</p>
+                <p className="text-base font-semibold text-white/95">{selectedDateName}</p>
                 <p
                   className={`text-2xl font-semibold ${
-                    selectedDayNet > 0
+                    selectedDateNet > 0
                       ? "text-emerald-300"
-                      : selectedDayNet < 0
+                      : selectedDateNet < 0
                         ? "text-rose-300"
                         : "text-white"
                   }`}
                 >
-                  {selectedDayNet > 0 ? "+" : ""}
-                  {selectedDayNet}
+                  {selectedDateNet > 0 ? "+" : ""}
+                  {selectedDateNet}
                 </p>
                 <button
                   type="button"
-                  onClick={handleNextDay}
+                  onClick={handleNextDate}
                   disabled={selectedDateOffset >= 0}
                   className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
                 >
@@ -655,8 +655,8 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
                       <RainParticle key={i} emoji={celebration.emoji} index={i} />
                     ))}
                   </div>
-                  <div className="kiosk-celebration-fade absolute left-1/2 top-1/2 text-center">
-                    <div className="kiosk-emoji-bounce" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.25)" }}>
+                  <div className="app-celebration-fade absolute left-1/2 top-1/2 text-center">
+                    <div className="app-emoji-bounce" style={{ textShadow: "0 2px 10px rgba(0,0,0,0.25)" }}>
                       <span
                         className={`text-8xl font-black ${celebration.value >= 0 ? "text-emerald-500" : "text-rose-500"}`}
                       >
@@ -692,7 +692,7 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
               <RewardSection
                 rewards={data.rewards}
                 currentPoints={totalNetPoints}
-                disabled={!isToday}
+                disabled={!isCurrentDate}
                 isUndoMode={undoMode}
                 onRedeem={handleRewardCardTap}
               />
@@ -700,7 +700,7 @@ export default function DayKioskPage({ onLock }: { onLock: () => void }) {
               <TaskSection
                 tasks={data.tasks}
                 onTap={handleTaskCardTap}
-                readOnly={!isToday}
+                readOnly={!isCurrentDate}
                 isUndoMode={undoMode}
               />
             )}
