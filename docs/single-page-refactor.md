@@ -37,3 +37,22 @@ and removes obsolete page-mode naming from the current source tree.
 
 Completed. Production defines the Sensitive variable `GEMSTEPS_PIN`; the
 previous key was removed only after the replacement was available.
+
+## iOS standalone follow-up
+
+- [x] Confirm the installed app still opens with Safari browser chrome after a
+      fresh Home Screen installation.
+- [x] Identify that the generated production HTML lacks the Apple-specific
+      `apple-mobile-web-app-capable` metadata.
+- [x] Add explicit iOS standalone metadata and a stable root manifest ID.
+- [x] Verify the production build output and generated install metadata.
+- [ ] Push the fix to `main` and confirm the production deployment.
+
+Verification evidence:
+
+- `npm run lint`: passed.
+- `npm run test:run`: passed, 2 files and 10 tests.
+- `npm run build`: passed.
+- Generated HTML contains both `apple-mobile-web-app-capable=yes` and
+  `mobile-web-app-capable=yes`.
+- Manifest identity, start URL, and scope are `/`; display mode is `standalone`.

@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     title: "GemSteps",
     statusBarStyle: "default",
   },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
   icons: {
     icon: "/favicon.ico",
     apple: "/apple-touch-icon.png",

@@ -1,6 +1,7 @@
 {
   "name": "GemSteps",
   "short_name": "GemSteps",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
