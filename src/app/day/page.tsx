@@ -1,5 +1,5 @@
 import { SerwistProvider } from "@serwist/next/react";
-import DayKioskPage from "./DayKioskPage";
+import PinProtectedDay from "./PinProtectedDay";
 
 export default function DayPage() {
   return (
@@ -10,7 +10,7 @@ export default function DayPage() {
       reloadOnOnline={false}
       options={{ scope: "/day" }}
     >
-      <DayKioskPage />
+      <PinProtectedDay />
     </SerwistProvider>
   );
 }

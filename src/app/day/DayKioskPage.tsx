@@ -221,7 +221,7 @@ function RainParticle({ emoji, index }: { emoji: string; index: number }) {
   );
 }
 
-export default function DayKioskPage() {
+export default function DayKioskPage({ onLock }: { onLock: () => void }) {
   const [data, setData] = useState<DayApiPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
@@ -623,6 +623,13 @@ export default function DayKioskPage() {
                   }`}
                 >
                   {undoMode ? "退出撤销" : "撤销模式"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onLock}
+                  className="px-3 py-1.5 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
+                >
+                  🔒 锁定
                 </button>
               </div>
             </div>
