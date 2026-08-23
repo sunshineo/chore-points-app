@@ -1,4 +1,5 @@
 import { SerwistProvider } from "@serwist/next/react";
+import PwaUpdater from "./PwaUpdater";
 import ProtectedApp from "./ProtectedApp";
 
 export default function Home() {
@@ -10,6 +11,7 @@ export default function Home() {
       reloadOnOnline={false}
       options={{ scope: "/" }}
     >
+      <PwaUpdater />
       <ProtectedApp />
     </SerwistProvider>
   );
