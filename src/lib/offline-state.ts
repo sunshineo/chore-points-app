@@ -24,7 +24,7 @@ export function applyPointEvent(
         Math.round(task.completedCount + deltaPoints / task.defaultPoints),
       );
     }
-  } else {
+  } else if (event.type === "reward") {
     const reward = next.rewards.find((item) => item.id === event.itemId);
     if (reward) {
       reward.redeemedCount = Math.max(

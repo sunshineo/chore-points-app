@@ -46,6 +46,17 @@ function taskEvent(id = "event-1"): PointEvent {
   };
 }
 
+function adjustmentEvent(points: number, id = "adjustment-1"): PointEvent {
+  return {
+    id,
+    type: "adjustment",
+    itemId: "manual-adjustment",
+    points,
+    dateKey: "2026-08-20",
+    date: "2026-08-20T16:00:00.000Z",
+  };
+}
+
 beforeEach(async () => {
   await offlineDb.delete();
   await offlineDb.open();
@@ -73,6 +84,21 @@ describe("offline database", () => {
     expect(optimistic.totalNet).toBe(11);
     expect(optimistic.tasks[0]).toMatchObject({ completedCount: 1 });
     expect(await offlineDb.outbox.count()).toBe(1);
+  });
+
+  it("applies manual adjustments without changing task or reward counts", async () => {
+    await storeRemoteState(state());
+
+    const added = await enqueuePointEvent(adjustmentEvent(4));
+    const subtracted = await enqueuePointEvent(adjustmentEvent(-3, "adjustment-2"));
+
+    expect(added).toMatchObject({ totalNet: 14, selectedDateNet: 14 });
+    expect(subtracted).toMatchObject({
+      totalNet: 11,
+      selectedDateNet: 11,
+      tasks: [{ completedCount: 0 }],
+      rewards: [{ redeemedCount: 0 }],
+    });
   });
 
   it("derives a new date from the latest cached snapshot", async () => {

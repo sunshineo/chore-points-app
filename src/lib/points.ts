@@ -32,12 +32,24 @@ export type PointsState = {
 
 export type PointEvent = {
   id: string;
-  type: "task" | "reward";
+  type: "task" | "reward" | "adjustment";
   itemId: string;
   points: number;
   dateKey: string;
   date: string;
 };
+
+export const MANUAL_ADJUSTMENT_ITEM_ID = "manual-adjustment";
+export const MAX_MANUAL_ADJUSTMENT_POINTS = 100;
+
+export function isValidManualAdjustmentPoints(points: unknown): points is number {
+  return (
+    typeof points === "number" &&
+    Number.isInteger(points) &&
+    points !== 0 &&
+    Math.abs(points) <= MAX_MANUAL_ADJUSTMENT_POINTS
+  );
+}
 
 export function getDateInPacific(now = new Date()): Date {
   const text = now.toLocaleString("en-US", { timeZone: TIME_ZONE });

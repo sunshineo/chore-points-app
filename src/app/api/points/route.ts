@@ -9,7 +9,9 @@ import {
 import {
   DEFAULT_REWARDS,
   DEFAULT_TASKS,
+  MANUAL_ADJUSTMENT_ITEM_ID,
   getDateKeyPT,
+  isValidManualAdjustmentPoints,
   type PointEvent,
 } from "@/lib/points";
 
@@ -39,20 +41,26 @@ function parseDateParam(raw: string | null): string {
 function isValidEvent(value: unknown): value is PointEvent {
   if (!value || typeof value !== "object") return false;
   const event = value as Partial<PointEvent>;
+  const isAdjustment =
+    event.type === "adjustment" &&
+    event.itemId === MANUAL_ADJUSTMENT_ITEM_ID &&
+    isValidManualAdjustmentPoints(event.points);
   const expectedPoints = event.type === "task"
     ? TASK_POINTS.get(event.itemId ?? "")
     : event.type === "reward"
       ? REWARD_COSTS.get(event.itemId ?? "")
       : undefined;
+  const isConfiguredItem =
+    expectedPoints !== undefined &&
+    typeof event.points === "number" &&
+    event.points !== 0 &&
+    Math.abs(event.points) === expectedPoints;
 
   return (
     typeof event.id === "string" &&
     event.id.length > 0 &&
     typeof event.itemId === "string" &&
-    expectedPoints !== undefined &&
-    typeof event.points === "number" &&
-    event.points !== 0 &&
-    Math.abs(event.points) === expectedPoints &&
+    (isAdjustment || isConfiguredItem) &&
     typeof event.dateKey === "string" &&
     DATE_KEY_RE.test(event.dateKey) &&
     typeof event.date === "string" &&
@@ -85,8 +93,14 @@ export async function GET(req: Request) {
       if (entry.dateKey !== selectedDate) continue;
 
       selectedDateNet += entry.points;
-      const totals = entry.type === "task" ? taskPoints : rewardPoints;
-      totals.set(entry.itemId, (totals.get(entry.itemId) ?? 0) + entry.points);
+      const totals = entry.type === "task"
+        ? taskPoints
+        : entry.type === "reward"
+          ? rewardPoints
+          : null;
+      if (totals) {
+        totals.set(entry.itemId, (totals.get(entry.itemId) ?? 0) + entry.points);
+      }
     }
 
     const tasks = DEFAULT_TASKS.map((task) => ({
