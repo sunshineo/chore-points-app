@@ -51,13 +51,26 @@ export function isValidManualAdjustmentPoints(points: unknown): points is number
   );
 }
 
-export function getDateInPacific(now = new Date()): Date {
-  const text = now.toLocaleString("en-US", { timeZone: TIME_ZONE });
-  return new Date(text);
+export function getDateKeyPT(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
-export function getDateKeyPT(now = new Date()): string {
-  return getDateInPacific(now).toLocaleDateString("en-CA", { timeZone: TIME_ZONE });
+export function addDaysToDateKey(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return date.toISOString().slice(0, 10);
+}
+
+export function getChangedDateKeyPT(previousDateKey: string, now = new Date()): string | null {
+  const currentDateKey = getDateKeyPT(now);
+  return currentDateKey === previousDateKey ? null : currentDateKey;
 }
 
 export const DEFAULT_TASKS: Task[] = [

@@ -2,8 +2,32 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_TASKS,
   MAX_MANUAL_ADJUSTMENT_POINTS,
+  addDaysToDateKey,
+  getChangedDateKeyPT,
+  getDateKeyPT,
   isValidManualAdjustmentPoints,
 } from "@/lib/points";
+
+describe("Pacific date helpers", () => {
+  it("changes dates exactly at Pacific midnight", () => {
+    expect(getDateKeyPT(new Date("2026-08-24T06:59:59.999Z"))).toBe("2026-08-23");
+    expect(getDateKeyPT(new Date("2026-08-24T07:00:00.000Z"))).toBe("2026-08-24");
+    expect(getDateKeyPT(new Date("2026-12-15T07:59:59.999Z"))).toBe("2026-12-14");
+    expect(getDateKeyPT(new Date("2026-12-15T08:00:00.000Z"))).toBe("2026-12-15");
+  });
+
+  it("detects when a resumed app has crossed into a new Pacific date", () => {
+    expect(getChangedDateKeyPT("2026-08-23", new Date("2026-08-24T07:00:00.000Z")))
+      .toBe("2026-08-24");
+    expect(getChangedDateKeyPT("2026-08-24", new Date("2026-08-24T15:00:00.000Z")))
+      .toBeNull();
+  });
+
+  it("moves relative dates across month and year boundaries", () => {
+    expect(addDaysToDateKey("2026-08-01", -1)).toBe("2026-07-31");
+    expect(addDaysToDateKey("2026-12-31", 1)).toBe("2027-01-01");
+  });
+});
 
 describe("default tasks", () => {
   it("uses the configured task points and bedtime order", () => {

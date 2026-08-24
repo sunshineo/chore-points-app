@@ -8,8 +8,9 @@ import {
   type PointEvent,
   type PointsState,
   type TaskProgress,
+  addDaysToDateKey,
+  getChangedDateKeyPT,
   getDateKeyPT,
-  getDateInPacific,
 } from "@/lib/points";
 import {
   enqueuePointEvent,
@@ -401,6 +402,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
   const [selectedDateOffset, setSelectedDateOffset] = useState(0);
+  const [todayDateKey, setTodayDateKey] = useState(() => getDateKeyPT());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   const [displayedPoints, setDisplayedPoints] = useState(0);
@@ -411,26 +413,23 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncInProgressRef = useRef(false);
 
-  const selectedDate = useMemo(() => {
-    const currentDate = getDateInPacific(new Date()) as Date;
-    const target = new Date(currentDate);
-    target.setDate(currentDate.getDate() + selectedDateOffset);
-    return target;
-  }, [selectedDateOffset]);
-
-  const selectedDateKey = useMemo(() => getDateKeyPT(selectedDate), [selectedDate]);
+  const selectedDateKey = useMemo(
+    () => addDaysToDateKey(todayDateKey, selectedDateOffset),
+    [selectedDateOffset, todayDateKey],
+  );
+  const selectedDateKeyRef = useRef(selectedDateKey);
+  selectedDateKeyRef.current = selectedDateKey;
   const selectedDateDateLabel = useMemo(() => {
-    const month = selectedDate.getMonth() + 1;
-    const dateNumber = selectedDate.getDate();
+    const [, month, dateNumber] = selectedDateKey.split("-").map(Number);
     return `${month}月${dateNumber}日`;
-  }, [selectedDate]);
+  }, [selectedDateKey]);
   const selectedDateName = useMemo(
     () =>
-      selectedDate.toLocaleDateString("zh-CN", {
+      new Date(`${selectedDateKey}T12:00:00Z`).toLocaleDateString("zh-CN", {
         timeZone: TIME_ZONE,
         weekday: "long",
       }),
-    [selectedDate],
+    [selectedDateKey],
   );
   const selectedDateNet = data?.selectedDateNet ?? 0;
   const totalNetPoints = data?.totalNet ?? 0;
@@ -465,7 +464,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       const result = await drainOutbox();
       if (!result.completed) return;
       const remote = await fetchRemoteState();
-      applyState(remote);
+      if (remote.selectedDate === selectedDateKeyRef.current) applyState(remote);
       setErrorMessage(null);
     } catch {
       // Keep the local snapshot as-is; the next online/focus event retries.
@@ -548,9 +547,19 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
     void loadState();
   }, [loadState]);
 
+  const refreshTodayDate = useCallback(() => {
+    const nextDateKey = getChangedDateKeyPT(todayDateKey);
+    if (!nextDateKey) return false;
+
+    setTodayDateKey(nextDateKey);
+    return true;
+  }, [todayDateKey]);
+
   useEffect(() => {
     const refreshWhenVisible = () => {
-      if (!document.hidden) void syncAndRefresh();
+      if (document.hidden) return;
+      if (refreshTodayDate()) return;
+      void syncAndRefresh();
     };
 
     window.addEventListener("online", refreshWhenVisible);
@@ -563,7 +572,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       window.clearInterval(refreshInterval);
     };
-  }, [syncAndRefresh]);
+  }, [refreshTodayDate, syncAndRefresh]);
 
   useEffect(() => {
     const start = displayedPoints;
