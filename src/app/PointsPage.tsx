@@ -790,13 +790,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
               </div>
 
               <div className="flex-shrink-0 z-10 flex items-center justify-end gap-2 text-right">
-                <button
-                  type="button"
-                  onClick={handlePreviousDate}
-                  className="px-4 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-lg"
-                >
-                  前一天
-                </button>
                 <p className="text-base font-semibold text-white/95">{selectedDateDateLabel}</p>
                 <p className="text-base font-semibold text-white/95">{selectedDateName}</p>
                 <p
@@ -810,15 +803,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
                 >
                   {selectedDateNet > 0 ? "+" : ""}
                   {selectedDateNet}
-                </p>
-                <button
-                  type="button"
-                  onClick={handleNextDate}
-                  disabled={selectedDateOffset >= 0}
-                  className="px-4 py-1.5 rounded-lg bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/25 text-lg"
-                >
-                  后一天
-                </button>
+                  </p>
                 <button
                   type="button"
                   onClick={() => setUndoMode((value) => !value)}
@@ -830,10 +815,26 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setAdjustmentOpen(true)}
+                  disabled={!isCurrentDate}
+                  title={isCurrentDate ? "临时加分或减分" : "只能调整今天的积分"}
+                  className="px-3 py-1.5 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span className="text-xl font-black leading-none" aria-hidden="true">
+                    ±
+                  </span>
+                  <span className="ml-1.5">临时加减</span>
+                </button>
+                <button
+                  type="button"
                   onClick={onLock}
                   className="px-3 py-1.5 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
+                  aria-label="锁定"
+                  title="锁定"
                 >
-                  🔒 锁定
+                  <span className="text-2xl leading-none" aria-hidden="true">
+                    🔒
+                  </span>
                 </button>
               </div>
             </div>
@@ -910,17 +911,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
             )}
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setAdjustmentOpen(true)}
-          disabled={!isCurrentDate}
-          title={isCurrentDate ? "临时加分或减分" : "只能调整今天的积分"}
-          className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-5 z-20 flex h-16 items-center gap-2 rounded-full bg-slate-900 px-5 text-white shadow-2xl shadow-slate-500/40 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <span className="text-2xl font-black" aria-hidden="true">±</span>
-          <span className="text-sm font-black">临时加减</span>
-        </button>
 
         {adjustmentOpen ? (
           <PointAdjustmentDialog
