@@ -143,4 +143,10 @@ export const DEFAULT_REWARDS: Reward[] = [
     emoji: "🎮",
     cost: 15,
   },
+  {
+    id: "reward-movie",
+    title: "看电影",
+    emoji: "🎬",
+    cost: 25,
+  },
 ];
