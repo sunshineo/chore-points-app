@@ -41,6 +41,11 @@ const INVALID_REMOTE_ERROR = "服务器返回了无效的积分数据";
 
 class InvalidRemoteStateError extends Error {}
 
+function abortRemoteFetches(controllers: Set<AbortController>) {
+  for (const controller of controllers) controller.abort();
+  controllers.clear();
+}
+
 export function usePointsController(): PointsController {
   const [data, setData] = useState<PointsState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,8 +101,7 @@ export function usePointsController(): PointsController {
 
       const body: unknown = await response.json();
       if (!isPointsState(body)) throw new InvalidRemoteStateError(INVALID_REMOTE_ERROR);
-      if (!mountedRef.current) throw new DOMException("Aborted", "AbortError");
-      return storeRemoteState(body);
+      return body;
     } finally {
       fetchControllersRef.current.delete(controller);
     }
@@ -113,14 +117,17 @@ export function usePointsController(): PointsController {
 
     syncInProgressRef.current = true;
     const dateKey = selectedDateKeyRef.current;
+    const isCurrentDate = () =>
+      mountedRef.current && dateKey === selectedDateKeyRef.current;
     try {
       const result = await drainOutbox();
-      if (!result.completed || !mountedRef.current) return;
-      const remote = await fetchRemoteState(dateKey);
-      if (mountedRef.current && remote.selectedDate === selectedDateKeyRef.current) {
-        applyState(remote);
-        setErrorMessage(null);
-      }
+      if (!result.completed || !isCurrentDate()) return;
+      const fetched = await fetchRemoteState(dateKey);
+      if (!isCurrentDate()) return;
+      const remote = await storeRemoteState(fetched);
+      if (!isCurrentDate()) return;
+      applyState(remote);
+      setErrorMessage(null);
     } catch (error) {
       if (mountedRef.current && error instanceof InvalidRemoteStateError) {
         setErrorMessage(INVALID_REMOTE_ERROR);
@@ -131,7 +138,12 @@ export function usePointsController(): PointsController {
   }, [applyState, fetchRemoteState]);
 
   const loadState = useCallback(async (dateKey: string) => {
+    abortRemoteFetches(fetchControllersRef.current);
     const sequence = ++loadSequenceRef.current;
+    const isCurrentLoad = () =>
+      mountedRef.current &&
+      sequence === loadSequenceRef.current &&
+      dateKey === selectedDateKeyRef.current;
     if (mountedRef.current) {
       setLoading(true);
       setErrorMessage(null);
@@ -140,29 +152,30 @@ export function usePointsController(): PointsController {
     let cached: PointsState | null = null;
     try {
       cached = await loadSnapshot(dateKey);
-      if (mountedRef.current && sequence === loadSequenceRef.current && cached) {
+      if (!isCurrentLoad()) return;
+      if (cached) {
         applyState(cached);
         setLoading(false);
       }
 
       if (window.navigator.onLine) {
         const result = await drainOutbox();
-        if (result.completed && mountedRef.current) {
-          const remote = await fetchRemoteState(dateKey);
-          if (mountedRef.current && sequence === loadSequenceRef.current) {
-            applyState(remote);
-            setErrorMessage(null);
-          }
-        }
+        if (!result.completed || !isCurrentLoad()) return;
+        const fetched = await fetchRemoteState(dateKey);
+        if (!isCurrentLoad()) return;
+        const remote = await storeRemoteState(fetched);
+        if (!isCurrentLoad()) return;
+        applyState(remote);
+        setErrorMessage(null);
       }
     } catch (error) {
-      if (mountedRef.current && sequence === loadSequenceRef.current) {
+      if (isCurrentLoad()) {
         if (!cached || error instanceof InvalidRemoteStateError) {
           setErrorMessage(error instanceof Error ? error.message : "加载失败");
         }
       }
     } finally {
-      if (mountedRef.current && sequence === loadSequenceRef.current) {
+      if (isCurrentLoad()) {
         setLoading(false);
       }
     }
@@ -226,8 +239,7 @@ export function usePointsController(): PointsController {
     return () => {
       mountedRef.current = false;
       loadSequenceRef.current += 1;
-      for (const controller of fetchControllers) controller.abort();
-      fetchControllers.clear();
+      abortRemoteFetches(fetchControllers);
     };
   }, []);
 

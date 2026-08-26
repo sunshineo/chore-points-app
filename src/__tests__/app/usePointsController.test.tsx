@@ -251,6 +251,117 @@ describe("usePointsController lifecycle", () => {
     expect(offlineMocks.loadSnapshot).toHaveBeenCalledWith(NEXT_DATE_KEY);
   });
 
+  it("does not start drain, fetch, or persistence when a snapshot resolves after unmount", async () => {
+    const snapshotResponse = deferred<PointsState | null>();
+    const fetchMock = vi.fn();
+    offlineMocks.loadSnapshot.mockReturnValue(snapshotResponse.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { unmount } = renderHook(() => usePointsController());
+    await waitFor(() => expect(offlineMocks.loadSnapshot).toHaveBeenCalledTimes(1));
+
+    unmount();
+    await act(async () => {
+      snapshotResponse.resolve(makeState());
+      await flushAsyncWork();
+    });
+
+    expect(syncMocks.drainOutbox).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(offlineMocks.storeRemoteState).not.toHaveBeenCalled();
+  });
+
+  it("does not start fetch or persistence when outbox drain resolves after unmount", async () => {
+    const drainResponse = deferred<{ completed: boolean; rejected: number }>();
+    const fetchMock = vi.fn();
+    offlineMocks.loadSnapshot.mockResolvedValue(makeState());
+    syncMocks.drainOutbox.mockReturnValue(drainResponse.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { unmount } = renderHook(() => usePointsController());
+    await waitFor(() => expect(syncMocks.drainOutbox).toHaveBeenCalledTimes(1));
+
+    unmount();
+    await act(async () => {
+      drainResponse.resolve({ completed: true, rejected: 0 });
+      await flushAsyncWork();
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(offlineMocks.storeRemoteState).not.toHaveBeenCalled();
+  });
+
+  it("does not persist a remote response that resolves after unmount", async () => {
+    const remoteResponse = deferred<Response>();
+    offlineMocks.loadSnapshot.mockResolvedValue(makeState());
+    vi.stubGlobal("fetch", vi.fn(() => remoteResponse.promise));
+
+    const { unmount } = renderHook(() => usePointsController());
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+    unmount();
+    await act(async () => {
+      remoteResponse.resolve(Response.json(makeState({ totalNet: 22 })));
+      await flushAsyncWork();
+    });
+
+    expect(offlineMocks.storeRemoteState).not.toHaveBeenCalled();
+  });
+
+  it("persists only the current date when remote responses resolve out of order", async () => {
+    const oldRemoteResponse = deferred<Response>();
+    const currentRemoteResponse = deferred<Response>();
+    const oldCached = makeState({ totalNet: 4 });
+    const currentCached = makeState({
+      dateKey: NEXT_DATE_KEY,
+      totalNet: 4,
+      selectedDateNet: 0,
+    });
+    const oldRemote = makeState({ totalNet: 18 });
+    const currentRemote = makeState({
+      dateKey: NEXT_DATE_KEY,
+      totalNet: 25,
+      selectedDateNet: 21,
+    });
+    let persistedState: PointsState | null = null;
+    offlineMocks.loadSnapshot.mockImplementation(async (dateKey: string) =>
+      dateKey === NEXT_DATE_KEY ? currentCached : oldCached,
+    );
+    offlineMocks.storeRemoteState.mockImplementation(async (state: PointsState) => {
+      persistedState = state;
+      return state;
+    });
+    const fetchMock = vi.fn((request: string | URL | Request) =>
+      String(request).includes(NEXT_DATE_KEY)
+        ? currentRemoteResponse.promise
+        : oldRemoteResponse.promise,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => usePointsController());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+
+    dateMocks.getChangedDateKeyPT.mockReturnValueOnce(NEXT_DATE_KEY);
+    act(() => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result.current.todayDateKey).toBe(NEXT_DATE_KEY);
+    });
+
+    currentRemoteResponse.resolve(Response.json(currentRemote));
+    await waitFor(() => {
+      expect(offlineMocks.storeRemoteState).toHaveBeenCalledTimes(1);
+      expect(result.current.data).toEqual(currentRemote);
+    });
+
+    oldRemoteResponse.resolve(Response.json(oldRemote));
+    await act(flushAsyncWork);
+
+    expect(offlineMocks.storeRemoteState).toHaveBeenCalledTimes(1);
+    expect(persistedState).toEqual(currentRemote);
+    expect(result.current.data).toEqual(currentRemote);
+  });
+
   it("cancels every timer and prevents lifecycle work after unmount", async () => {
     vi.useFakeTimers();
     const state = makeState({ totalNet: 8 });
