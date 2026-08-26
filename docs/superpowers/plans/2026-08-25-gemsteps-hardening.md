@@ -1921,7 +1921,7 @@ git commit -m "refactor: centralize PWA update checks"
 - Consumes: `PointsState`, task/reward types, offline database functions, `drainOutbox`, and `createPointEvent`.
 - Produces: `usePointsController(): PointsController`; presentational components receive plain domain values and callback props, with no persistence/network imports; `PointsPage` remains the default export consumed by `ProtectedApp`.
 
-- [ ] **Step 1: Define the controller contract before moving code**
+- [x] **Step 1: Define the controller contract before moving code**
 
 Create the feature directory once:
 
@@ -1951,7 +1951,7 @@ export type PointsController = {
 
 The controller owns data state, initial load, remote validation, snapshot merge, outbox drain, 10-second data refresh, midnight rollover, displayed-point animation, and event creation. It does not render JSX or own `activeTab`, `undoMode`, dialog-open state, lock behavior, or celebration DOM.
 
-- [ ] **Step 2: Move task and reward presentation without behavior changes**
+- [x] **Step 2: Move task and reward presentation without behavior changes**
 
 Move `ChoreTile` and `TaskSection` to `TaskSection.tsx`. Export this exact prop contract:
 
@@ -1978,7 +1978,7 @@ export type RewardSectionProps = {
 
 Preserve all classes, dimensions, labels, disabled rules, and displayed counts.
 
-- [ ] **Step 3: Move dialog and celebration presentation**
+- [x] **Step 3: Move dialog and celebration presentation**
 
 Move `PointAdjustmentDialog` unchanged except for exporting it and its props:
 
@@ -1999,7 +1999,7 @@ export type CelebrationOverlayProps = { celebration: Celebration | null };
 
 Keep the timer that clears celebration in `PointsPage`, because it is page interaction state rather than persistent point data.
 
-- [ ] **Step 4: Move load/sync/action logic into `usePointsController`**
+- [x] **Step 4: Move load/sync/action logic into `usePointsController`**
 
 Move the existing state/effects/callbacks behind the contract from Step 1. Consolidate task/reward event differences inside the controller so `PointsPage` calls:
 
@@ -2010,7 +2010,7 @@ void controller.enqueueReward(rewardId, undoMode);
 
 The controller must look up the configured item from `data`, reject invalid undo/redeem actions before enqueueing, call `enqueuePointEvent`, apply the optimistic state, and trigger `syncAndRefresh`. It returns `true` only when the local Dexie transaction succeeds.
 
-- [ ] **Step 5: Reduce `PointsPage` to composition and page-only interaction state**
+- [x] **Step 5: Reduce `PointsPage` to composition and page-only interaction state**
 
 `PointsPage` should retain only:
 
@@ -2024,7 +2024,7 @@ const controller = usePointsController();
 
 It renders loading/error/header/tabs, imported sections, imported dialog, imported overlay, and the lock button. Preserve celebration timing and invoke it after successful controller actions.
 
-- [ ] **Step 6: Add controller lifecycle regression tests**
+- [x] **Step 6: Add controller lifecycle regression tests**
 
 Create `src/__tests__/app/usePointsController.test.tsx` with `// @vitest-environment jsdom`, `renderHook`, `act`, and `waitFor` from `@testing-library/react`. Mock `@/lib/offline-db` and `@/lib/sync-controller` at their module boundaries and use complete `DEFAULT_TASKS`/`DEFAULT_REWARDS` fixtures accepted by `isPointsState`. Implement these exact cases:
 
@@ -2043,7 +2043,7 @@ npm run test:run -- src/__tests__/app/usePointsController.test.tsx
 
 Expected: PASS without a real network, IndexedDB database, or service worker; every hook-owned effect has an observable cleanup assertion.
 
-- [ ] **Step 7: Verify behavior and file boundaries**
+- [x] **Step 7: Verify behavior and file boundaries**
 
 Run:
 
@@ -2077,7 +2077,7 @@ node scripts/run-with-test-database.mjs npm run dev
 
 Stop the dev server when the smoke check ends. Leave the disposable local test ledger in place or remove that dedicated database through its normal local database-management workflow; never reset or drop a database from this plan. A real service-worker update check must use a production build on `localhost`; record that separate check in Task 8's release evidence if development mode does not register the worker.
 
-- [ ] **Step 8: Commit the client split**
+- [x] **Step 8: Commit the client split**
 
 Run:
 
