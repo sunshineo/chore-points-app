@@ -9,15 +9,9 @@ import {
 import {
   DEFAULT_REWARDS,
   DEFAULT_TASKS,
-  MANUAL_ADJUSTMENT_ITEM_ID,
   getDateKeyPT,
-  isValidManualAdjustmentPoints,
-  type PointEvent,
 } from "@/lib/points";
-
-const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const TASK_POINTS = new Map(DEFAULT_TASKS.map((task) => [task.id, task.defaultPoints]));
-const REWARD_COSTS = new Map(DEFAULT_REWARDS.map((reward) => [reward.id, reward.cost]));
+import { isValidDateKey, parsePointEvent } from "@/lib/point-event";
 
 async function requireSession(): Promise<NextResponse | null> {
   const configuredPin = process.env.GEMSTEPS_PIN;
@@ -35,37 +29,7 @@ async function requireSession(): Promise<NextResponse | null> {
 
 function parseDateParam(raw: string | null): string {
   const trimmed = raw?.trim() ?? "";
-  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : getDateKeyPT();
-}
-
-function isValidEvent(value: unknown): value is PointEvent {
-  if (!value || typeof value !== "object") return false;
-  const event = value as Partial<PointEvent>;
-  const isAdjustment =
-    event.type === "adjustment" &&
-    event.itemId === MANUAL_ADJUSTMENT_ITEM_ID &&
-    isValidManualAdjustmentPoints(event.points);
-  const expectedPoints = event.type === "task"
-    ? TASK_POINTS.get(event.itemId ?? "")
-    : event.type === "reward"
-      ? REWARD_COSTS.get(event.itemId ?? "")
-      : undefined;
-  const isConfiguredItem =
-    expectedPoints !== undefined &&
-    typeof event.points === "number" &&
-    event.points !== 0 &&
-    Math.abs(event.points) === expectedPoints;
-
-  return (
-    typeof event.id === "string" &&
-    event.id.length > 0 &&
-    typeof event.itemId === "string" &&
-    (isAdjustment || isConfiguredItem) &&
-    typeof event.dateKey === "string" &&
-    DATE_KEY_RE.test(event.dateKey) &&
-    typeof event.date === "string" &&
-    Number.isFinite(new Date(event.date).getTime())
-  );
+  return isValidDateKey(trimmed) ? trimmed : getDateKeyPT();
 }
 
 export async function GET(req: Request) {
@@ -137,8 +101,8 @@ export async function POST(req: Request) {
   if (unauthorized) return unauthorized;
 
   try {
-    const event = await req.json().catch(() => null);
-    if (!isValidEvent(event)) {
+    const event = parsePointEvent(await req.json().catch(() => null));
+    if (!event) {
       return NextResponse.json({ error: "Invalid event" }, { status: 400 });
     }
 

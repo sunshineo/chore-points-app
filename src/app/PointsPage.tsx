@@ -12,6 +12,8 @@ import {
   getChangedDateKeyPT,
   getDateKeyPT,
 } from "@/lib/points";
+import { createPointEvent } from "@/lib/point-event";
+import { isPointsState } from "@/lib/points-state";
 import {
   enqueuePointEvent,
   loadSnapshot,
@@ -454,7 +456,9 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       throw new Error(body?.error ?? `加载失败：${response.status}`);
     }
 
-    return storeRemoteState((await response.json()) as PointsState);
+    const body: unknown = await response.json();
+    if (!isPointsState(body)) throw new Error("服务器返回了无效的积分数据");
+    return storeRemoteState(body);
   }, [selectedDateKey]);
 
   const syncAndRefresh = useCallback(async () => {
@@ -641,20 +645,16 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const handleTaskTap = useCallback(
     async (task: TaskProgress) => {
       if (!data || !isCurrentDate) return;
-      const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: PointEvent = {
-        id: eventId,
+      const event = createPointEvent({
         type: "task",
         itemId: task.id,
         points: Math.abs(task.defaultPoints),
-        dateKey: selectedDateKey,
-        date: new Date().toISOString(),
-      };
+      });
       if (await enqueueAndApplyEvent(event)) {
         runCelebration(task.emoji, task.defaultPoints);
       }
     },
-    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration, selectedDateKey],
+    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration],
   );
 
   const handleTaskUndo = useCallback(
@@ -662,18 +662,14 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       if (!data || !isCurrentDate) return;
       if (Number(task.completedCount ?? 0) <= 0) return;
       clearCelebration();
-      const eventId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: PointEvent = {
-        id: eventId,
+      const event = createPointEvent({
         type: "task",
         itemId: task.id,
         points: -Math.abs(task.defaultPoints),
-        dateKey: selectedDateKey,
-        date: new Date().toISOString(),
-      };
+      });
       await enqueueAndApplyEvent(event);
     },
-    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent, selectedDateKey],
+    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent],
   );
 
   const handleRewardRedeem = useCallback(
@@ -681,20 +677,16 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       if (!data || !isCurrentDate) return;
       if (totalNetPoints < reward.cost) return;
 
-      const eventId = `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: PointEvent = {
-        id: eventId,
+      const event = createPointEvent({
         type: "reward",
         itemId: reward.id,
         points: -Math.abs(reward.cost),
-        dateKey: selectedDateKey,
-        date: new Date().toISOString(),
-      };
+      });
       if (await enqueueAndApplyEvent(event)) {
         runCelebration(reward.emoji, -reward.cost);
       }
     },
-    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration, selectedDateKey, totalNetPoints],
+    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration, totalNetPoints],
   );
 
   const handleRewardUndo = useCallback(
@@ -703,37 +695,29 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       if (reward.redeemedCount <= 0) return;
       clearCelebration();
 
-      const eventId = `reward-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: PointEvent = {
-        id: eventId,
+      const event = createPointEvent({
         type: "reward",
         itemId: reward.id,
         points: Math.abs(reward.cost),
-        dateKey: selectedDateKey,
-        date: new Date().toISOString(),
-      };
+      });
       await enqueueAndApplyEvent(event);
     },
-    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent, selectedDateKey],
+    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent],
   );
 
   const handleManualAdjustment = useCallback(
     async (points: number) => {
       if (!data || !isCurrentDate) return false;
-      const eventId = `adjustment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const event: PointEvent = {
-        id: eventId,
+      const event = createPointEvent({
         type: "adjustment",
         itemId: MANUAL_ADJUSTMENT_ITEM_ID,
         points,
-        dateKey: selectedDateKey,
-        date: new Date().toISOString(),
-      };
+      });
       const applied = await enqueueAndApplyEvent(event);
       if (applied) runCelebration("⭐", points);
       return applied;
     },
-    [data, enqueueAndApplyEvent, isCurrentDate, runCelebration, selectedDateKey],
+    [data, enqueueAndApplyEvent, isCurrentDate, runCelebration],
   );
 
   const handleTaskCardTap = useCallback(
