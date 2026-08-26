@@ -7,13 +7,20 @@ datasource db {
 }
 
 model PointEntry {
-  id          String   @id
-  type        String
-  itemId      String
-  points      Int
-  dateKey     String
-  date        DateTime
-  createdAt   DateTime @default(now())
+  id        String   @id
+  type      String
+  itemId    String
+  points    Int
+  dateKey   String
+  date      DateTime
+  createdAt DateTime @default(now())
 
   @@index([dateKey])
+  @@index([dateKey, type, itemId])
+}
+
+model PointBalance {
+  id        String   @id
+  totalNet  Int
+  updatedAt DateTime @updatedAt
 }

@@ -16,6 +16,8 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
+    "db:test:migrate": "node scripts/run-with-test-database.mjs npx --no-install prisma migrate deploy",
+    "test:integration": "node scripts/run-with-test-database.mjs vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --noEmit --incremental false",
     "verify": "npm run lint && npm run typecheck && npm run test:run && npm run build",
     "postinstall": "prisma generate",
