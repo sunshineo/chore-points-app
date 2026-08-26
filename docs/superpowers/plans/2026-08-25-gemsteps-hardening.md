@@ -1777,7 +1777,7 @@ git commit -m "refactor: keep one offline points snapshot"
 - Consumes: Serwist registration at scope `/`, browser focus/online/visibility events.
 - Produces: one non-overlapping update controller that checks immediately and hourly while visible, then reloads once on `controllerchange`.
 
-- [ ] **Step 1: Capture the duplicate behavior in a source assertion**
+- [x] **Step 1: Capture the duplicate behavior in a source assertion**
 
 Run:
 
@@ -1787,7 +1787,7 @@ rg -n 'registration\.update|controllerchange|SKIP_WAITING' src/app/PwaUpdater.ts
 
 Expected: update logic appears in both files and `SKIP_WAITING` appears in `PointsPage.tsx`.
 
-- [ ] **Step 2: Add a tested one-reload state machine**
+- [x] **Step 2: Add a tested one-reload state machine**
 
 Export this small handler from `PwaUpdater.tsx` and use it inside the effect:
 
@@ -1836,7 +1836,7 @@ describe("PWA controller changes", () => {
 });
 ```
 
-- [ ] **Step 3: Add an hourly, non-overlapping update check to `PwaUpdater`**
+- [x] **Step 3: Add an hourly, non-overlapping update check to `PwaUpdater`**
 
 Replace the effect-local reload state with the tested handler, add an in-flight guard, and register the interval only after `checkWhenVisible` is defined:
 
@@ -1879,11 +1879,11 @@ return () => {
 
 Keep the existing immediate check and focus/online/visibility listeners. The hourly interval is an intentional freshness/battery tradeoff for a continuously visible installed app; do not restore 10-second service-worker polling.
 
-- [ ] **Step 4: Delete PWA lifecycle code from `PointsPage`**
+- [x] **Step 4: Delete PWA lifecycle code from `PointsPage`**
 
 Remove `updateCheckInProgressRef`, `checkForCodeUpdate`, its calls, waiting/installing worker listeners, and the `SKIP_WAITING` message. Keep the 10-second data-refresh interval and its online/focus/visibility behavior; its callback should only refresh the Pacific date and call `syncAndRefresh`.
 
-- [ ] **Step 5: Verify one owner, reload behavior, and production compilation**
+- [x] **Step 5: Verify one owner, reload behavior, and production compilation**
 
 Run:
 
@@ -1895,7 +1895,7 @@ npm run verify
 
 Expected: `registration.update` and `controllerchange` occur only in `PwaUpdater`; `SKIP_WAITING` has no source match; all verification passes.
 
-- [ ] **Step 6: Commit the PWA consolidation**
+- [x] **Step 6: Commit the PWA consolidation**
 
 Run:
 
