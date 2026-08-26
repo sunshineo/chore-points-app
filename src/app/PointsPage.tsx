@@ -409,7 +409,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const loadSequenceRef = useRef(0);
   const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncInProgressRef = useRef(false);
-  const updateCheckInProgressRef = useRef(false);
 
   const selectedDateKey = todayDateKey;
   const selectedDateKeyRef = useRef(selectedDateKey);
@@ -550,52 +549,12 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
     return true;
   }, [todayDateKey]);
 
-  const checkForCodeUpdate = useCallback(async () => {
-    if (!("serviceWorker" in navigator) || document.hidden || updateCheckInProgressRef.current) return;
-
-    const applyUpdateAndReload = (registration: ServiceWorkerRegistration) => {
-      const waitingWorker = registration.waiting;
-      if (!waitingWorker) return false;
-
-      updateCheckInProgressRef.current = true;
-      waitingWorker.postMessage({ type: "SKIP_WAITING" });
-      window.location.reload();
-      return true;
-    };
-
-    try {
-      const registration = await navigator.serviceWorker.getRegistration("/");
-      if (!registration) return;
-
-      if (applyUpdateAndReload(registration)) return;
-
-      const installingWorker = registration.installing;
-      if (installingWorker) {
-        installingWorker.addEventListener(
-          "statechange",
-          () => {
-            if (installingWorker.state === "installed") {
-              applyUpdateAndReload(registration);
-            }
-          },
-          { once: true },
-        );
-      }
-
-      await registration.update();
-      applyUpdateAndReload(registration);
-    } catch {
-      // Swallow update check errors and try again on next interval.
-    }
-  }, []);
-
   useEffect(() => {
     const refreshWhenVisible = () => {
       if (document.hidden) return;
       if (!refreshTodayDate()) {
         void syncAndRefresh();
       }
-      void checkForCodeUpdate();
     };
 
     window.addEventListener("online", refreshWhenVisible);
@@ -608,7 +567,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       document.removeEventListener("visibilitychange", refreshWhenVisible);
       window.clearInterval(refreshInterval);
     };
-  }, [refreshTodayDate, syncAndRefresh, checkForCodeUpdate]);
+  }, [refreshTodayDate, syncAndRefresh]);
 
   useEffect(() => {
     const start = displayedPoints;
