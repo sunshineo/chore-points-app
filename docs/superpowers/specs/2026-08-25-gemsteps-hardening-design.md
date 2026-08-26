@@ -47,7 +47,7 @@ Next.js page shell
             -> PostgreSQL PointEntry + PointBalance projection
 ```
 
-PWA lifecycle handling remains in `PwaUpdater`. It owns foreground, online, and 10-second service-worker update checks. `PointsPage` only owns data synchronization.
+PWA lifecycle handling remains in `PwaUpdater`. It owns immediate, foreground, online, and hourly service-worker update checks. `PointsPage` only owns data synchronization. Hourly polling avoids the current 10-second update traffic while still updating a continuously visible installed app.
 
 ## Dependency baseline
 
@@ -71,13 +71,15 @@ Create a shared `src/lib/point-event.ts` module that owns:
 - validation of real calendar dates;
 - verification that `dateKey` equals the Pacific date derived from `date`.
 
-Create an `isPointsState(value: unknown): value is PointsState` boundary guard before remote JSON is written to Dexie. The helper validates numbers, selected date, and every required task/reward field; it does not silently fill missing values.
+Create an `isPointsState(value: unknown): value is PointsState` boundary guard before remote JSON is written to Dexie. The helper validates nonnegative total points, selected date, and the complete configured task/reward arrays, including exact IDs, order, display fields, point values, and unique membership; it does not silently fill missing values.
 
-API failures return stable public messages plus a request ID. The server logs the request ID, route, and original exception without logging PINs, session tokens, or request bodies.
+API failures return stable public messages plus a request ID. The server logs the request ID, route, exception class, and safe machine-readable error code. It does not log raw exception messages, PINs, session tokens, request bodies, or connection strings.
 
 ## Ledger consistency and projection
 
-Add a singleton `PointBalance` table with ID `singleton`, `totalNet`, and `updatedAt`. The migration backfills `totalNet` from all existing `PointEntry` rows and installs a PostgreSQL trigger that keeps the projection synchronized for inserts, updates, and deletes. The trigger makes the migration safe even if the old application receives an event during deployment.
+Add a singleton `PointBalance` table with ID `singleton`, nonnegative `totalNet`, and `updatedAt`. The PostgreSQL migration runs in one explicit transaction, locks `PointEntry` against writes, creates and backfills the projection, installs the invariant trigger, and commits only after the trigger is active. The short lock removes the backfill/trigger race.
+
+Every insert, including one made by an old application instance during a rolling deployment, is serialized through the singleton balance row. The trigger is explicitly `VOLATILE` and relies on PostgreSQL's default `READ COMMITTED` isolation so its post-lock aggregate query sees the preceding committed writer. It keeps the projection current and rejects a negative total, negative task aggregate, or positive reward aggregate. Application code uses explicit `READ COMMITTED` and still performs the same checks so normal rejected actions receive a stable 409 instead of a database exception.
 
 Move ledger writes to `src/lib/server/point-ledger.ts`. Every write transaction:
 
@@ -93,13 +95,15 @@ GET reads `PointBalance.totalNet` and uses a date-filtered database `groupBy` fo
 
 ## Authentication and lock semantics
 
-Add required `GEMSTEPS_SESSION_SECRET` configuration with at least 32 characters of entropy. The session token contains a version and absolute expiration and is signed with HMAC-SHA-256 using that secret. The configured PIN is included in the signed message so rotating the PIN invalidates existing sessions, but the PIN is never used as the HMAC key.
+Add required `GEMSTEPS_SESSION_SECRET` configuration generated from at least 32 random bytes and stored in a safe textual encoding. Runtime byte length is only a minimum guard and does not claim to measure entropy. The session token contains a version and absolute expiration and is signed with HMAC-SHA-256 using that secret. The configured PIN is included in the signed message so rotating the PIN invalidates existing sessions, but the PIN is never used as the HMAC key.
 
-The server validates token signatures and expiration. Cookie `maxAge` and token expiration use the same timestamp. The application keeps the existing 30-day device-session behavior.
+The server validates token signatures and expiration. The JSON response, token, and cookie expiration are derived from one `expiresAt`; cookie `maxAge` keeps the same 30-day device-session duration.
 
 Add `gemsteps-explicitly-locked` local state. Clicking lock sets it before attempting the network DELETE. Startup never accepts an online cookie while the explicit local lock is set. A successful PIN submission clears the explicit lock.
 
-Configure a Vercel WAF fixed-window rule for `POST /api/auth`: five requests per 60 seconds keyed by IP and JA4 digest, returning 429. Document the rule and verify it in production after deployment.
+Configure two Vercel WAF fixed-window rules for `POST /api/auth`: five requests per 60 seconds keyed by IP in one rule and by JA4 digest in the other, both returning 429. Separate rules avoid ambiguous multi-key semantics. They are mandatory production prerequisites, must be observed in Log mode first, and require external-change authorization before publication.
+
+The lock button is intentionally a local-device lock: it clears that browser's cookie and sets sticky local state, but it does not revoke a copied bearer token. A copied token remains valid until its absolute expiration unless the PIN or session secret is rotated. This is an accepted singleton-app tradeoff rather than a server-side session registry.
 
 ## Offline storage
 
@@ -123,12 +127,12 @@ The refactor must preserve rendered copy, button behavior, accessibility labels,
 
 ## Testing and delivery
 
-- Unit tests cover token expiration/signature behavior, explicit offline locking, strict event/date validation, remote state validation, event construction, and one-snapshot migration.
-- PostgreSQL integration tests cover two simultaneous redemptions, duplicate IDs, projection backfill, and GET aggregation.
+- Unit/component tests cover token and auth-route expiration behavior, explicit offline locking in `ProtectedApp`, strict event/date validation through the points route, exact remote state validation, event construction, cross-date one-snapshot rollback, PWA one-reload behavior, and controller effect cleanup.
+- PostgreSQL integration tests run only through a localhost database whose name ends in `_test`; both the command wrapper and test client reject every other URL. They cover two simultaneous redemptions, task/reward over-undo, duplicate IDs, the actual migration backfill, projection/trigger invariants, and GET aggregation.
 - Existing 17 tests remain green.
 - CI runs on Node 24 with PostgreSQL and executes install, migration, lint with zero warnings, typecheck, unit tests, integration tests, production audit, and production build.
-- Deployment order: create the session secret and WAF rule; run the additive migration; deploy application code; verify auth, concurrent ledger behavior, offline lock, outbox drain, and PWA update; then monitor API errors and database totals.
-- Rollback is application-safe because the old application ignores the additive table and the database trigger keeps the projection current.
+- Deployment order: create the session secret and both WAF rules; run the locked additive migration; deploy application code; verify auth, concurrent ledger behavior, offline lock, outbox drain, and PWA update; then monitor API errors and database totals.
+- Rollback preserves ledger invariants because the old application ignores the additive table and the database trigger guards inserts. An old client can retain an invariant-rejected outbox event because the old route maps the trigger error to 500 rather than 409; operations must prefer roll-forward and document this limitation.
 
 ## Success criteria
 
