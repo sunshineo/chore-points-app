@@ -5,7 +5,7 @@ function safeErrorCode(error: unknown): string | undefined {
   try {
     if (!error || typeof error !== "object") return undefined;
     const code = Reflect.get(error, "code");
-    return typeof code === "string" && /^[A-Z0-9_-]{1,32}$/.test(code)
+    return typeof code === "string" && /^P\d{4}$/.test(code)
       ? code
       : undefined;
   } catch {

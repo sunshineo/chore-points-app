@@ -57,6 +57,20 @@ describe("internalServerError", () => {
     expect(JSON.stringify(entry)).not.toContain("synthetic-secret");
   });
 
+  it("does not log an arbitrary formatted error code", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const error = Object.assign(new Error("raw message contains synthetic-secret"), {
+      code: "SYNTHETIC_SECRET",
+    });
+
+    internalServerError("points.get", error);
+    const entry = JSON.parse(String(log.mock.calls[0]?.[0]));
+
+    expect(entry).not.toHaveProperty("errorCode");
+    expect(JSON.stringify(entry)).not.toContain("SYNTHETIC_SECRET");
+    expect(JSON.stringify(entry)).not.toContain("synthetic-secret");
+  });
+
   it("returns a generic 500 when hostile metadata getters throw", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const error = new Error("raw synthetic-route-secret");

@@ -20,7 +20,13 @@ type AuthResponse = {
 
 const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "delete"] as const;
 
-function PinEntry({ onUnlocked }: { onUnlocked: (expiresAt: number) => void }) {
+function PinEntry({
+  onUnlocked,
+  waitForPendingLock,
+}: {
+  onUnlocked: (expiresAt: number) => void;
+  waitForPendingLock: () => Promise<void>;
+}) {
   const [pin, setPin] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -32,6 +38,7 @@ function PinEntry({ onUnlocked }: { onUnlocked: (expiresAt: number) => void }) {
     setSubmitting(true);
     setErrorMessage(null);
     try {
+      await waitForPendingLock();
       const response = await fetch("/api/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,7 +58,7 @@ function PinEntry({ onUnlocked }: { onUnlocked: (expiresAt: number) => void }) {
     } finally {
       setSubmitting(false);
     }
-  }, [onUnlocked, submitting]);
+  }, [onUnlocked, submitting, waitForPendingLock]);
 
   const updatePin = useCallback((value: string) => {
     if (submitting) return;
@@ -128,6 +135,7 @@ function PinEntry({ onUnlocked }: { onUnlocked: (expiresAt: number) => void }) {
 
 export default function ProtectedApp() {
   const [authState, setAuthState] = useState<AuthState>("checking");
+  const pendingLockRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     let cancelled = false;
@@ -160,10 +168,20 @@ export default function ProtectedApp() {
     setAuthState("unlocked");
   }, []);
 
+  const waitForPendingLock = useCallback(() => pendingLockRef.current, []);
+
   const handleLock = useCallback(async () => {
     markExplicitlyLocked(window.localStorage);
+    const pendingLock = (async () => {
+      try {
+        await fetch("/api/auth", { method: "DELETE" });
+      } catch {
+        // The explicit local lock remains authoritative when the network fails.
+      }
+    })();
+    pendingLockRef.current = pendingLock;
     setAuthState("locked");
-    await fetch("/api/auth", { method: "DELETE" }).catch(() => null);
+    await pendingLock;
   }, []);
 
   if (authState === "checking") {
@@ -177,6 +195,8 @@ export default function ProtectedApp() {
     );
   }
 
-  if (authState === "locked") return <PinEntry onUnlocked={handleUnlocked} />;
+  if (authState === "locked") {
+    return <PinEntry onUnlocked={handleUnlocked} waitForPendingLock={waitForPendingLock} />;
+  }
   return <PointsPage onLock={handleLock} />;
 }

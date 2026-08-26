@@ -49,6 +49,19 @@ describe("point event boundary", () => {
     expect(parsePointEvent({ ...event, dateKey: "2026-08-24" })).toBeNull();
   });
 
+  it.each([
+    "2026-08-25T09:00:00.000",
+    "2026-08-25T09:00:00.000-07:00",
+    "2026-08-25T16:00:00Z",
+  ])("rejects a noncanonical event timestamp: %s", (date) => {
+    const event = createPointEvent(
+      { type: "task", itemId: "seed-task-face", points: 1 },
+      { id: "event-1", now: new Date("2026-08-25T16:00:00.000Z") },
+    );
+
+    expect(parsePointEvent({ ...event, date })).toBeNull();
+  });
+
   it("validates real calendar date keys", () => {
     expect(isValidDateKey("2026-08-25")).toBe(true);
     expect(isValidDateKey("2026-02-31")).toBe(false);

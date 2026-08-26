@@ -43,7 +43,11 @@ export function parsePointEvent(value: unknown): PointEvent | null {
   if (typeof event.date !== "string" || !isValidDateKey(event.dateKey)) return null;
 
   const date = new Date(event.date);
-  if (!Number.isFinite(date.getTime()) || getDateKeyPT(date) !== event.dateKey) return null;
+  if (
+    !Number.isFinite(date.getTime()) ||
+    date.toISOString() !== event.date ||
+    getDateKeyPT(date) !== event.dateKey
+  ) return null;
 
   const validItem = event.type === "task"
     ? Math.abs(event.points) === TASK_POINTS.get(event.itemId)
