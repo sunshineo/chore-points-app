@@ -62,12 +62,6 @@ export function getDateKeyPT(now = new Date()): string {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-export function addDaysToDateKey(dateKey: string, days: number): string {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day + days));
-  return date.toISOString().slice(0, 10);
-}
-
 export function getChangedDateKeyPT(previousDateKey: string, now = new Date()): string | null {
   const currentDateKey = getDateKeyPT(now);
   return currentDateKey === previousDateKey ? null : currentDateKey;

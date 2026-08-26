@@ -113,6 +113,31 @@ describe("offline database", () => {
     expect(nextDate?.tasks[0]).toMatchObject({ completedCount: 0 });
     expect(nextDate?.totalNet).toBe(10);
   });
+
+  it("migrates legacy date snapshots to one current snapshot", async () => {
+    await offlineDb.table("snapshots").bulkPut([
+      { key: "2026-08-20", state: state("2026-08-20") },
+      { key: "2026-08-21", state: { ...state("2026-08-21"), totalNet: 12 } },
+    ]);
+
+    const current = await loadSnapshot("2026-08-22");
+
+    expect(current).toMatchObject({ selectedDate: "2026-08-22", totalNet: 12 });
+    expect(await offlineDb.snapshots.count()).toBe(1);
+    expect(await offlineDb.snapshots.get("current")).toBeDefined();
+  });
+
+  it("removes a legacy record even when current already exists", async () => {
+    await offlineDb.table("snapshots").bulkPut([
+      { key: "current", state: state("2026-08-20") },
+      { key: "2026-08-20", state: { ...state("2026-08-20"), totalNet: 99 } },
+    ]);
+
+    const current = await loadSnapshot("2026-08-20");
+
+    expect(await offlineDb.snapshots.count()).toBe(1);
+    expect(current?.totalNet).toBe(10);
+  });
 });
 
 describe("outbox sync", () => {
@@ -173,6 +198,43 @@ describe("outbox sync", () => {
     expect(await offlineDb.outbox.count()).toBe(0);
     expect(await loadSnapshot("2026-08-20")).toMatchObject({
       totalNet: 10,
+      tasks: [{ completedCount: 0 }],
+    });
+  });
+
+  it("rolls back an older-date rejection without changing current-day counts", async () => {
+    await storeRemoteState(state("2026-08-20"));
+    await enqueuePointEvent(taskEvent());
+    await loadSnapshot("2026-08-21");
+
+    const result = await drainOutbox({
+      fetchImpl: vi.fn(async () => new Response(null, { status: 409 })),
+    });
+    const current = await loadSnapshot("2026-08-21");
+
+    expect(result).toEqual({ completed: true, rejected: 1 });
+    expect(current).toMatchObject({
+      totalNet: 10,
+      selectedDate: "2026-08-21",
+      selectedDateNet: 0,
+      tasks: [{ completedCount: 0 }],
+    });
+  });
+
+  it("merges an older-date pending event into a current-day remote snapshot", async () => {
+    await storeRemoteState(state("2026-08-20"));
+    await enqueuePointEvent(taskEvent());
+    await loadSnapshot("2026-08-21");
+
+    const merged = await storeRemoteState({
+      ...state("2026-08-21"),
+      selectedDateNet: 0,
+    });
+
+    expect(merged).toMatchObject({
+      totalNet: 11,
+      selectedDate: "2026-08-21",
+      selectedDateNet: 0,
       tasks: [{ completedCount: 0 }],
     });
   });

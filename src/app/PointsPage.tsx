@@ -8,7 +8,6 @@ import {
   type PointEvent,
   type PointsState,
   type TaskProgress,
-  addDaysToDateKey,
   getChangedDateKeyPT,
   getDateKeyPT,
 } from "@/lib/points";
@@ -145,9 +144,8 @@ function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
 function TaskSection({
   tasks,
   onTap,
-  readOnly,
   isUndoMode,
-}: { tasks: TaskProgress[]; onTap: (id: string) => void; readOnly: boolean; isUndoMode: boolean }) {
+}: { tasks: TaskProgress[]; onTap: (id: string) => void; isUndoMode: boolean }) {
   if (tasks.length === 0) {
     return <div className="flex items-center justify-center h-full text-gray-400 text-lg">这组还没有任务</div>;
   }
@@ -160,7 +158,7 @@ function TaskSection({
             key={task.id}
             task={task}
             colorIndex={i}
-            disabled={readOnly || (isUndoMode && Number(task.completedCount || 0) <= 0)}
+            disabled={isUndoMode && Number(task.completedCount || 0) <= 0}
             onTap={() => onTap(task.id)}
           />
         ))}
@@ -173,13 +171,11 @@ function RewardSection({
   rewards,
   onRedeem,
   currentPoints,
-  disabled,
   isUndoMode,
 }: {
   rewards: PointsState["rewards"];
   onRedeem: (id: string) => void;
   currentPoints: number;
-  disabled: boolean;
   isUndoMode: boolean;
 }) {
   if (rewards.length === 0) {
@@ -191,7 +187,7 @@ function RewardSection({
       <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(150px,1fr))]">
         {rewards.map((reward, i) => {
           const enough = currentPoints >= reward.cost;
-          const isDisabled = disabled || (isUndoMode ? reward.redeemedCount <= 0 : !enough);
+          const isDisabled = isUndoMode ? reward.redeemedCount <= 0 : !enough;
           return (
             <RewardTile
               key={reward.id + i}
@@ -403,7 +399,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const [data, setData] = useState<PointsState | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>("tasks");
-  const [selectedDateOffset, setSelectedDateOffset] = useState(0);
   const [todayDateKey, setTodayDateKey] = useState(() => getDateKeyPT());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [celebration, setCelebration] = useState<Celebration | null>(null);
@@ -416,10 +411,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const syncInProgressRef = useRef(false);
   const updateCheckInProgressRef = useRef(false);
 
-  const selectedDateKey = useMemo(
-    () => addDaysToDateKey(todayDateKey, selectedDateOffset),
-    [selectedDateOffset, todayDateKey],
-  );
+  const selectedDateKey = todayDateKey;
   const selectedDateKeyRef = useRef(selectedDateKey);
   selectedDateKeyRef.current = selectedDateKey;
   const selectedDateDateLabel = useMemo(() => {
@@ -436,8 +428,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   );
   const selectedDateNet = data?.selectedDateNet ?? 0;
   const totalNetPoints = data?.totalNet ?? 0;
-
-  const isCurrentDate = selectedDateOffset === 0;
 
   const applyState = useCallback((state: PointsState) => {
     setData(state);
@@ -644,7 +634,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
 
   const handleTaskTap = useCallback(
     async (task: TaskProgress) => {
-      if (!data || !isCurrentDate) return;
+      if (!data) return;
       const event = createPointEvent({
         type: "task",
         itemId: task.id,
@@ -654,12 +644,12 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
         runCelebration(task.emoji, task.defaultPoints);
       }
     },
-    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration],
+    [data, enqueueAndApplyEvent, runCelebration],
   );
 
   const handleTaskUndo = useCallback(
     async (task: TaskProgress) => {
-      if (!data || !isCurrentDate) return;
+      if (!data) return;
       if (Number(task.completedCount ?? 0) <= 0) return;
       clearCelebration();
       const event = createPointEvent({
@@ -669,12 +659,12 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       });
       await enqueueAndApplyEvent(event);
     },
-    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent],
+    [clearCelebration, data, enqueueAndApplyEvent],
   );
 
   const handleRewardRedeem = useCallback(
     async (reward: PointsState["rewards"][number]) => {
-      if (!data || !isCurrentDate) return;
+      if (!data) return;
       if (totalNetPoints < reward.cost) return;
 
       const event = createPointEvent({
@@ -686,12 +676,12 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
         runCelebration(reward.emoji, -reward.cost);
       }
     },
-    [data, isCurrentDate, enqueueAndApplyEvent, runCelebration, totalNetPoints],
+    [data, enqueueAndApplyEvent, runCelebration, totalNetPoints],
   );
 
   const handleRewardUndo = useCallback(
     async (reward: PointsState["rewards"][number]) => {
-      if (!data || !isCurrentDate) return;
+      if (!data) return;
       if (reward.redeemedCount <= 0) return;
       clearCelebration();
 
@@ -702,12 +692,12 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       });
       await enqueueAndApplyEvent(event);
     },
-    [clearCelebration, data, isCurrentDate, enqueueAndApplyEvent],
+    [clearCelebration, data, enqueueAndApplyEvent],
   );
 
   const handleManualAdjustment = useCallback(
     async (points: number) => {
-      if (!data || !isCurrentDate) return false;
+      if (!data) return false;
       const event = createPointEvent({
         type: "adjustment",
         itemId: MANUAL_ADJUSTMENT_ITEM_ID,
@@ -717,7 +707,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
       if (applied) runCelebration("⭐", points);
       return applied;
     },
-    [data, enqueueAndApplyEvent, isCurrentDate, runCelebration],
+    [data, enqueueAndApplyEvent, runCelebration],
   );
 
   const handleTaskCardTap = useCallback(
@@ -746,14 +736,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
     },
     [data, handleRewardRedeem, handleRewardUndo, undoMode],
   );
-
-  const handlePreviousDate = useCallback(() => {
-    setSelectedDateOffset((offset) => offset - 1);
-  }, []);
-
-  const handleNextDate = useCallback(() => {
-    setSelectedDateOffset((offset) => Math.min(offset + 1, 0));
-  }, []);
 
   if (loading) {
     return (
@@ -842,9 +824,8 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
                 <button
                   type="button"
                   onClick={() => setAdjustmentOpen(true)}
-                  disabled={!isCurrentDate}
-                  title={isCurrentDate ? "临时加分或减分" : "只能调整今天的积分"}
-                  className="px-3 py-1.5 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-40"
+                  title="临时加分或减分"
+                  className="px-3 py-1.5 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
                 >
                   <span className="text-xl font-black leading-none" aria-hidden="true">
                     ±
@@ -923,7 +904,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
               <RewardSection
                 rewards={data.rewards}
                 currentPoints={totalNetPoints}
-                disabled={!isCurrentDate}
                 isUndoMode={undoMode}
                 onRedeem={handleRewardCardTap}
               />
@@ -931,7 +911,6 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
               <TaskSection
                 tasks={data.tasks}
                 onTap={handleTaskCardTap}
-                readOnly={!isCurrentDate}
                 isUndoMode={undoMode}
               />
             )}

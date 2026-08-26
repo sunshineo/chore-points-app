@@ -28,8 +28,10 @@ class OfflineDatabase extends Dexie {
 
 export const offlineDb = new OfflineDatabase();
 
+const CURRENT_SNAPSHOT_KEY = "current";
+
 function snapshotRecord(state: PointsState): SnapshotRecord {
-  return { key: state.selectedDate, state };
+  return { key: CURRENT_SNAPSHOT_KEY, state };
 }
 
 async function pendingEvents(): Promise<OutboxRecord[]> {
@@ -37,16 +39,30 @@ async function pendingEvents(): Promise<OutboxRecord[]> {
 }
 
 export async function loadSnapshot(dateKey: string): Promise<PointsState | null> {
-  const exact = await offlineDb.snapshots.get(dateKey);
-  if (exact) return exact.state;
+  return offlineDb.transaction("rw", offlineDb.snapshots, async () => {
+    const current = await offlineDb.snapshots.get(CURRENT_SNAPSHOT_KEY);
+    if (current) {
+      const selected = current.state.selectedDate === dateKey
+        ? current.state
+        : deriveStateForDate(current.state, dateKey);
+      await offlineDb.snapshots.clear();
+      await offlineDb.snapshots.put(snapshotRecord(selected));
+      return selected;
+    }
 
-  const snapshots = await offlineDb.snapshots.toArray();
-  const latest = snapshots.sort((left, right) => left.key.localeCompare(right.key)).at(-1);
-  if (!latest) return null;
+    const legacy = (await offlineDb.snapshots.toArray())
+      .filter((record) => record.key !== CURRENT_SNAPSHOT_KEY)
+      .sort((left, right) => left.key.localeCompare(right.key))
+      .at(-1);
+    if (!legacy) return null;
 
-  const derived = deriveStateForDate(latest.state, dateKey);
-  await offlineDb.snapshots.put(snapshotRecord(derived));
-  return derived;
+    const migrated = legacy.state.selectedDate === dateKey
+      ? legacy.state
+      : deriveStateForDate(legacy.state, dateKey);
+    await offlineDb.snapshots.clear();
+    await offlineDb.snapshots.put(snapshotRecord(migrated));
+    return migrated;
+  });
 }
 
 export async function storeRemoteState(state: PointsState): Promise<PointsState> {
@@ -55,6 +71,7 @@ export async function storeRemoteState(state: PointsState): Promise<PointsState>
     for (const record of await pendingEvents()) {
       merged = applyPointEvent(merged, record.event);
     }
+    await offlineDb.snapshots.clear();
     await offlineDb.snapshots.put(snapshotRecord(merged));
     return merged;
   });
@@ -62,27 +79,15 @@ export async function storeRemoteState(state: PointsState): Promise<PointsState>
 
 export async function enqueuePointEvent(event: PointEvent): Promise<PointsState> {
   return offlineDb.transaction("rw", offlineDb.snapshots, offlineDb.outbox, async () => {
-    const snapshots = await offlineDb.snapshots.toArray();
-    if (snapshots.length === 0) throw new Error("No local snapshot is available");
+    const current = await offlineDb.snapshots.get(CURRENT_SNAPSHOT_KEY);
+    if (!current) throw new Error("No local snapshot is available");
 
-    let selectedState: PointsState | null = null;
-    const updated = snapshots.map((record) => {
-      const state = applyPointEvent(record.state, event);
-      if (record.key === event.dateKey) selectedState = state;
-      return snapshotRecord(state);
-    });
+    const base = current.state.selectedDate === event.dateKey
+      ? current.state
+      : deriveStateForDate(current.state, event.dateKey);
+    const optimistic = applyPointEvent(base, event);
+    await offlineDb.snapshots.put(snapshotRecord(optimistic));
 
-    if (!selectedState) {
-      const latest = snapshots.sort((left, right) => left.key.localeCompare(right.key)).at(-1);
-      if (!latest) throw new Error("No local snapshot is available");
-      selectedState = applyPointEvent(
-        deriveStateForDate(latest.state, event.dateKey),
-        event,
-      );
-      updated.push(snapshotRecord(selectedState));
-    }
-
-    await offlineDb.snapshots.bulkPut(updated);
     const latestOutboxRecord = await offlineDb.outbox.orderBy("order").last();
     await offlineDb.outbox.add({
       id: event.id,
@@ -90,7 +95,7 @@ export async function enqueuePointEvent(event: PointEvent): Promise<PointsState>
       event,
     });
 
-    return selectedState;
+    return optimistic;
   });
 }
 
@@ -104,12 +109,12 @@ export async function deleteOutboxEvent(id: string): Promise<void> {
 
 export async function rejectOutboxEvent(record: OutboxRecord): Promise<void> {
   await offlineDb.transaction("rw", offlineDb.snapshots, offlineDb.outbox, async () => {
-    const snapshots = await offlineDb.snapshots.toArray();
-    await offlineDb.snapshots.bulkPut(
-      snapshots.map((snapshot) =>
-        snapshotRecord(applyPointEvent(snapshot.state, record.event, -1)),
-      ),
-    );
+    const current = await offlineDb.snapshots.get(CURRENT_SNAPSHOT_KEY);
+    if (current) {
+      await offlineDb.snapshots.put(
+        snapshotRecord(applyPointEvent(current.state, record.event, -1)),
+      );
+    }
     await offlineDb.outbox.delete(record.id);
   });
 }

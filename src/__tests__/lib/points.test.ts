@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_TASKS,
   MAX_MANUAL_ADJUSTMENT_POINTS,
-  addDaysToDateKey,
   getChangedDateKeyPT,
   getDateKeyPT,
   isValidManualAdjustmentPoints,
@@ -21,11 +20,6 @@ describe("Pacific date helpers", () => {
       .toBe("2026-08-24");
     expect(getChangedDateKeyPT("2026-08-24", new Date("2026-08-24T15:00:00.000Z")))
       .toBeNull();
-  });
-
-  it("moves relative dates across month and year boundaries", () => {
-    expect(addDaysToDateKey("2026-08-01", -1)).toBe("2026-07-31");
-    expect(addDaysToDateKey("2026-12-31", 1)).toBe("2027-01-01");
   });
 });
 
