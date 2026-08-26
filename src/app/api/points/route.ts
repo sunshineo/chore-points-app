@@ -11,6 +11,7 @@ import {
   getDateKeyPT,
 } from "@/lib/points";
 import { isValidDateKey, parsePointEvent } from "@/lib/point-event";
+import { internalServerError } from "@/lib/server/api-error";
 import { applyPointEventToLedger, readPointsState } from "@/lib/server/point-ledger";
 
 async function requireSession(): Promise<NextResponse | null> {
@@ -42,23 +43,22 @@ function parseDateParam(raw: string | null): string {
 }
 
 export async function GET(req: Request) {
-  const unauthorized = await requireSession();
-  if (unauthorized) return unauthorized;
-
   try {
+    const unauthorized = await requireSession();
+    if (unauthorized) return unauthorized;
+
     const selectedDate = parseDateParam(new URL(req.url).searchParams.get("date"));
     return NextResponse.json(await readPointsState(prisma, selectedDate));
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Something went wrong";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalServerError("points.get", error);
   }
 }
 
 export async function POST(req: Request) {
-  const unauthorized = await requireSession();
-  if (unauthorized) return unauthorized;
-
   try {
+    const unauthorized = await requireSession();
+    if (unauthorized) return unauthorized;
+
     const event = parsePointEvent(await req.json().catch(() => null));
     if (!event) {
       return NextResponse.json({ error: "Invalid event" }, { status: 400 });
@@ -72,7 +72,6 @@ export async function POST(req: Request) {
 
     return new Response(null, { status: 204 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Something went wrong";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalServerError("points.post", error);
   }
 }

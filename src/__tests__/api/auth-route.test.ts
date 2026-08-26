@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const cookieGet = vi.hoisted(() => vi.fn());
+const headerMocks = vi.hoisted(() => ({
+  cookieGet: vi.fn(),
+  cookies: vi.fn(),
+}));
 vi.mock("next/headers", () => ({
-  cookies: async () => ({ get: cookieGet }),
+  cookies: headerMocks.cookies,
 }));
 
 import { DELETE, GET, POST } from "@/app/api/auth/route";
@@ -34,10 +37,13 @@ beforeEach(() => {
   vi.setSystemTime(NOW);
   vi.stubEnv("GEMSTEPS_PIN", "482731");
   vi.stubEnv("GEMSTEPS_SESSION_SECRET", SESSION_SECRET);
-  cookieGet.mockReset();
+  headerMocks.cookieGet.mockReset();
+  headerMocks.cookies.mockReset();
+  headerMocks.cookies.mockResolvedValue({ get: headerMocks.cookieGet });
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
@@ -71,7 +77,7 @@ describe("auth route sessions", () => {
       sessionSecret: SESSION_SECRET,
       expiresAt: NOW - 1,
     });
-    cookieGet.mockReturnValue({ value: token });
+    headerMocks.cookieGet.mockReturnValue({ value: token });
 
     const response = await GET();
 
@@ -105,5 +111,25 @@ describe("auth route sessions", () => {
     expect(response.status).toBe(503);
     expect(cookie?.value).toBe("");
     expect(cookie?.expires).toEqual(new Date(0));
+  });
+
+  it("does not disclose an unexpected auth failure", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    headerMocks.cookies.mockRejectedValueOnce(
+      new Error("connection failed: postgresql://release-user:secret@localhost/gemsteps_release_test"),
+    );
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toEqual({
+      error: "服务器暂时无法处理请求",
+      requestId: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      ),
+    });
+    expect(JSON.stringify(body)).not.toContain("postgresql://");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("postgresql://");
   });
 });

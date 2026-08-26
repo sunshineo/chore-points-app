@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const ledger = vi.hoisted(() => ({
+  applyPointEventToLedger: vi.fn(),
+  readPointsState: vi.fn(),
+}));
+
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => ({ value: "test-session" }) }),
 }));
@@ -8,6 +13,7 @@ vi.mock("@/lib/auth", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/auth")>();
   return { ...actual, isValidSessionToken: () => true };
 });
+vi.mock("@/lib/server/point-ledger", () => ledger);
 
 import { GET, POST } from "@/app/api/points/route";
 
@@ -36,7 +42,10 @@ const pointsHandlers = [
   },
 ];
 
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
 describe("POST /api/points validation", () => {
   it.each([
@@ -72,5 +81,30 @@ describe("POST /api/points validation", () => {
 
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: "GemSteps authentication is not configured" });
+  });
+
+  it.each([
+    { ...pointsHandlers[0], fail: ledger.readPointsState },
+    { ...pointsHandlers[1], fail: ledger.applyPointEventToLedger },
+  ])("$method does not disclose unexpected failures", async ({ call, fail }) => {
+    vi.stubEnv("GEMSTEPS_PIN", "123456");
+    vi.stubEnv("GEMSTEPS_SESSION_SECRET", SESSION_SECRET);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    fail.mockRejectedValueOnce(
+      new Error("connection failed: postgresql://release-user:secret@localhost/gemsteps_release_test"),
+    );
+
+    const response = await call();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toEqual({
+      error: "服务器暂时无法处理请求",
+      requestId: expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      ),
+    });
+    expect(JSON.stringify(body)).not.toContain("postgresql://");
+    expect(JSON.stringify(log.mock.calls)).not.toContain("postgresql://");
   });
 });
