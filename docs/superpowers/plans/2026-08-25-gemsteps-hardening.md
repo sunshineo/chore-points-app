@@ -2107,7 +2107,7 @@ git commit -m "refactor: separate points page responsibilities"
 - Consumes: route exceptions, npm scripts, disposable PostgreSQL service, documented Vercel configuration.
 - Produces: `internalServerError(scope, error): NextResponse`, zero-warning CI, weekly npm update PRs, and an exact release/rollback checklist.
 
-- [ ] **Step 1: Add a failing non-disclosure test for server errors**
+- [x] **Step 1: Add a failing non-disclosure test for server errors**
 
 Create `src/__tests__/lib/api-error.test.ts`:
 
@@ -2145,7 +2145,7 @@ npm run test:run -- src/__tests__/lib/api-error.test.ts
 
 Expected: FAIL because the helper does not exist yet.
 
-- [ ] **Step 2: Add a safe server-error helper**
+- [x] **Step 2: Add a safe server-error helper**
 
 Create `src/lib/server/api-error.ts`:
 
@@ -2187,7 +2187,7 @@ npm run test:run -- src/__tests__/lib/api-error.test.ts
 
 Expected: PASS; the response contains a correlation ID and the captured log omits the raw database URL.
 
-- [ ] **Step 3: Make lint warnings and verification failures blocking**
+- [x] **Step 3: Make lint warnings and verification failures blocking**
 
 Change scripts to:
 
@@ -2211,7 +2211,7 @@ Update `.husky/pre-push` to:
 npm run verify
 ```
 
-- [ ] **Step 4: Add the PostgreSQL-backed CI workflow**
+- [x] **Step 4: Add the PostgreSQL-backed CI workflow**
 
 Create the workflow directory once:
 
@@ -2270,7 +2270,7 @@ jobs:
       - run: npm run build
 ```
 
-- [ ] **Step 5: Add weekly dependency monitoring**
+- [x] **Step 5: Add weekly dependency monitoring**
 
 Create `.github/dependabot.yml`:
 
@@ -2307,7 +2307,7 @@ updates:
       interval: weekly
 ```
 
-- [ ] **Step 6: Complete operations and deployment documentation**
+- [x] **Step 6: Complete operations and deployment documentation**
 
 Update README development instructions to use Node 24 and list all three application environment variables without values. Document `GEMSTEPS_TEST_DATABASE_URL` separately as test-only, localhost-only, and required to end in `_test`; never suggest copying Production `DATABASE_URL` into it. In `docs/security-and-operations.md`, record this deployment sequence:
 
@@ -2348,7 +2348,7 @@ SELECT
 
 Expected before migration: isolation is `read committed`, total is nonnegative, and the grouped invariant query returns zero rows. Any other result stops the deployment for data or database-configuration remediation.
 
-- [ ] **Step 7: Run the complete local release gate**
+- [x] **Step 7: Run the complete local release gate**
 
 With the disposable PostgreSQL database migrated, run:
 
@@ -2369,7 +2369,7 @@ git status --short
 
 Expected: lint has zero warnings; unit and integration tests all pass; production audit and build exit 0; only intended documentation/code changes are present.
 
-- [ ] **Step 8: Review the final diff against the design success criteria**
+- [x] **Step 8: Review the final diff against the design success criteria**
 
 Run:
 
@@ -2380,7 +2380,7 @@ rg -n 'pointEntry\.findMany|createHmac\("sha256", configuredPin\)|handlePrevious
 
 Expected: `git diff --check` is silent; the banned-pattern scan is silent. Verify the migration is additive and every new required environment variable is documented before committing.
 
-- [ ] **Step 9: Commit CI and operational hardening**
+- [x] **Step 9: Commit CI and operational hardening**
 
 Run:
 
@@ -2389,6 +2389,6 @@ git add src/lib/server/api-error.ts src/__tests__/lib/api-error.test.ts src/app/
 git commit -m "ci: enforce GemSteps release gates"
 ```
 
-- [ ] **Step 10: Stop before production changes and request deployment authorization**
+- [x] **Step 10: Stop before production changes and request deployment authorization**
 
 Report the exact commit IDs, verification output, unresolved audit advisories, migration name, required environment variable, both WAF rules, and the expected short write lock. Do not run production migration, change Vercel settings, or deploy until the user explicitly authorizes those external changes.
