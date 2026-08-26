@@ -4,9 +4,23 @@ const headerMocks = vi.hoisted(() => ({
   cookieGet: vi.fn(),
   cookies: vi.fn(),
 }));
+const authMocks = vi.hoisted(() => ({
+  createSessionToken: vi.fn(),
+  isConfiguredSessionSecret: vi.fn(),
+}));
 vi.mock("next/headers", () => ({
   cookies: headerMocks.cookies,
 }));
+vi.mock("@/lib/auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth")>();
+  authMocks.createSessionToken.mockImplementation(actual.createSessionToken);
+  authMocks.isConfiguredSessionSecret.mockImplementation(actual.isConfiguredSessionSecret);
+  return {
+    ...actual,
+    createSessionToken: authMocks.createSessionToken,
+    isConfiguredSessionSecret: authMocks.isConfiguredSessionSecret,
+  };
+});
 
 import { DELETE, GET, POST } from "@/app/api/auth/route";
 import {
@@ -18,6 +32,7 @@ import {
 const SESSION_SECRET = "0123456789abcdef0123456789abcdef";
 const NOW = Date.parse("2026-08-25T16:00:00.000Z");
 const EXPIRES_AT = Date.parse("2026-09-24T16:00:00.000Z");
+const RAW_FAILURE = "unexpected auth failure: synthetic-route-secret";
 
 const authHandlers = [
   { method: "GET", call: () => GET() },
@@ -40,6 +55,8 @@ beforeEach(() => {
   headerMocks.cookieGet.mockReset();
   headerMocks.cookies.mockReset();
   headerMocks.cookies.mockResolvedValue({ get: headerMocks.cookieGet });
+  authMocks.createSessionToken.mockClear();
+  authMocks.isConfiguredSessionSecret.mockClear();
 });
 
 afterEach(() => {
@@ -113,14 +130,44 @@ describe("auth route sessions", () => {
     expect(cookie?.expires).toEqual(new Date(0));
   });
 
-  it("does not disclose an unexpected auth failure", async () => {
+  it.each([
+    {
+      method: "GET",
+      scope: "auth.get",
+      arrangeFailure: () => headerMocks.cookies.mockRejectedValueOnce(new Error(RAW_FAILURE)),
+      call: () => GET(),
+    },
+    {
+      method: "POST",
+      scope: "auth.post",
+      arrangeFailure: () => authMocks.createSessionToken.mockImplementationOnce(() => {
+        throw new Error(RAW_FAILURE);
+      }),
+      call: () => POST(new Request("http://localhost/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: "482731" }),
+      })),
+    },
+    {
+      method: "DELETE",
+      scope: "auth.delete",
+      arrangeFailure: () => authMocks.isConfiguredSessionSecret.mockImplementationOnce(() => {
+        throw new Error(RAW_FAILURE);
+      }),
+      call: () => DELETE(),
+    },
+  ])("$method correlates an unexpected failure without disclosure", async ({
+    arrangeFailure,
+    call,
+    scope,
+  }) => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    headerMocks.cookies.mockRejectedValueOnce(
-      new Error("connection failed: postgresql://release-user:secret@localhost/gemsteps_release_test"),
-    );
+    arrangeFailure();
 
-    const response = await GET();
+    const response = await call();
     const body = await response.json();
+    const entry = JSON.parse(String(log.mock.calls[0]?.[0]));
 
     expect(response.status).toBe(500);
     expect(body).toEqual({
@@ -129,7 +176,17 @@ describe("auth route sessions", () => {
         /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       ),
     });
-    expect(JSON.stringify(body)).not.toContain("postgresql://");
-    expect(JSON.stringify(log.mock.calls)).not.toContain("postgresql://");
+    expect(log).toHaveBeenCalledTimes(1);
+    expect(log.mock.calls[0]).toHaveLength(1);
+    expect(entry).toEqual({
+      level: "error",
+      scope,
+      requestId: body.requestId,
+      errorName: "Error",
+    });
+    expect(JSON.stringify(body)).not.toContain(RAW_FAILURE);
+    expect(JSON.stringify(body)).not.toContain("synthetic-route-secret");
+    expect(JSON.stringify(log.mock.calls)).not.toContain(RAW_FAILURE);
+    expect(JSON.stringify(log.mock.calls)).not.toContain("synthetic-route-secret");
   });
 });
