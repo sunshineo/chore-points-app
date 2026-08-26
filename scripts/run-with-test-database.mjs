@@ -13,10 +13,12 @@ try {
 }
 const databaseName = decodeURIComponent(parsed.pathname.slice(1));
 const allowedHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const connectionOverrideParams = ["host", "hostaddr", "database", "dbname"];
 if (
   !["postgres:", "postgresql:"].includes(parsed.protocol) ||
   !allowedHosts.has(parsed.hostname) ||
-  !databaseName.endsWith("_test")
+  !databaseName.endsWith("_test") ||
+  connectionOverrideParams.some((name) => parsed.searchParams.has(name))
 ) {
   throw new Error("Refusing to use a non-local or non-test database");
 }

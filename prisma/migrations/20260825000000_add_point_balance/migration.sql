@@ -36,48 +36,65 @@ BEGIN
 END;
 $$;
 
+CREATE FUNCTION "lock_point_balance"() RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM 1
+  FROM "PointBalance"
+  WHERE "id" = 'singleton'
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'PointBalance singleton is missing'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE TRIGGER "PointEntry_lock_balance"
+BEFORE INSERT ON "PointEntry"
+FOR EACH ROW EXECUTE FUNCTION "lock_point_balance"();
+
+CREATE FUNCTION "reject_point_entry_mutation"() RETURNS TRIGGER AS $$
+BEGIN
+  RAISE EXCEPTION 'PointEntry rows are immutable'
+    USING ERRCODE = '55000';
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE TRIGGER "PointEntry_reject_mutation"
+BEFORE UPDATE OR DELETE ON "PointEntry"
+FOR EACH ROW EXECUTE FUNCTION "reject_point_entry_mutation"();
+
 CREATE FUNCTION "sync_point_balance"() RETURNS TRIGGER AS $$
 DECLARE
   item_total INTEGER;
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE "PointBalance"
-    SET "totalNet" = "totalNet" + NEW."points", "updatedAt" = CURRENT_TIMESTAMP
-    WHERE "id" = 'singleton';
+  UPDATE "PointBalance"
+  SET "totalNet" = "totalNet" + NEW."points", "updatedAt" = CURRENT_TIMESTAMP
+  WHERE "id" = 'singleton';
 
-    -- The balance-row update above serializes old and new application writers.
-    -- AFTER INSERT can now see NEW plus every earlier committed event.
-    IF NEW."type" IN ('task', 'reward') THEN
-      SELECT COALESCE(SUM("points"), 0)::INTEGER INTO item_total
-      FROM "PointEntry"
-      WHERE "type" = NEW."type"
-        AND "itemId" = NEW."itemId"
-        AND "dateKey" = NEW."dateKey";
+  -- The BEFORE INSERT trigger serializes old and new application writers.
+  -- This VOLATILE trigger can now see NEW plus every earlier committed event.
+  IF NEW."type" IN ('task', 'reward') THEN
+    SELECT COALESCE(SUM("points"), 0)::INTEGER INTO item_total
+    FROM "PointEntry"
+    WHERE "type" = NEW."type"
+      AND "itemId" = NEW."itemId"
+      AND "dateKey" = NEW."dateKey";
 
-      IF (NEW."type" = 'task' AND item_total < 0)
-        OR (NEW."type" = 'reward' AND item_total > 0) THEN
-        RAISE EXCEPTION 'point item aggregate violates invariant'
-          USING ERRCODE = '23514';
-      END IF;
+    IF (NEW."type" = 'task' AND item_total < 0)
+      OR (NEW."type" = 'reward' AND item_total > 0) THEN
+      RAISE EXCEPTION 'point item aggregate violates invariant'
+        USING ERRCODE = '23514';
     END IF;
-    RETURN NEW;
-  ELSIF TG_OP = 'UPDATE' THEN
-    UPDATE "PointBalance"
-    SET "totalNet" = "totalNet" + NEW."points" - OLD."points",
-        "updatedAt" = CURRENT_TIMESTAMP
-    WHERE "id" = 'singleton';
-    RETURN NEW;
-  ELSE
-    UPDATE "PointBalance"
-    SET "totalNet" = "totalNet" - OLD."points", "updatedAt" = CURRENT_TIMESTAMP
-    WHERE "id" = 'singleton';
-    RETURN OLD;
   END IF;
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
 CREATE TRIGGER "PointEntry_sync_balance"
-AFTER INSERT OR UPDATE OR DELETE ON "PointEntry"
+AFTER INSERT ON "PointEntry"
 FOR EACH ROW EXECUTE FUNCTION "sync_point_balance"();
 
 COMMIT;

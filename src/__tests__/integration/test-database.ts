@@ -12,10 +12,12 @@ try {
   throw new Error("GEMSTEPS_TEST_DATABASE_URL must be a valid URL");
 }
 const databaseName = decodeURIComponent(parsed.pathname.slice(1));
+const connectionOverrideParams = ["host", "hostaddr", "database", "dbname"];
 if (
   !["postgres:", "postgresql:"].includes(parsed.protocol) ||
   !new Set(["localhost", "127.0.0.1", "[::1]"]).has(parsed.hostname) ||
-  !databaseName.endsWith("_test")
+  !databaseName.endsWith("_test") ||
+  connectionOverrideParams.some((name) => parsed.searchParams.has(name))
 ) {
   throw new Error("Integration tests require a local *_test database");
 }
