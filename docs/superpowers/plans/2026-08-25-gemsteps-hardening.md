@@ -35,7 +35,7 @@
 - Consumes: the current npm project and Node 24 runtime.
 - Produces: reproducible dependency versions, `npm run typecheck`, and `npm run verify` for every later task.
 
-- [ ] **Step 1: Record the pre-upgrade baseline**
+- [x] **Step 1: Record the pre-upgrade baseline**
 
 Run:
 
@@ -50,7 +50,7 @@ npm run build
 
 Expected: clean tracked worktree apart from this plan/spec work; 17 tests pass; typecheck and build exit 0; lint reports exactly the two known unused date-handler warnings. The build refreshes ignored `.next/` and `public/sw.js` artifacts but no tracked source.
 
-- [ ] **Step 2: Install the exact security baseline**
+- [x] **Step 2: Install the exact security baseline**
 
 Run:
 
@@ -61,7 +61,7 @@ npm install --save-dev --save-exact eslint-config-next@16.3.3 prisma@7.10.0 vite
 
 Expected: `package.json` and `package-lock.json` change; Prisma client generation completes; npm reports no invalid peer dependency. Keep the existing top-level `esbuild` entry because `@serwist/cli` declares it as a peer.
 
-- [ ] **Step 3: Pin Node and add reusable verification scripts**
+- [x] **Step 3: Pin Node and add reusable verification scripts**
 
 Add these keys to `package.json` while leaving the existing scripts intact:
 
@@ -79,7 +79,7 @@ Add these keys to `package.json` while leaving the existing scripts intact:
 
 Expected: `npm pkg get engines scripts.typecheck scripts.verify` prints `24.x` and both exact commands.
 
-- [ ] **Step 4: Verify the upgraded dependency graph**
+- [x] **Step 4: Verify the upgraded dependency graph**
 
 Run:
 
@@ -91,7 +91,7 @@ npm audit --omit=dev --audit-level=high
 
 Expected: dependency tree is valid; tests/typecheck/build pass; lint still has only the two pre-existing warnings. The production audit exits 0. If npm reports a high/critical advisory, open its primary advisory, determine whether it is reachable in this application, and do not proceed until a patched version is installed or the non-reachability evidence is added to the design document.
 
-- [ ] **Step 5: Commit the dependency patch**
+- [x] **Step 5: Commit the dependency patch**
 
 Run:
 
