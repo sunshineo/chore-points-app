@@ -1132,7 +1132,7 @@ git commit -m "fix: serialize point ledger updates"
 - Consumes: configured six-digit `GEMSTEPS_PIN`, required `GEMSTEPS_SESSION_SECRET` containing at least 32 random bytes, localStorage.
 - Produces: `createSessionToken(options)`, `isValidSessionToken(options)`, `markExplicitlyLocked(storage)`, `markUnlocked(storage, expiresAt)`, `hasOfflineSession(storage, now)`, and `isExplicitlyLocked(storage)`.
 
-- [ ] **Step 1: Replace auth tests with explicit expiration and secret cases**
+- [x] **Step 1: Replace auth tests with explicit expiration and secret cases**
 
 Extend `src/__tests__/lib/auth.test.ts` so the token test asserts all security properties:
 
@@ -1248,7 +1248,7 @@ describe("auth route sessions", () => {
 });
 ```
 
-- [ ] **Step 2: Add failing explicit-lock tests**
+- [x] **Step 2: Add failing explicit-lock tests**
 
 Create the component-test directory once:
 
@@ -1348,7 +1348,7 @@ describe("ProtectedApp sticky lock", () => {
 
 The successful PIN POST is the sole action that clears the explicit lock and writes the new offline expiration.
 
-- [ ] **Step 3: Run focused tests to verify the new APIs are absent**
+- [x] **Step 3: Run focused tests to verify the new APIs are absent**
 
 Run:
 
@@ -1358,7 +1358,7 @@ npm run test:run -- src/__tests__/lib/auth.test.ts src/__tests__/lib/offline-aut
 
 Expected: FAIL on missing session option signatures and missing offline-auth module.
 
-- [ ] **Step 4: Implement the expiring token format**
+- [x] **Step 4: Implement the expiring token format**
 
 In `src/lib/auth.ts`, keep PIN validation and replace token creation/validation with:
 
@@ -1427,7 +1427,7 @@ export function isValidSessionToken({
 }
 ```
 
-- [ ] **Step 5: Implement local explicit-lock helpers**
+- [x] **Step 5: Implement local explicit-lock helpers**
 
 Create `src/lib/offline-auth.ts`:
 
@@ -1458,7 +1458,7 @@ export function markUnlocked(storage: LocalStorage, expiresAt: number): void {
 }
 ```
 
-- [ ] **Step 6: Require the secret in both API routes**
+- [x] **Step 6: Require the secret in both API routes**
 
 In `src/app/api/auth/route.ts` and the session guard used by `src/app/api/points/route.ts`, load both variables and return 503 when either is invalid:
 
@@ -1479,7 +1479,7 @@ const token = createSessionToken({ configuredPin, sessionSecret, expiresAt });
 
 Set both `expires: new Date(expiresAt)` and `maxAge: SESSION_MAX_AGE_SECONDS` on the cookie, and return that same `expiresAt` in the response body. Pass `token`, PIN, secret, and current time to the new validation function for GET and points authorization.
 
-- [ ] **Step 7: Enforce explicit lock before online session checking**
+- [x] **Step 7: Enforce explicit lock before online session checking**
 
 In `ProtectedApp.tsx`, remove the local constants/helper and use `offline-auth.ts`. At the beginning of `checkSession`:
 
@@ -1492,7 +1492,7 @@ if (isExplicitlyLocked(window.localStorage)) {
 
 On successful PIN submission call `markUnlocked(window.localStorage, expiresAt)`. On lock call `markExplicitlyLocked(window.localStorage)` before changing React state or sending DELETE. In the network-error path call `hasOfflineSession(window.localStorage)`.
 
-- [ ] **Step 8: Document random secret creation and mandatory WAF rules**
+- [x] **Step 8: Document random secret creation and mandatory WAF rules**
 
 Add `GEMSTEPS_SESSION_SECRET` to README required environment and document this generation command without showing any generated result:
 
@@ -1524,7 +1524,7 @@ Response: 429
 
 State that both rules are mandatory before exposing the auth code in Production: observe matching Preview traffic in Log mode, capture evidence, then publish both in Rate Limit mode before the production deployment. Execution requires explicit external-change authorization. Also record the accepted limitation that local lock/DELETE does not revoke a copied token; PIN or secret rotation invalidates all outstanding tokens, otherwise a copied token lasts until its embedded expiration.
 
-- [ ] **Step 9: Verify auth and lock behavior**
+- [x] **Step 9: Verify auth and lock behavior**
 
 Run:
 
@@ -1536,7 +1536,7 @@ rg -n 'createHmac\("sha256", configuredPin\)|gemsteps-explicitly-locked' src
 
 Expected: focused and full verification pass; no PIN-derived HMAC key remains; explicit lock is referenced by the shared helper and `ProtectedApp`.
 
-- [ ] **Step 10: Commit auth hardening**
+- [x] **Step 10: Commit auth hardening**
 
 Run:
 
