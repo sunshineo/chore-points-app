@@ -161,6 +161,26 @@ describe("usePointsController lifecycle", () => {
     });
   });
 
+  it("rejects a structurally valid remote state for a different requested date", async () => {
+    const cached = makeState({ totalNet: 7, completedTaskId: "seed-task-face" });
+    const mismatchedRemote = makeState({
+      dateKey: NEXT_DATE_KEY,
+      totalNet: 99,
+      selectedDateNet: 92,
+    });
+    offlineMocks.loadSnapshot.mockResolvedValue(cached);
+    offlineMocks.storeRemoteState.mockResolvedValue(mismatchedRemote);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(mismatchedRemote)));
+
+    const { result } = renderHook(() => usePointsController());
+
+    await waitFor(() => {
+      expect(result.current.data).toEqual(cached);
+      expect(result.current.errorMessage).toBe(INVALID_REMOTE_ERROR);
+      expect(offlineMocks.storeRemoteState).not.toHaveBeenCalled();
+    });
+  });
+
   it("optimistically exposes an offline task event without fetching remotely", async () => {
     vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(false);
     const cached = makeState({ totalNet: 10 });
@@ -360,6 +380,46 @@ describe("usePointsController lifecycle", () => {
     expect(offlineMocks.storeRemoteState).toHaveBeenCalledTimes(1);
     expect(persistedState).toEqual(currentRemote);
     expect(result.current.data).toEqual(currentRemote);
+  });
+
+  it("lets only the newest same-date remote request persist and update the hook", async () => {
+    const initialRemoteResponse = deferred<Response>();
+    const refreshRemoteResponse = deferred<Response>();
+    const cached = makeState({ totalNet: 4 });
+    const olderRemote = makeState({ totalNet: 8 });
+    const newerRemote = makeState({ totalNet: 13 });
+    let persistedState: PointsState | null = null;
+    offlineMocks.loadSnapshot.mockResolvedValue(cached);
+    offlineMocks.storeRemoteState.mockImplementation(async (state: PointsState) => {
+      persistedState = state;
+      return state;
+    });
+    const fetchMock = vi.fn()
+      .mockReturnValueOnce(initialRemoteResponse.promise)
+      .mockReturnValueOnce(refreshRemoteResponse.promise);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => usePointsController());
+    await waitFor(() => {
+      expect(result.current.data).toEqual(cached);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    refreshRemoteResponse.resolve(Response.json(newerRemote));
+    await waitFor(() => {
+      expect(offlineMocks.storeRemoteState).toHaveBeenCalledTimes(1);
+      expect(result.current.data).toEqual(newerRemote);
+    });
+
+    initialRemoteResponse.resolve(Response.json(olderRemote));
+    await act(flushAsyncWork);
+
+    expect(offlineMocks.storeRemoteState).toHaveBeenCalledTimes(1);
+    expect(persistedState).toEqual(newerRemote);
+    expect(result.current.data).toEqual(newerRemote);
   });
 
   it("cancels every timer and prevents lifecycle work after unmount", async () => {

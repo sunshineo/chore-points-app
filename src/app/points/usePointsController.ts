@@ -57,6 +57,7 @@ export function usePointsController(): PointsController {
   const selectedDateKeyRef = useRef(todayDateKey);
   const displayedPointsRef = useRef(0);
   const syncInProgressRef = useRef(false);
+  const remoteRequestSequenceRef = useRef(0);
   const fetchControllersRef = useRef(new Set<AbortController>());
 
   selectedDateKeyRef.current = todayDateKey;
@@ -85,6 +86,16 @@ export function usePointsController(): PointsController {
     });
   }, []);
 
+  const beginRemoteRequest = useCallback(() => {
+    abortRemoteFetches(fetchControllersRef.current);
+    return ++remoteRequestSequenceRef.current;
+  }, []);
+
+  const ownsRemoteRequest = useCallback((requestSequence: number, dateKey: string) =>
+    mountedRef.current &&
+    requestSequence === remoteRequestSequenceRef.current &&
+    dateKey === selectedDateKeyRef.current, []);
+
   const fetchRemoteState = useCallback(async (dateKey: string): Promise<PointsState> => {
     const controller = new AbortController();
     fetchControllersRef.current.add(controller);
@@ -100,7 +111,9 @@ export function usePointsController(): PointsController {
       }
 
       const body: unknown = await response.json();
-      if (!isPointsState(body)) throw new InvalidRemoteStateError(INVALID_REMOTE_ERROR);
+      if (!isPointsState(body) || body.selectedDate !== dateKey) {
+        throw new InvalidRemoteStateError(INVALID_REMOTE_ERROR);
+      }
       return body;
     } finally {
       fetchControllersRef.current.delete(controller);
@@ -117,33 +130,41 @@ export function usePointsController(): PointsController {
 
     syncInProgressRef.current = true;
     const dateKey = selectedDateKeyRef.current;
+    let remoteRequestSequence: number | null = null;
     const isCurrentDate = () =>
       mountedRef.current && dateKey === selectedDateKeyRef.current;
+    const ownsActiveRemoteRequest = () =>
+      remoteRequestSequence !== null &&
+      ownsRemoteRequest(remoteRequestSequence, dateKey);
     try {
       const result = await drainOutbox();
       if (!result.completed || !isCurrentDate()) return;
+      remoteRequestSequence = beginRemoteRequest();
       const fetched = await fetchRemoteState(dateKey);
-      if (!isCurrentDate()) return;
+      if (!ownsActiveRemoteRequest()) return;
       const remote = await storeRemoteState(fetched);
-      if (!isCurrentDate()) return;
+      if (!ownsActiveRemoteRequest()) return;
       applyState(remote);
       setErrorMessage(null);
     } catch (error) {
-      if (mountedRef.current && error instanceof InvalidRemoteStateError) {
+      if (ownsActiveRemoteRequest() && error instanceof InvalidRemoteStateError) {
         setErrorMessage(INVALID_REMOTE_ERROR);
       }
     } finally {
       syncInProgressRef.current = false;
     }
-  }, [applyState, fetchRemoteState]);
+  }, [applyState, beginRemoteRequest, fetchRemoteState, ownsRemoteRequest]);
 
   const loadState = useCallback(async (dateKey: string) => {
-    abortRemoteFetches(fetchControllersRef.current);
     const sequence = ++loadSequenceRef.current;
+    let remoteRequestSequence: number | null = null;
     const isCurrentLoad = () =>
       mountedRef.current &&
       sequence === loadSequenceRef.current &&
       dateKey === selectedDateKeyRef.current;
+    const ownsActiveRemoteRequest = () =>
+      remoteRequestSequence !== null &&
+      ownsRemoteRequest(remoteRequestSequence, dateKey);
     if (mountedRef.current) {
       setLoading(true);
       setErrorMessage(null);
@@ -161,15 +182,19 @@ export function usePointsController(): PointsController {
       if (window.navigator.onLine) {
         const result = await drainOutbox();
         if (!result.completed || !isCurrentLoad()) return;
+        remoteRequestSequence = beginRemoteRequest();
         const fetched = await fetchRemoteState(dateKey);
-        if (!isCurrentLoad()) return;
+        if (!isCurrentLoad() || !ownsActiveRemoteRequest()) return;
         const remote = await storeRemoteState(fetched);
-        if (!isCurrentLoad()) return;
+        if (!isCurrentLoad() || !ownsActiveRemoteRequest()) return;
         applyState(remote);
         setErrorMessage(null);
       }
     } catch (error) {
-      if (isCurrentLoad()) {
+      if (
+        isCurrentLoad() &&
+        (remoteRequestSequence === null || ownsActiveRemoteRequest())
+      ) {
         if (!cached || error instanceof InvalidRemoteStateError) {
           setErrorMessage(error instanceof Error ? error.message : "加载失败");
         }
@@ -179,7 +204,7 @@ export function usePointsController(): PointsController {
         setLoading(false);
       }
     }
-  }, [applyState, fetchRemoteState]);
+  }, [applyState, beginRemoteRequest, fetchRemoteState, ownsRemoteRequest]);
 
   const enqueueAndApplyEvent = useCallback(async (event: PointEvent): Promise<boolean> => {
     if (!data) return false;
@@ -239,6 +264,7 @@ export function usePointsController(): PointsController {
     return () => {
       mountedRef.current = false;
       loadSequenceRef.current += 1;
+      remoteRequestSequenceRef.current += 1;
       abortRemoteFetches(fetchControllers);
     };
   }, []);
