@@ -5,6 +5,7 @@ import {
   SESSION_MAX_AGE_SECONDS,
   createSessionToken,
   isConfiguredPin,
+  isConfiguredSessionSecret,
   isValidPin,
   isValidSessionToken,
 } from "@/lib/auth";
@@ -13,34 +14,33 @@ type UnlockRequest = {
   pin?: unknown;
 };
 
-function getConfiguredPin(): string | null {
-  const pin = process.env.GEMSTEPS_PIN;
-  return isConfiguredPin(pin) ? pin : null;
-}
-
 export async function GET() {
-  const configuredPin = getConfiguredPin();
-  if (!configuredPin) {
+  const configuredPin = process.env.GEMSTEPS_PIN;
+  const sessionSecret = process.env.GEMSTEPS_SESSION_SECRET;
+  if (!isConfiguredPin(configuredPin) || !isConfiguredSessionSecret(sessionSecret)) {
     return NextResponse.json(
-      { authenticated: false, configured: false },
+      { error: "GemSteps authentication is not configured" },
       { status: 503 },
     );
   }
 
   const cookieStore = await cookies();
-  const authenticated = isValidSessionToken(
-    cookieStore.get(SESSION_COOKIE)?.value,
+  const authenticated = isValidSessionToken({
+    token: cookieStore.get(SESSION_COOKIE)?.value,
     configuredPin,
-  );
+    sessionSecret,
+    now: Date.now(),
+  });
 
   return NextResponse.json({ authenticated, configured: true });
 }
 
 export async function POST(request: Request) {
-  const configuredPin = getConfiguredPin();
-  if (!configuredPin) {
+  const configuredPin = process.env.GEMSTEPS_PIN;
+  const sessionSecret = process.env.GEMSTEPS_SESSION_SECRET;
+  if (!isConfiguredPin(configuredPin) || !isConfiguredSessionSecret(sessionSecret)) {
     return NextResponse.json(
-      { error: "管理员还没有配置六位数字密码" },
+      { error: "GemSteps authentication is not configured" },
       { status: 503 },
     );
   }
@@ -51,14 +51,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "密码不正确，请再试一次" }, { status: 401 });
   }
 
-  const response = NextResponse.json({
-    authenticated: true,
-    expiresAt: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
-  });
+  const expiresAt = Date.now() + SESSION_MAX_AGE_SECONDS * 1000;
+  const token = createSessionToken({ configuredPin, sessionSecret, expiresAt });
+  const response = NextResponse.json({ authenticated: true, expiresAt });
   response.cookies.set({
     name: SESSION_COOKIE,
-    value: createSessionToken(configuredPin),
+    value: token,
     httpOnly: true,
+    expires: new Date(expiresAt),
     maxAge: SESSION_MAX_AGE_SECONDS,
     path: "/",
     sameSite: "strict",

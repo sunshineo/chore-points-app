@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  hasOfflineSession,
+  isExplicitlyLocked,
+  markExplicitlyLocked,
+  markUnlocked,
+} from "@/lib/offline-auth";
 import PointsPage from "./PointsPage";
 
 type AuthState = "checking" | "locked" | "unlocked";
@@ -12,13 +18,7 @@ type AuthResponse = {
   expiresAt?: number;
 };
 
-const OFFLINE_AUTH_KEY = "gemsteps-unlocked-until";
 const DIGITS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "delete"] as const;
-
-function hasOfflineSession(): boolean {
-  const expiresAt = Number(window.localStorage.getItem(OFFLINE_AUTH_KEY));
-  return Number.isFinite(expiresAt) && expiresAt > Date.now();
-}
 
 function PinEntry({ onUnlocked }: { onUnlocked: (expiresAt: number) => void }) {
   const [pin, setPin] = useState("");
@@ -133,12 +133,19 @@ export default function ProtectedApp() {
     let cancelled = false;
 
     async function checkSession() {
+      if (isExplicitlyLocked(window.localStorage)) {
+        if (!cancelled) setAuthState("locked");
+        return;
+      }
+
       try {
         const response = await fetch("/api/auth", { cache: "no-store" });
         const body = (await response.json().catch(() => null)) as AuthResponse | null;
         if (!cancelled) setAuthState(response.ok && body?.authenticated ? "unlocked" : "locked");
       } catch {
-        if (!cancelled) setAuthState(hasOfflineSession() ? "unlocked" : "locked");
+        if (!cancelled) {
+          setAuthState(hasOfflineSession(window.localStorage) ? "unlocked" : "locked");
+        }
       }
     }
 
@@ -149,12 +156,12 @@ export default function ProtectedApp() {
   }, []);
 
   const handleUnlocked = useCallback((expiresAt: number) => {
-    window.localStorage.setItem(OFFLINE_AUTH_KEY, String(expiresAt));
+    markUnlocked(window.localStorage, expiresAt);
     setAuthState("unlocked");
   }, []);
 
   const handleLock = useCallback(async () => {
-    window.localStorage.removeItem(OFFLINE_AUTH_KEY);
+    markExplicitlyLocked(window.localStorage);
     setAuthState("locked");
     await fetch("/api/auth", { method: "DELETE" }).catch(() => null);
   }, []);

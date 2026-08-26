@@ -13,6 +13,17 @@ A singleton, offline-first tasks, points, and rewards app.
 
 - `DATABASE_URL`
 - `GEMSTEPS_PIN` — exactly six digits; validated only on the server
+- `GEMSTEPS_SESSION_SECRET` — at least 32 random bytes, stored in a safe textual encoding
+
+Generate the session secret without displaying or committing it:
+
+```sh
+openssl rand -base64 32
+```
+
+The runtime length check is only a minimum guard and cannot measure entropy.
+Operators must generate the value from at least 32 random bytes and store it as a
+sensitive environment variable.
 
 The database contains only structured point events; there is no user or child model.
 

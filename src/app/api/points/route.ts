@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import {
   SESSION_COOKIE,
   isConfiguredPin,
+  isConfiguredSessionSecret,
   isValidSessionToken,
 } from "@/lib/auth";
 import {
@@ -14,12 +15,21 @@ import { applyPointEventToLedger, readPointsState } from "@/lib/server/point-led
 
 async function requireSession(): Promise<NextResponse | null> {
   const configuredPin = process.env.GEMSTEPS_PIN;
-  if (!isConfiguredPin(configuredPin)) {
-    return NextResponse.json({ error: "GEMSTEPS_PIN is not configured" }, { status: 503 });
+  const sessionSecret = process.env.GEMSTEPS_SESSION_SECRET;
+  if (!isConfiguredPin(configuredPin) || !isConfiguredSessionSecret(sessionSecret)) {
+    return NextResponse.json(
+      { error: "GemSteps authentication is not configured" },
+      { status: 503 },
+    );
   }
 
   const cookieStore = await cookies();
-  if (!isValidSessionToken(cookieStore.get(SESSION_COOKIE)?.value, configuredPin)) {
+  if (!isValidSessionToken({
+    token: cookieStore.get(SESSION_COOKIE)?.value,
+    configuredPin,
+    sessionSecret,
+    now: Date.now(),
+  })) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
