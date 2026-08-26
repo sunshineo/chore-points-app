@@ -505,7 +505,7 @@ git commit -m "refactor: validate point data at boundaries"
 - Consumes: validated `PointEvent`, `DEFAULT_TASKS`, `DEFAULT_REWARDS`, Prisma client, explicit localhost-only `GEMSTEPS_TEST_DATABASE_URL`.
 - Produces: guarded test-database commands, `applyPointEventToLedger(db, event): Promise<"applied" | "duplicate" | "rejected">`, and `readPointsState(db, dateKey): Promise<PointsState>`.
 
-- [ ] **Step 1: Build a double-guarded integration-test harness**
+- [x] **Step 1: Build a double-guarded integration-test harness**
 
 Create the owned directories once:
 
@@ -627,7 +627,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 2: Add failing migration, concurrency, and invariant tests**
+- [x] **Step 2: Add failing migration, concurrency, and invariant tests**
 
 Create `src/__tests__/integration/point-ledger.test.ts` with real PostgreSQL calls:
 
@@ -824,7 +824,7 @@ describe("serialized point ledger", () => {
 });
 ```
 
-- [ ] **Step 3: Run the guarded integration test to verify it fails before the model/service exist**
+- [x] **Step 3: Run the guarded integration test to verify it fails before the model/service exist**
 
 Point `GEMSTEPS_TEST_DATABASE_URL` at a newly created empty local database ending in `_test`; do not reuse a personal/development database. Then run:
 
@@ -836,7 +836,7 @@ npm run test:integration
 
 Expected: the baseline migration deploys, then the integration suite FAILS because `PointBalance` and `@/lib/server/point-ledger` do not exist.
 
-- [ ] **Step 4: Add the projection model and reserve the exact migration path**
+- [x] **Step 4: Add the projection model and reserve the exact migration path**
 
 Update `prisma/schema.prisma`:
 
@@ -872,7 +872,7 @@ mkdir -p prisma/migrations/20260825000000_add_point_balance
 
 Expected: the updated schema validates, the generated client exposes `pointBalance`, and only the exact migration directory named by this plan is created.
 
-- [ ] **Step 5: Create and review the locked additive migration**
+- [x] **Step 5: Create and review the locked additive migration**
 
 Create `prisma/migrations/20260825000000_add_point_balance/migration.sql` with `apply_patch` and these reviewed operations:
 
@@ -964,7 +964,7 @@ COMMIT;
 
 Expected: the migration accepts a short write-blocking lock, preserves the old single-column index, backfills without a race, and commits only after the trigger is active. Direct inserts from an old application instance are serialized and cannot make the total negative, over-undo a task, or undo a reward that was never redeemed. Keep the trigger explicitly `VOLATILE` and Production at PostgreSQL `READ COMMITTED`: PostgreSQL gives each query executed by a volatile function a fresh snapshot, which is why the post-lock aggregate sees the preceding committed writer ([PostgreSQL function volatility](https://www.postgresql.org/docs/current/xfunc-volatility.html), [SPI visibility](https://www.postgresql.org/docs/current/spi-visibility.html)).
 
-- [ ] **Step 6: Implement the serialized ledger service**
+- [x] **Step 6: Implement the serialized ledger service**
 
 Create `src/lib/server/point-ledger.ts`. The write path must acquire the balance row lock before duplicate and invariant checks:
 
@@ -1066,7 +1066,7 @@ export async function readPointsState(db: PrismaClient, selectedDate: string): P
 }
 ```
 
-- [ ] **Step 7: Make the route a thin HTTP adapter**
+- [x] **Step 7: Make the route a thin HTTP adapter**
 
 In `src/app/api/points/route.ts`:
 
@@ -1078,7 +1078,7 @@ In `src/app/api/points/route.ts`:
 
 Keep the guarded integration scripts and ordinary-test exclusion from Step 1 unchanged.
 
-- [ ] **Step 8: Apply the migration to the disposable database and run red-to-green verification**
+- [x] **Step 8: Apply the migration to the disposable database and run red-to-green verification**
 
 Run:
 
@@ -1092,7 +1092,7 @@ npm run verify
 
 Expected: the actual migration backfills historical rows; old-writer trigger and app-service tests protect total/task/reward invariants; concurrent redemption and task undo each produce one applied and one rejected event; duplicate test stores one row; all unit tests/build pass.
 
-- [ ] **Step 9: Confirm full-ledger reads are gone**
+- [x] **Step 9: Confirm full-ledger reads are gone**
 
 Run:
 
@@ -1102,7 +1102,7 @@ rg -n 'pointEntry\.findMany' src
 
 Expected: no output. Confirm `PointEntry_dateKey_type_itemId_idx`, the `PointEntry` write lock, the nonnegative check, and trigger invariant query exist in the hand-written migration.
 
-- [ ] **Step 10: Commit the ledger fix**
+- [x] **Step 10: Commit the ledger fix**
 
 Run:
 
