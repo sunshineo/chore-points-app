@@ -1560,7 +1560,7 @@ git commit -m "fix: harden PIN sessions and local lock"
 - Consumes: existing Dexie `snapshots` and `outbox` stores, including legacy snapshots whose keys are date strings.
 - Produces: one snapshot record with key `current`; public `loadSnapshot`, `storeRemoteState`, and `enqueuePointEvent` signatures stay unchanged.
 
-- [ ] **Step 1: Add failing one-snapshot migration tests**
+- [x] **Step 1: Add failing one-snapshot migration tests**
 
 Extend `offline.test.ts` with:
 
@@ -1628,7 +1628,7 @@ it("merges an older-date pending event into a current-day remote snapshot", asyn
 });
 ```
 
-- [ ] **Step 2: Run the focused test and observe the legacy records remain**
+- [x] **Step 2: Run the focused test and observe the legacy records remain**
 
 Run:
 
@@ -1638,7 +1638,7 @@ npm run test:run -- src/__tests__/lib/offline.test.ts
 
 Expected: FAIL because snapshots remain keyed by date and count is greater than one.
 
-- [ ] **Step 3: Make `current` the only snapshot key**
+- [x] **Step 3: Make `current` the only snapshot key**
 
 In `offline-db.ts`:
 
@@ -1730,7 +1730,7 @@ export async function rejectOutboxEvent(record: OutboxRecord): Promise<void> {
 }
 ```
 
-- [ ] **Step 4: Remove constant-zero date navigation state**
+- [x] **Step 4: Remove constant-zero date navigation state**
 
 In `PointsPage.tsx`:
 
@@ -1741,7 +1741,7 @@ In `PointsPage.tsx`:
 
 After `rg` confirms there is no production caller, remove `addDaysToDateKey` from `points.ts` and delete only its dedicated test case from `points.test.ts`.
 
-- [ ] **Step 5: Verify migration, outbox, and lint cleanliness**
+- [x] **Step 5: Verify migration, outbox, and lint cleanliness**
 
 Run:
 
@@ -1755,7 +1755,7 @@ rg -n 'selectedDateOffset|handlePreviousDate|handleNextDate|addDaysToDateKey' sr
 
 Expected: all tests/build pass; ESLint has zero warnings; final `rg` prints no matches.
 
-- [ ] **Step 6: Commit the offline simplification**
+- [x] **Step 6: Commit the offline simplification**
 
 Run:
 
