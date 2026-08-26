@@ -56,6 +56,20 @@ describe("auth", () => {
     })).toBe(false);
   });
 
+  it("rejects a noncanonical expiration without normalizing the signed payload", () => {
+    const secret = "0123456789abcdef0123456789abcdef";
+    const expiresAt = Date.parse("2026-09-24T00:00:00.000Z");
+    const token = createSessionToken({ configuredPin: "482731", sessionSecret: secret, expiresAt });
+    const [version, rawExpiresAt, signature] = token.split(".");
+
+    expect(isValidSessionToken({
+      token: `${version}.0${rawExpiresAt}.${signature}`,
+      configuredPin: "482731",
+      sessionSecret: secret,
+      now: expiresAt - 1,
+    })).toBe(false);
+  });
+
   it("requires at least 32 bytes of session secret", () => {
     expect(isConfiguredSessionSecret("short")).toBe(false);
     expect(isConfiguredSessionSecret("0123456789abcdef0123456789abcdef")).toBe(true);

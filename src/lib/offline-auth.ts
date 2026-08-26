@@ -19,6 +19,6 @@ export function markExplicitlyLocked(storage: LocalStorage): void {
 }
 
 export function markUnlocked(storage: LocalStorage, expiresAt: number): void {
-  storage.removeItem(EXPLICIT_LOCK_KEY);
   storage.setItem(OFFLINE_AUTH_KEY, String(expiresAt));
+  storage.removeItem(EXPLICIT_LOCK_KEY);
 }

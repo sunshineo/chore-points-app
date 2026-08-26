@@ -68,7 +68,14 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
-  const response = NextResponse.json({ authenticated: false });
+  const configuredPin = process.env.GEMSTEPS_PIN;
+  const sessionSecret = process.env.GEMSTEPS_SESSION_SECRET;
+  const response = isConfiguredPin(configuredPin) && isConfiguredSessionSecret(sessionSecret)
+    ? NextResponse.json({ authenticated: false })
+    : NextResponse.json(
+      { error: "GemSteps authentication is not configured" },
+      { status: 503 },
+    );
   response.cookies.set({
     name: SESSION_COOKIE,
     value: "",

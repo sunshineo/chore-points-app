@@ -74,11 +74,17 @@ export function isValidSessionToken({
   if (parts.length !== 3) return false;
   const [version, rawExpiresAt, received] = parts;
   const expiresAt = Number(rawExpiresAt);
-  if (version !== SESSION_VERSION || !Number.isSafeInteger(expiresAt) || expiresAt <= now || !received) {
+  if (
+    version !== SESSION_VERSION ||
+    !Number.isSafeInteger(expiresAt) ||
+    rawExpiresAt !== String(expiresAt) ||
+    expiresAt <= now ||
+    !received
+  ) {
     return false;
   }
 
-  const payload = `${version}.${expiresAt}`;
+  const payload = `${version}.${rawExpiresAt}`;
   const expected = signature(payload, configuredPin, sessionSecret);
   const receivedBuffer = Buffer.from(received);
   const expectedBuffer = Buffer.from(expected);

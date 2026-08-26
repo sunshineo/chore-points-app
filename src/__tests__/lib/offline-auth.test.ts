@@ -29,4 +29,18 @@ describe("offline auth state", () => {
     expect(isExplicitlyLocked(local)).toBe(false);
     expect(hasOfflineSession(local, 2_000)).toBe(true);
   });
+
+  it("keeps the explicit lock when persisting the new expiration fails", () => {
+    const local = storage();
+    markExplicitlyLocked(local);
+    const failingStorage = {
+      ...local,
+      setItem: () => {
+        throw new Error("storage full");
+      },
+    };
+
+    expect(() => markUnlocked(failingStorage, 3_000)).toThrow("storage full");
+    expect(isExplicitlyLocked(local)).toBe(true);
+  });
 });
