@@ -119,7 +119,7 @@ Expected: one commit containing only dependency/runtime metadata.
 - Consumes: `PointEvent`, `PointsState`, configured tasks/rewards, `getDateKeyPT`, and manual-adjustment limits from `src/lib/points.ts`.
 - Produces: `createPointEvent(draft, options): PointEvent`, `parsePointEvent(value): PointEvent | null`, `isValidDateKey(value): value is string`, and `isPointsState(value): value is PointsState`.
 
-- [ ] **Step 1: Write failing point-event boundary tests**
+- [x] **Step 1: Write failing point-event boundary tests**
 
 Create the new test directory once:
 
@@ -189,7 +189,7 @@ describe("point event boundary", () => {
 });
 ```
 
-- [ ] **Step 2: Write failing remote-state and route-adapter tests**
+- [x] **Step 2: Write failing remote-state and route-adapter tests**
 
 Create `src/__tests__/lib/points-state.test.ts` with the complete configured state and corrupt variants:
 
@@ -288,7 +288,7 @@ describe("POST /api/points validation", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to prove the boundary modules are missing**
+- [x] **Step 3: Run the tests to prove the boundary modules are missing**
 
 Run:
 
@@ -298,7 +298,7 @@ npm run test:run -- src/__tests__/lib/point-event.test.ts src/__tests__/lib/poin
 
 Expected: FAIL because `@/lib/point-event` and `@/lib/points-state` do not exist.
 
-- [ ] **Step 4: Implement `point-event.ts`**
+- [x] **Step 4: Implement `point-event.ts`**
 
 Implement the exported surface with this shape:
 
@@ -362,7 +362,7 @@ export function parsePointEvent(value: unknown): PointEvent | null {
 }
 ```
 
-- [ ] **Step 5: Implement `points-state.ts`**
+- [x] **Step 5: Implement `points-state.ts`**
 
 Implement structural guards that reject missing, infinite, fractional count, negative count, or non-positive configured values:
 
@@ -415,7 +415,7 @@ export function isPointsState(value: unknown): value is PointsState {
 
 `createPointEvent` is an internal builder for already-selected configured items; `parsePointEvent` remains the trust boundary and must validate every draft field when the event reaches the API.
 
-- [ ] **Step 6: Route all event creation and parsing through the shared helpers**
+- [x] **Step 6: Route all event creation and parsing through the shared helpers**
 
 In `src/app/api/points/route.ts`, delete `DATE_KEY_RE`, `TASK_POINTS`, `REWARD_COSTS`, and the local `isValidEvent`; parse the body exactly once:
 
@@ -463,7 +463,7 @@ if (!isPointsState(body)) throw new Error("服务器返回了无效的积分数�
 return storeRemoteState(body);
 ```
 
-- [ ] **Step 7: Verify the boundary behavior and repository**
+- [x] **Step 7: Verify the boundary behavior and repository**
 
 Run:
 
@@ -475,7 +475,7 @@ rg -n 'as PointsState|function isValidEvent|DATE_KEY_RE' src/app/PointsPage.tsx 
 
 Expected: new tests and all prior tests pass; typecheck/build pass; only the two pre-existing date warnings remain; the final boundary-bypass scan is silent.
 
-- [ ] **Step 8: Commit the shared boundaries**
+- [x] **Step 8: Commit the shared boundaries**
 
 Run:
 
