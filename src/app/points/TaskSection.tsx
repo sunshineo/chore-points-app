@@ -1,3 +1,5 @@
+import Image from "next/image";
+import { getTaskImageSrc } from "@/app/points/taskImages";
 import type { TaskProgress } from "@/lib/points";
 
 type ChoreTileProps = {
@@ -30,6 +32,7 @@ const TILE_COLORS = [
 function ChoreTile({ task, onTap, colorIndex, disabled }: ChoreTileProps) {
   const gradient = TILE_COLORS[colorIndex % TILE_COLORS.length];
   const completedCount = task.completedCount;
+  const imageSrc = getTaskImageSrc(task.id);
 
   return (
     <button
@@ -47,9 +50,20 @@ function ChoreTile({ task, onTap, colorIndex, disabled }: ChoreTileProps) {
       >
         {completedCount}
       </div>
-      <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>
-        {task.emoji}
-      </span>
+      {imageSrc ? (
+        <Image
+          src={imageSrc}
+          alt=""
+          width={56}
+          height={56}
+          unoptimized
+          className="relative z-10 h-14 w-14 object-contain"
+        />
+      ) : (
+        <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>
+          {task.emoji}
+        </span>
+      )}
       <h3
         className="relative z-10 mt-2 font-bold text-sm leading-tight text-center px-2 text-white"
         style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}

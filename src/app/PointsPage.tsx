@@ -8,6 +8,7 @@ import {
 import { PointAdjustmentDialog } from "@/app/points/PointAdjustmentDialog";
 import { RewardSection } from "@/app/points/RewardSection";
 import { TaskSection } from "@/app/points/TaskSection";
+import { getTaskImageSrc } from "@/app/points/taskImages";
 import { usePointsController } from "@/app/points/usePointsController";
 
 type TabKey = "tasks" | "rewards";
@@ -37,7 +38,11 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
     if (undoMode) setCelebration(null);
     const applied = await enqueueTask(taskId, undoMode);
     if (applied && !undoMode) {
-      setCelebration({ emoji: task.emoji, value: task.defaultPoints });
+      setCelebration({
+        emoji: task.emoji,
+        imageSrc: getTaskImageSrc(task.id),
+        value: task.defaultPoints,
+      });
     }
   }, [data, enqueueTask, undoMode]);
 

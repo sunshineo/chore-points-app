@@ -1,8 +1,22 @@
-export type Celebration = { emoji: string; value: number };
+import Image from "next/image";
+
+export type Celebration = {
+  emoji: string;
+  imageSrc?: string;
+  value: number;
+};
 
 export type CelebrationOverlayProps = { celebration: Celebration | null };
 
-function RainParticle({ emoji, index }: { emoji: string; index: number }) {
+function RainParticle({
+  emoji,
+  imageSrc,
+  index,
+}: {
+  emoji: string;
+  imageSrc?: string;
+  index: number;
+}) {
   const left = (index * 37 + 11) % 100;
   const delay = ((index * 17) % 80) / 100;
   const duration = 1.5 + ((index * 29) % 100) / 100;
@@ -19,7 +33,16 @@ function RainParticle({ emoji, index }: { emoji: string; index: number }) {
         top: "-40px",
       }}
     >
-      {emoji}
+      {imageSrc ? (
+        <Image
+          src={imageSrc}
+          alt=""
+          width={size}
+          height={size}
+          unoptimized
+          className="object-contain"
+        />
+      ) : emoji}
     </span>
   );
 }
@@ -55,7 +78,12 @@ export function CelebrationOverlay({ celebration }: CelebrationOverlayProps) {
         <div className="relative h-full w-full overflow-hidden">
           <div className="absolute inset-0 overflow-hidden">
             {Array.from({ length: 16 }).map((_, i) => (
-              <RainParticle key={i} emoji={celebration.emoji} index={i} />
+              <RainParticle
+                key={i}
+                emoji={celebration.emoji}
+                imageSrc={celebration.imageSrc}
+                index={i}
+              />
             ))}
           </div>
           <div className="app-celebration-fade absolute left-1/2 top-1/2 text-center">
