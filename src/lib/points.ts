@@ -94,9 +94,9 @@ export const DEFAULT_TASKS: Task[] = [
   { id: "seed-task-bedtime", title: "准时上床睡觉", emoji: "🛌", defaultPoints: 3 },
   { id: "seed-task-practice-piano", title: "练钢琴", emoji: "🎹", defaultPoints: 5 },
   { id: "seed-task-math", title: "做数学题", emoji: "🧮", defaultPoints: 5 },
-  { id: "seed-task-handwriting", title: "写汉字", emoji: "✍️", defaultPoints: 5 },
+  { id: "seed-task-handwriting", title: "练习写汉字", emoji: "✍️", defaultPoints: 5 },
   { id: "seed-task-english", title: "拼写英文单词", emoji: "🔤", defaultPoints: 5 },
-  { id: "seed-task-piano", title: "上钢琴课", emoji: "🎹", defaultPoints: 10 },
+  { id: "seed-task-piano", title: "上钢琴课", emoji: "🎼", defaultPoints: 10 },
   { id: "seed-task-swim", title: "上游泳课", emoji: "🏊", defaultPoints: 10 },
   { id: "seed-task-chinese-class", title: "上中文课", emoji: "文", defaultPoints: 10 },
 ];
@@ -104,15 +104,21 @@ export const DEFAULT_TASKS: Task[] = [
 export const DEFAULT_REWARDS: Reward[] = [
   {
     id: "reward-ice-stick",
-    title: "冰棍或棒棒糖",
+    title: "棒棒糖",
     emoji: "🍭",
     cost: 5,
+  },
+  {
+    id: "reward-popsicle",
+    title: "冰棍儿",
+    emoji: "🍧",
+    cost: 10,
   },
   {
     id: "reward-ice-cream",
     title: "冰淇淋",
     emoji: "🍦",
-    cost: 10,
+    cost: 15,
   },
   {
     id: "reward-sweet",
@@ -137,6 +143,12 @@ export const DEFAULT_REWARDS: Reward[] = [
     title: "15分钟游戏",
     emoji: "🎮",
     cost: 15,
+  },
+  {
+    id: "reward-ipad",
+    title: "15分钟 iPad",
+    emoji: "📱",
+    cost: 20,
   },
   {
     id: "reward-movie",

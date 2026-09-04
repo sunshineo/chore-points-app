@@ -1,4 +1,7 @@
+import Image from "next/image";
+
 import type { PointsState } from "@/lib/points";
+import { getRewardImageSrc } from "./rewardImages";
 
 type RewardTileProps = {
   reward: PointsState["rewards"][number];
@@ -29,6 +32,10 @@ const TILE_COLORS = [
 
 function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
   const gradient = TILE_COLORS[Math.abs(reward.id.length) % TILE_COLORS.length];
+  const imageSrc = getRewardImageSrc(reward.id);
+  const isTvImage = reward.id === "reward-tv";
+  const isCarTvImage = reward.id === "reward-car-tv";
+  const isIpadImage = reward.id === "reward-ipad";
   const redeemedCount = Number(reward.redeemedCount ?? 0);
 
   return (
@@ -47,7 +54,42 @@ function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
       >
         {redeemedCount}
       </div>
-      <span className="relative z-10 text-5xl" style={{ lineHeight: 1 }}>{reward.emoji}</span>
+      <span
+        className={`relative z-10 flex items-center justify-center text-5xl ${
+          imageSrc
+            ? isTvImage
+              ? "h-[100px] w-[116px]"
+              : isIpadImage
+                ? "h-[100px] w-[100px]"
+                : isCarTvImage
+                  ? "h-[88px] w-[124px]"
+                  : "h-[88px] w-[88px]"
+            : "h-14"
+        }`}
+        style={{ lineHeight: 1 }}
+      >
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={reward.title}
+            width={88}
+            height={88}
+            className={
+              reward.id === "reward-game"
+                ? "h-14 w-14 object-contain"
+                : isTvImage
+                  ? "h-[100px] w-[116px] object-contain"
+                  : isIpadImage
+                    ? "h-[84px] w-[84px] object-contain"
+                    : isCarTvImage
+                      ? "h-[88px] w-[124px] object-contain"
+                      : "h-[88px] w-[88px] object-contain"
+            }
+          />
+        ) : (
+          reward.emoji
+        )}
+      </span>
       <h3
         className="relative z-10 mt-2 font-bold text-sm leading-tight text-center px-2 text-white"
         style={{ maxWidth: 150, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
