@@ -84,7 +84,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
     <div className="relative grid grid-rows-[auto_1fr] min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="text-white flex-shrink-0 relative overflow-hidden px-6 py-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
         <div className="relative z-20 flex flex-col gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3">
             <div className="min-w-0 flex-1 z-10">
               <div className="flex items-center gap-3 sm:gap-4 text-5xl sm:text-7xl leading-none font-black tracking-tight">
                 <div className="relative w-12 h-12 flex-shrink-0">
@@ -101,7 +101,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
               </div>
             </div>
 
-            <div className="w-full sm:w-auto z-10 flex flex-wrap justify-end gap-2 text-right">
+            <div className="z-10 flex flex-col items-end text-right">
               <p className="text-xs sm:text-base font-semibold text-white/95">{controller.selectedDateDateLabel}</p>
               <p className="text-xs sm:text-base font-semibold text-white/95">{controller.selectedDateName}</p>
               <p
@@ -116,10 +116,13 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
                 {selectedDateNet > 0 ? "+" : ""}
                 {selectedDateNet}
               </p>
+            </div>
+
+            <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] gap-2 sm:flex sm:justify-end">
               <button
                 type="button"
                 onClick={() => setUndoMode((value) => !value)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
+                className={`min-h-11 whitespace-nowrap px-3 py-2 rounded-lg text-sm font-bold ${
                   undoMode ? "bg-rose-100 text-rose-700" : "bg-white/15 text-white"
                 }`}
               >
@@ -129,7 +132,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
                 type="button"
                 onClick={() => setAdjustmentOpen(true)}
                 title="临时加分或减分"
-                className="px-3 py-1.5 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
+                className="min-h-11 flex items-center justify-center whitespace-nowrap px-3 py-2 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
               >
                 <span className="text-xl font-black leading-none" aria-hidden="true">±</span>
                 <span className="ml-1.5">临时加减</span>
@@ -137,7 +140,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
               <button
                 type="button"
                 onClick={onLock}
-                className="px-3 py-1.5 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
+                className="min-h-11 flex items-center justify-center whitespace-nowrap px-3 py-2 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
                 aria-label="锁定"
                 title="锁定"
               >
