@@ -101,7 +101,7 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
               </div>
             </div>
 
-            <div className="z-10 flex flex-col items-end text-right">
+            <div className="z-10 flex items-center gap-2 whitespace-nowrap text-right">
               <p className="text-xs sm:text-base font-semibold text-white/95">{controller.selectedDateDateLabel}</p>
               <p className="text-xs sm:text-base font-semibold text-white/95">{controller.selectedDateName}</p>
               <p
