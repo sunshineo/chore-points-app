@@ -84,9 +84,9 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
     <div className="relative grid grid-rows-[auto_1fr] min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="text-white flex-shrink-0 relative overflow-hidden px-6 py-3 bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
         <div className="relative z-20 flex flex-col gap-3">
-          <div className="flex items-center justify-start gap-3">
-            <div className="flex-1 z-10">
-              <div className="flex items-center gap-4 text-7xl leading-none font-black tracking-tight">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 z-10">
+              <div className="flex items-center gap-3 sm:gap-4 text-5xl sm:text-7xl leading-none font-black tracking-tight">
                 <div className="relative w-12 h-12 flex-shrink-0">
                   <div className="absolute inset-0 rounded-full bg-gradient-to-b from-yellow-300 via-yellow-400 to-yellow-600 shadow-lg" />
                   <div className="absolute inset-2 rounded-full bg-gradient-to-b from-yellow-400 via-amber-500 to-yellow-700" />
@@ -101,11 +101,11 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
               </div>
             </div>
 
-            <div className="flex-shrink-0 z-10 flex items-center justify-end gap-2 text-right">
-              <p className="text-base font-semibold text-white/95">{controller.selectedDateDateLabel}</p>
-              <p className="text-base font-semibold text-white/95">{controller.selectedDateName}</p>
+            <div className="w-full sm:w-auto z-10 flex flex-wrap justify-end gap-2 text-right">
+              <p className="text-xs sm:text-base font-semibold text-white/95">{controller.selectedDateDateLabel}</p>
+              <p className="text-xs sm:text-base font-semibold text-white/95">{controller.selectedDateName}</p>
               <p
-                className={`text-2xl font-semibold ${
+                className={`text-lg sm:text-2xl font-semibold ${
                   selectedDateNet > 0
                     ? "text-emerald-300"
                     : selectedDateNet < 0
