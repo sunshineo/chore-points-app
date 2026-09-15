@@ -14,16 +14,20 @@ export function playPointSound(kind: "task" | "reward"): void {
   if (!context || context.state !== "running") return;
   try {
     const audio = context;
-    const frequencies = kind === "task" ? [523.25, 783.99] : [783.99, 523.25];
+    const ascendingNotes = [392, 440, 523.25, 587.33, 659.25, 783.99];
+    const frequencies = kind === "task" ? ascendingNotes : ascendingNotes.reverse();
+    const startedAt = audio.currentTime;
     frequencies.forEach((frequency, index) => {
-      const start = audio.currentTime + index * 0.14;
+      const start = startedAt + index * 0.25;
+      // Five quarter-second steps and a longer final note total 1.7 seconds.
+      const duration = index === frequencies.length - 1 ? 0.45 : 0.24;
       const oscillator = audio.createOscillator();
       const gain = audio.createGain();
       oscillator.type = "sine";
       oscillator.frequency.setValueAtTime(frequency, start);
       gain.gain.setValueAtTime(0, start);
       gain.gain.linearRampToValueAtTime(0.1, start + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + duration - 0.02);
       oscillator.connect(gain);
       gain.connect(audio.destination);
       oscillator.onended = () => {
@@ -31,7 +35,7 @@ export function playPointSound(kind: "task" | "reward"): void {
         gain.disconnect();
       };
       oscillator.start(start);
-      oscillator.stop(start + 0.2);
+      oscillator.stop(start + duration);
     });
   } catch {
     // Keep the successful action and animation even if playback fails.
