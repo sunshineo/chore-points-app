@@ -22,7 +22,7 @@
     "db:test:migrate": "node scripts/run-with-test-database.mjs npx --no-install prisma migrate deploy",
     "test:integration": "node scripts/run-with-test-database.mjs vitest run --config vitest.integration.config.ts",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
-    "verify": "npm run lint && npm run typecheck && npm run test:run && npm run build",
+    "verify": "npm run lint && npm run typecheck && npm run test:run && npm run audit:prod && npm run build",
     "postinstall": "prisma generate",
     "prepare": "husky"
   },
