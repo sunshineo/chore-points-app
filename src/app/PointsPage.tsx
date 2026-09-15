@@ -10,6 +10,7 @@ import { RewardSection } from "@/app/points/RewardSection";
 import { TaskSection } from "@/app/points/TaskSection";
 import { getTaskImageSrc } from "@/app/points/taskImages";
 import { usePointsController } from "@/app/points/usePointsController";
+import { playPointSound, preparePointSound } from "@/app/points/pointSounds";
 
 type TabKey = "tasks" | "rewards";
 
@@ -35,9 +36,11 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const handleTaskCardTap = useCallback(async (taskId: string) => {
     const task = data?.tasks.find((item) => item.id === taskId);
     if (!task) return;
+    if (!undoMode) preparePointSound();
     if (undoMode) setCelebration(null);
     const applied = await enqueueTask(taskId, undoMode);
     if (applied && !undoMode) {
+      playPointSound("task");
       setCelebration({
         emoji: task.emoji,
         imageSrc: getTaskImageSrc(task.id),
@@ -49,9 +52,11 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   const handleRewardCardTap = useCallback(async (rewardId: string) => {
     const reward = data?.rewards.find((item) => item.id === rewardId);
     if (!reward) return;
+    if (!undoMode) preparePointSound();
     if (undoMode) setCelebration(null);
     const applied = await enqueueReward(rewardId, undoMode);
     if (applied && !undoMode) {
+      playPointSound("reward");
       setCelebration({ emoji: reward.emoji, value: -reward.cost });
     }
   }, [data, enqueueReward, undoMode]);
