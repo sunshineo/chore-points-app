@@ -62,8 +62,12 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   }, [data, enqueueReward, undoMode]);
 
   const handleManualAdjustment = useCallback(async (points: number) => {
+    preparePointSound();
     const applied = await enqueueAdjustment(points);
-    if (applied) setCelebration({ emoji: "⭐", value: points });
+    if (applied) {
+      playPointSound(points > 0 ? "task" : "reward");
+      setCelebration({ emoji: "⭐", value: points });
+    }
     return applied;
   }, [enqueueAdjustment]);
 
