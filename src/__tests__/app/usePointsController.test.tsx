@@ -219,6 +219,34 @@ describe("usePointsController lifecycle", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("ignores a second rapid tap on the same task", async () => {
+    vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(false);
+    const cached = makeState({ totalNet: 10 });
+    const optimistic = makeState({
+      totalNet: 11,
+      selectedDateNet: 11,
+      completedTaskId: "seed-task-face",
+    });
+    offlineMocks.loadSnapshot.mockResolvedValue(cached);
+    offlineMocks.enqueuePointEvent.mockResolvedValue(optimistic);
+    vi.stubGlobal("fetch", vi.fn());
+
+    const { result } = renderHook(() => usePointsController());
+    await waitFor(() => expect(result.current.data?.totalNet).toBe(10));
+
+    let firstApplied = false;
+    let secondApplied = true;
+    await act(async () => {
+      firstApplied = await result.current.enqueueTask("seed-task-face", false);
+      secondApplied = await result.current.enqueueTask("seed-task-face", false);
+    });
+
+    expect(firstApplied).toBe(true);
+    expect(secondApplied).toBe(false);
+    expect(offlineMocks.enqueuePointEvent).toHaveBeenCalledTimes(1);
+    expect(result.current.data?.totalNet).toBe(11);
+  });
+
   it("replaces a rejected optimistic value with the authoritative remote state", async () => {
     const optimistic = makeState({
       totalNet: 11,
