@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { CelebrationOverlay } from "@/app/points/CelebrationOverlay";
 
@@ -21,5 +21,19 @@ describe("CelebrationOverlay task pictures", () => {
       'img[src="/icons/mouthwash.png"]',
     );
     expect(particles).toHaveLength(16);
+  });
+
+  it("blocks interaction with the page while the celebration is visible", () => {
+    render(
+      <CelebrationOverlay
+        celebration={{ emoji: "⭐", value: 1 }}
+      />,
+    );
+
+    expect(
+      screen.getByText("+1").closest(".fixed")?.classList.contains(
+        "pointer-events-none",
+      ),
+    ).toBe(false);
   });
 });

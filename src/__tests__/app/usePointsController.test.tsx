@@ -219,7 +219,7 @@ describe("usePointsController lifecycle", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("ignores a second rapid tap on the same task", async () => {
+  it("ignores a second tap while the same task is still being saved", async () => {
     vi.spyOn(window.navigator, "onLine", "get").mockReturnValue(false);
     const cached = makeState({ totalNet: 10 });
     const optimistic = makeState({
@@ -227,23 +227,28 @@ describe("usePointsController lifecycle", () => {
       selectedDateNet: 11,
       completedTaskId: "seed-task-face",
     });
+    const pendingSave = deferred<PointsState>();
     offlineMocks.loadSnapshot.mockResolvedValue(cached);
-    offlineMocks.enqueuePointEvent.mockResolvedValue(optimistic);
+    offlineMocks.enqueuePointEvent.mockReturnValue(pendingSave.promise);
     vi.stubGlobal("fetch", vi.fn());
 
     const { result } = renderHook(() => usePointsController());
     await waitFor(() => expect(result.current.data?.totalNet).toBe(10));
 
-    let firstApplied = false;
+    let firstResult!: Promise<boolean>;
     let secondApplied = true;
     await act(async () => {
-      firstApplied = await result.current.enqueueTask("seed-task-face", false);
+      firstResult = result.current.enqueueTask("seed-task-face", false);
       secondApplied = await result.current.enqueueTask("seed-task-face", false);
     });
 
-    expect(firstApplied).toBe(true);
     expect(secondApplied).toBe(false);
     expect(offlineMocks.enqueuePointEvent).toHaveBeenCalledTimes(1);
+
+    pendingSave.resolve(optimistic);
+    await act(async () => {
+      expect(await firstResult).toBe(true);
+    });
     expect(result.current.data?.totalNet).toBe(11);
   });
 

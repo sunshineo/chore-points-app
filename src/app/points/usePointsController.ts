@@ -37,7 +37,6 @@ type ApiErrorBody = {
 };
 
 const REFRESH_INTERVAL_MS = 10_000;
-const TASK_TAP_GUARD_MS = 600;
 const INVALID_REMOTE_ERROR = "服务器返回了无效的积分数据";
 
 class InvalidRemoteStateError extends Error {}
@@ -57,7 +56,7 @@ export function usePointsController(): PointsController {
   const loadSequenceRef = useRef(0);
   const selectedDateKeyRef = useRef(todayDateKey);
   const displayedPointsRef = useRef(0);
-  const lastTaskTapRef = useRef(new Map<string, number>());
+  const pendingTaskIdsRef = useRef(new Set<string>());
   const syncInProgressRef = useRef(false);
   const remoteRequestSequenceRef = useRef(0);
   const fetchControllersRef = useRef(new Set<AbortController>());
@@ -228,19 +227,18 @@ export function usePointsController(): PointsController {
   const enqueueTask = useCallback(async (taskId: string, undo: boolean) => {
     const task = data?.tasks.find((item) => item.id === taskId);
     if (!task || (undo && Number(task.completedCount ?? 0) <= 0)) return false;
+    if (pendingTaskIdsRef.current.has(taskId)) return false;
+    pendingTaskIdsRef.current.add(taskId);
 
-    const now = Date.now();
-    const lastTap = lastTaskTapRef.current.get(taskId);
-    if (lastTap !== undefined && now - lastTap < TASK_TAP_GUARD_MS) return false;
-    lastTaskTapRef.current.set(taskId, now);
-
-    const applied = await enqueueAndApplyEvent(createPointEvent({
-      type: "task",
-      itemId: task.id,
-      points: (undo ? -1 : 1) * Math.abs(task.defaultPoints),
-    }));
-    if (!applied) lastTaskTapRef.current.delete(taskId);
-    return applied;
+    try {
+      return await enqueueAndApplyEvent(createPointEvent({
+        type: "task",
+        itemId: task.id,
+        points: (undo ? -1 : 1) * Math.abs(task.defaultPoints),
+      }));
+    } finally {
+      pendingTaskIdsRef.current.delete(taskId);
+    }
   }, [data, enqueueAndApplyEvent]);
 
   const enqueueReward = useCallback(async (rewardId: string, undo: boolean) => {

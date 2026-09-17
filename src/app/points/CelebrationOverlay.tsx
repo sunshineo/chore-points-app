@@ -72,7 +72,7 @@ export function CelebrationOverlay({ celebration }: CelebrationOverlayProps) {
         .app-celebration-fade { animation: app-celebration-fade 1.8s ease-out forwards; }
       `}</style>
       <div
-        className="fixed inset-0 z-30 pointer-events-none"
+        className="fixed inset-0 z-30"
         style={{ background: "rgba(255,255,255,0.88)", backdropFilter: "blur(8px)" }}
       >
         <div className="relative h-full w-full overflow-hidden">
