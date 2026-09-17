@@ -43,6 +43,7 @@ describe("default tasks", () => {
       用漱口水: 1,
       自己换睡衣: 1,
       自己睡觉: 2,
+      上芭蕾课: 10,
     });
 
     const eveningTaskTitles = DEFAULT_TASKS.slice(17, 25).map(({ title }) => title);

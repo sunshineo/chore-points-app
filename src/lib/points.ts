@@ -96,6 +96,7 @@ export const DEFAULT_TASKS: Task[] = [
   { id: "seed-task-math", title: "做数学题", emoji: "🧮", defaultPoints: 5 },
   { id: "seed-task-handwriting", title: "练习写汉字", emoji: "✍️", defaultPoints: 5 },
   { id: "seed-task-english", title: "拼写英文单词", emoji: "🔤", defaultPoints: 5 },
+  { id: "seed-task-ballet", title: "上芭蕾课", emoji: "🩰", defaultPoints: 10 },
   { id: "seed-task-piano", title: "上钢琴课", emoji: "🎼", defaultPoints: 10 },
   { id: "seed-task-swim", title: "上游泳课", emoji: "🏊", defaultPoints: 10 },
   { id: "seed-task-chinese-class", title: "上中文课", emoji: "文", defaultPoints: 10 },
