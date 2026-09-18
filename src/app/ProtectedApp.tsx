@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AuthCheckingStatus } from "@/app/components/FullScreenStatus";
 import {
   hasOfflineSession,
   isExplicitlyLocked,
@@ -185,14 +186,7 @@ export default function ProtectedApp() {
   }, []);
 
   if (authState === "checking") {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-purple-100 flex items-center justify-center">
-        <div className="text-center text-indigo-700">
-          <div className="text-4xl animate-pulse" aria-hidden="true">🔒</div>
-          <p className="mt-3 text-sm font-semibold">正在检查密码…</p>
-        </div>
-      </main>
-    );
+    return <AuthCheckingStatus />;
   }
 
   if (authState === "locked") {

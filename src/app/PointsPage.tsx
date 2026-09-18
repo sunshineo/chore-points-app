@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { HeaderActionButton } from "@/app/components/HeaderActionButton";
+import {
+  PointsLoadErrorStatus,
+  PointsLoadingStatus,
+} from "@/app/components/FullScreenStatus";
 import {
   CelebrationOverlay,
   type Celebration,
@@ -72,19 +77,11 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
   }, [enqueueAdjustment]);
 
   if (controller.loading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
-        <div className="text-4xl animate-pulse">⏳</div>
-      </div>
-    );
+    return <PointsLoadingStatus />;
   }
 
   if (!controller.data) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6 text-sm text-red-600">
-        <div>加载失败：{controller.errorMessage ?? "未知错误"}</div>
-      </div>
-    );
+    return <PointsLoadErrorStatus message={controller.errorMessage ?? "未知错误"} />;
   }
 
   const selectedDateNet = controller.data.selectedDateNet;
@@ -128,33 +125,30 @@ export default function PointsPage({ onLock }: { onLock: () => void }) {
             </div>
 
             <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] gap-2 sm:col-span-1 sm:flex sm:justify-end">
-              <button
-                type="button"
+              <HeaderActionButton
                 onClick={() => setUndoMode((value) => !value)}
-                className={`min-h-11 whitespace-nowrap px-3 py-2 rounded-lg text-sm font-bold ${
+                className={
                   undoMode ? "bg-rose-100 text-rose-700" : "bg-white/15 text-white"
-                }`}
+                }
               >
                 {undoMode ? "退出撤销" : "撤销模式"}
-              </button>
-              <button
-                type="button"
+              </HeaderActionButton>
+              <HeaderActionButton
                 onClick={() => setAdjustmentOpen(true)}
                 title="临时加分或减分"
-                className="min-h-11 flex items-center justify-center whitespace-nowrap px-3 py-2 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
+                className="flex items-center justify-center bg-white/15 text-white hover:bg-white/25"
               >
                 <span className="text-xl font-black leading-none" aria-hidden="true">±</span>
                 <span className="ml-1.5">临时加减</span>
-              </button>
-              <button
-                type="button"
+              </HeaderActionButton>
+              <HeaderActionButton
                 onClick={onLock}
-                className="min-h-11 flex items-center justify-center whitespace-nowrap px-3 py-2 rounded-lg bg-white/15 text-sm font-bold text-white hover:bg-white/25"
+                className="flex items-center justify-center bg-white/15 text-white hover:bg-white/25"
                 aria-label="锁定"
                 title="锁定"
               >
                 <span className="text-2xl leading-none" aria-hidden="true">🔒</span>
-              </button>
+              </HeaderActionButton>
             </div>
           </div>
 

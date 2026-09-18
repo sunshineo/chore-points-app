@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { PointCard, POINT_CARD_GRADIENTS } from "./PointCard";
 import type { PointsState } from "@/lib/points";
 import { getRewardImageSrc } from "./rewardImages";
 
@@ -17,21 +18,10 @@ export type RewardSectionProps = {
   onRedeem: (id: string) => void;
 };
 
-const TILE_COLORS = [
-  "from-pink-400 to-pink-500",
-  "from-purple-400 to-purple-500",
-  "from-indigo-400 to-indigo-500",
-  "from-blue-400 to-blue-500",
-  "from-cyan-400 to-cyan-500",
-  "from-teal-400 to-teal-500",
-  "from-green-400 to-green-500",
-  "from-yellow-400 to-yellow-500",
-  "from-orange-400 to-orange-500",
-  "from-red-400 to-red-500",
-];
-
 function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
-  const gradient = TILE_COLORS[Math.abs(reward.id.length) % TILE_COLORS.length];
+  const gradient = POINT_CARD_GRADIENTS[
+    Math.abs(reward.id.length) % POINT_CARD_GRADIENTS.length
+  ];
   const imageSrc = getRewardImageSrc(reward.id);
   const isTvImage = reward.id === "reward-tv";
   const isCarTvImage = reward.id === "reward-car-tv";
@@ -39,14 +29,7 @@ function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
   const redeemedCount = Number(reward.redeemedCount ?? 0);
 
   return (
-    <button
-      type="button"
-      onClick={onRedeem}
-      disabled={disabled}
-      className={`relative flex flex-col items-center justify-center rounded-2xl shadow-lg transition-all duration-500 select-none text-white overflow-hidden bg-gradient-to-br ${gradient}`}
-      style={{ width: 165, height: 165, opacity: disabled ? 0.55 : 1 }}
-    >
-      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+    <PointCard gradient={gradient} disabled={disabled} onClick={onRedeem}>
       <div
         className={`absolute top-2 right-2 z-10 w-9 h-9 rounded-full flex items-center justify-center text-base font-bold shadow ${
           disabled ? "bg-gray-500 text-white" : "bg-rose-500 text-white"
@@ -103,7 +86,7 @@ function RewardTile({ reward, onRedeem, disabled }: RewardTileProps) {
       >
         -{reward.cost} 分
       </span>
-    </button>
+    </PointCard>
   );
 }
 

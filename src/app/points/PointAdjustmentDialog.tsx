@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { DialogShell } from "@/app/components/DialogShell";
 import { MAX_MANUAL_ADJUSTMENT_POINTS } from "@/lib/points";
 
 type AdjustmentMode = "add" | "subtract";
@@ -22,14 +23,6 @@ export function PointAdjustmentDialog({
   const [amount, setAmount] = useState("1");
   const [submitting, setSubmitting] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !submitting) onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, submitting]);
 
   const selectMode = (nextMode: AdjustmentMode) => {
     setMode(nextMode);
@@ -59,35 +52,14 @@ export function PointAdjustmentDialog({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-slate-950/55 p-4 backdrop-blur-sm sm:items-center"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !submitting) onClose();
-      }}
+    <DialogShell
+      titleId="adjustment-title"
+      title="临时加减分"
+      description="不关联任务或奖励，直接调整总积分"
+      closeLabel="关闭临时加减分"
+      closeDisabled={submitting}
+      onClose={onClose}
     >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="adjustment-title"
-        className="w-full max-w-md rounded-[2rem] bg-white p-5 shadow-2xl sm:p-6"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 id="adjustment-title" className="text-2xl font-black text-slate-900">临时加减分</h2>
-            <p className="mt-1 text-sm text-slate-500">不关联任务或奖励，直接调整总积分</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-xl font-bold text-slate-500 disabled:opacity-50"
-            aria-label="关闭临时加减分"
-          >
-            ×
-          </button>
-        </div>
-
         <div className="mt-5 grid grid-cols-2 gap-3" aria-label="选择加分或减分">
           <button
             type="button"
@@ -175,7 +147,6 @@ export function PointAdjustmentDialog({
         >
           {submitting ? "正在保存…" : `${mode === "add" ? "加" : "减"} ${amount || 0} 分`}
         </button>
-      </section>
-    </div>
+    </DialogShell>
   );
 }
