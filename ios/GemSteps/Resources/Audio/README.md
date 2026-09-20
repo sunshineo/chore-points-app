@@ -1,13 +1,19 @@
-# Point sounds
+# Point feedback sounds
 
-The two mono PCM WAV files reproduce `web/src/app/points/pointSounds.ts`:
-44,100 Hz, signed 16-bit; sine frequencies 392, 440, 523.25, 587.33,
-659.25, 783.99 Hz, reversed for deductions. Notes start every 0.25 seconds;
-first five last 0.24 seconds, last lasts 0.45 seconds (total 1.7 seconds).
-Gain ramps linearly from 0 to 0.1 during the first 0.01 seconds, exponentially
-to 0.001 at duration minus 0.02 seconds, then holds until the note ends.
-Samples are rounded after multiplying by 32767. No normalization or effects.
+Native playback uses AVAudioPlayer with the ambient session (respects silent mode).
+The former Web-generated ascending.wav and descending.wav have been removed.
 
-`AVAudioPlayer` uses the ambient audio session. Playback failure never changes
-an already-saved action. Undo does not play audio. Device listening, silent
-switch, Bluetooth and interruption checks remain unverified without iOS hardware.
+Source: Kenney, **Interface Sounds 1.0**, released 2020.
+https://kenney.nl/assets/interface-sounds
+License: CC0; the original notice is in LICENSE-Kenney.txt.
+Downloaded from the creator on 2026-09-20:
+https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip
+
+- points-earned.wav: Audio/confirmation_002.ogg, positive task/manual adjustment feedback.
+- reward-complete.wav: Audio/confirmation_004.ogg, successful redemption/manual deduction feedback.
+
+Converted to signed 16-bit PCM WAV with ffmpeg; no synthesis, pitch change, or added notes.
+These are confirmation cues, not an error sound for spending points.
+Undo remains silent. Sound starts when the full-screen celebration appears, after
+any adjustment sheet has dismissed. Playback failure never changes a saved action.
+Physical iPhone/iPad listening, silent switch and Bluetooth routing require device verification.

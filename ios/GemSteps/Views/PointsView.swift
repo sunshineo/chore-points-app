@@ -4,107 +4,181 @@ import Combine
 struct PointsView: View {
     @Bindable var state: AppState
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var waitingForAdjustmentDismissal = false
+    @State private var presentedCelebration: Celebration?
     private let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                LinearGradient(colors: [Color(hex: 0xf8fafc), Color(hex: 0xeff6ff), Color(hex: 0xeef2ff)], startPoint: .topLeading, endPoint: .bottomTrailing).ignoresSafeArea()
+        // Separate presentation hosts prevent form dismissal from dismissing the celebration.
+        ZStack {
+            Group {
                 if let points = state.points {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            header(points, wide: geometry.size.width >= 640 && !textSize.isAccessibilitySize)
-                            HStack(spacing: 12) {
-                                tab("任务", emoji: "✅", rewards: false)
-                                tab("奖励", emoji: "🎁", rewards: true)
-                            }.padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 4)
-                            CardLayout(rewards: state.rewards) {
-                                ForEach(Array((state.rewards ? Catalog.rewards : Catalog.tasks).enumerated()), id: \.element.id) { index, item in
-                                    let count = points.counts[item.id, default: 0]
-                                    PointCard(item: item, index: index, count: count,
-                                              disabled: state.undo ? count <= 0 : item.isReward && points.balance < item.points) {
-                                        state.perform(itemID: item.id)
-                                    }
-                                }
-                            }.padding(.trailing, state.rewards ? 4 : 0)
-                                .padding(.horizontal, 24).padding(.bottom, 24)
-                        }
-                    }
-                    .blur(radius: state.celebration != nil ? 8 : state.adjustmentOpen ? 4 : 0)
-                    .allowsHitTesting(state.celebration == nil && !state.adjustmentOpen)
-                    .accessibilityHidden(state.celebration != nil || state.adjustmentOpen)
-                    if state.adjustmentOpen { AdjustmentView(state: state, wide: geometry.size.width >= 640) }
-                    if let celebration = state.celebration {
-                        CelebrationView(celebration: celebration).id(celebration.id).zIndex(2)
-                    }
+                    page(points)
                 } else {
                     ContentUnavailableView("无法读取积分", systemImage: "exclamationmark.triangle", description: Text(state.loadError ?? "加载失败"))
                 }
             }
+            .sheet(isPresented: $state.adjustmentOpen, onDismiss: {
+                // Present only after the system form has left the screen.
+                waitingForAdjustmentDismissal = false
+                presentedCelebration = state.celebration
+            }) {
+                AdjustmentView(state: state)
+            }
+        }
+        .tint(PointsColors.accent)
+        .fullScreenCover(item: $presentedCelebration) { celebration in
+            CelebrationView(celebration: celebration)
+                .task { await state.playCelebration(celebration.id) }
+        }
+        .onChange(of: state.celebration?.id) { _, id in
+            if id == nil { presentedCelebration = nil }
+            else if !waitingForAdjustmentDismissal { presentedCelebration = state.celebration }
         }
         .onReceive(timer) { _ in if scenePhase == .active { state.refreshDate() } }
         .onChange(of: scenePhase) { _, phase in if phase == .active { state.refreshDate() } }
     }
 
-    private func header(_ points: PointsState, wide: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if wide {
-                HStack(spacing: 12) { balance(wide: true); Spacer(minLength: 0); date(points, wide: true); actions(wide: true) }
-            } else {
-                HStack(spacing: 12) { balance(wide: false); Spacer(minLength: 0); date(points, wide: false) }
-                actions(wide: false)
+    private func page(_ points: PointsState) -> some View {
+        GeometryReader { geometry in
+            // Phones retain two columns; iPad windows gain columns as space permits.
+            let count = UIDevice.current.userInterfaceIdiom == .phone ? 2 : max(2, Int((geometry.size.width - 20) / 190))
+            let side = max(1, (geometry.size.width - 32 - CGFloat(count - 1) * 12) / CGFloat(count))
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    header(points)
+                        .foregroundStyle(.white)
+                        .tint(.white)
+                        .padding(.vertical, 12)
+                        .background {
+                            LinearGradient(colors: [.purple, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                .padding(.horizontal, -16)
+                        }
+                    if let error = state.errorMessage {
+                        Text(error).foregroundStyle(.red).accessibilityIdentifier("points-error")
+                    }
+                    if state.undo {
+                        Label("撤销模式：点击方块撤销当天一次记录", systemImage: "arrow.uturn.backward")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 12) {
+                        sectionButton("任务", systemImage: "checkmark.circle", rewards: false)
+                        sectionButton("奖励", systemImage: "gift", rewards: true)
+                    }
+                    .accessibilityIdentifier("section-switcher")
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: count), spacing: 12) {
+                        ForEach(Array((state.rewards ? Catalog.rewards : Catalog.tasks).enumerated()), id: \.element.id) { index, item in
+                            let occurrences = points.counts[item.id, default: 0]
+                            PointCard(item: item, color: PointsColors.cards[index % PointsColors.cards.count], count: occurrences,
+                                      disabled: state.saving || (state.undo ? occurrences <= 0 : item.isReward && points.balance < item.points),
+                                      side: side) {
+                                state.perform(itemID: item.id)
+                            }
+                        }
+                    }
+                }.padding(16)
             }
-            if let error = state.errorMessage { Text(error).font(.system(size: 14)).foregroundStyle(Color(hex: 0xffe4e6)) }
-            if state.undo { Text("撤销模式：点击可撤销的卡片会执行撤销").font(.system(size: 12)).foregroundStyle(.white.opacity(0.9)).padding(.top, 4) }
         }
-        .padding(.horizontal, 24).padding(.vertical, 12).foregroundStyle(.white)
-        .background(LinearGradient(colors: [Color(hex: 0x9810fa), Color(hex: 0x4f39f6), Color(hex: 0x155dfc)], startPoint: .topLeading, endPoint: .bottomTrailing))
+        .background {
+            Color(uiColor: .systemGroupedBackground)
+                .overlay(LinearGradient(colors: [.indigo.opacity(0.06), .purple.opacity(0.03)], startPoint: .top, endPoint: .bottom))
+                .ignoresSafeArea()
+        }
     }
 
-    private func balance(wide: Bool) -> some View {
-        HStack(spacing: wide ? 16 : 12) {
-            ZStack {
-                Circle().fill(LinearGradient(colors: [Color(hex: 0xffdf20), Color(hex: 0xfacc15), Color(hex: 0xca8a04)], startPoint: .top, endPoint: .bottom))
-                Circle().fill(LinearGradient(colors: [Color(hex: 0xfacc15), Color(hex: 0xf59e0b), Color(hex: 0xa16207)], startPoint: .top, endPoint: .bottom)).padding(8)
-                Ellipse().fill(Color(hex: 0xfef08a).opacity(0.6)).frame(width: 12, height: 16).offset(x: -6, y: -8).blur(radius: 1)
-                Text("★").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: 0x713f12).opacity(0.7))
-            }.frame(width: 48, height: 48)
-            Text("\(state.displayedPoints)").font(.custom("Arial-BoldMT", size: wide ? 72 : 48)).minimumScaleFactor(0.4).lineLimit(1)
-                .accessibilityLabel("总积分 \(pointsBalance)")
-                .frame(height: wide ? 72 : 48)
+    private func header(_ points: PointsState) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 24) {
+                balance(points).fixedSize(horizontal: true, vertical: false)
+                Spacer(minLength: 0)
+                day(points).fixedSize(horizontal: true, vertical: false)
+                actions.fixedSize(horizontal: true, vertical: false)
+            }
+            VStack(spacing: 12) {
+                ViewThatFits(in: .horizontal) {
+                    summaryRow(points)
+                    VStack(alignment: .leading, spacing: 8) {
+                        balance(points)
+                        day(points)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                actions
+            }
         }
     }
-    private var pointsBalance: Int { state.points?.balance ?? 0 }
-    private func date(_ points: PointsState, wide: Bool) -> some View {
-        HStack(spacing: 8) {
-            Text(PacificDate.label(points.dateKey)); Text(PacificDate.weekday(points.dateKey))
-            Text("\(points.dailyNet > 0 ? "+" : "")\(points.dailyNet)")
-                .font(.custom("Arial-BoldMT", size: wide ? 24 : 18))
-                .foregroundStyle(points.dailyNet > 0 ? Color(hex: 0x6ee7b7) : points.dailyNet < 0 ? Color(hex: 0xfda4af) : .white)
-        }.font(.custom("Arial-BoldMT", size: wide ? 16 : 12)).fixedSize(horizontal: true, vertical: false)
+
+    private func summaryRow(_ points: PointsState) -> some View {
+        HStack(spacing: 16) {
+            balance(points).fixedSize(horizontal: true, vertical: false)
+            Spacer(minLength: 0)
+            day(points).fixedSize(horizontal: true, vertical: false)
+        }
     }
-    private func actions(wide: Bool) -> some View {
-        HStack(spacing: 8) {
-            Button(state.undo ? "退出撤销" : "撤销模式") { state.undo.toggle() }
-                .foregroundStyle(state.undo ? Color(hex: 0xbe123c) : .white)
-                .padding(.horizontal, wide ? 12 : 0).frame(maxWidth: wide ? nil : .infinity, minHeight: 44)
-                .background(state.undo ? Color(hex: 0xffe4e6) : .white.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
-            Button("± 临时加减") { state.adjustmentOpen = true }
-                .padding(.horizontal, wide ? 12 : 0).frame(maxWidth: wide ? nil : .infinity, minHeight: 44)
-                .background(.white.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
-        }.font(.custom("Arial-BoldMT", size: 14, relativeTo: .subheadline)).buttonStyle(.plain)
-    }
-    private func tab(_ title: String, emoji: String, rewards: Bool) -> some View {
-        Button { state.rewards = rewards } label: {
-            HStack(spacing: 4) {
-                Text(emoji).font(.system(size: 22))
-                Text(title).font(.custom("Arial-BoldMT", size: 18, relativeTo: .headline))
+
+    private var actions: some View {
+        HStack(spacing: 12) {
+            Button {
+                state.undo.toggle()
+            } label: {
+                Label(state.undo ? "退出撤销" : "撤销模式", systemImage: "arrow.uturn.backward")
+                    .frame(maxWidth: .infinity, minHeight: 32)
             }
-                .frame(maxWidth: .infinity, minHeight: 65)
-                .foregroundStyle(state.rewards == rewards ? .white : Color(hex: 0x6b7280))
-                .background(state.rewards == rewards ? Appearance.indigo : .white, in: RoundedRectangle(cornerRadius: 12))
-                .overlay { if state.rewards != rewards { RoundedRectangle(cornerRadius: 12).stroke(Color(hex: 0xe5e7eb), lineWidth: 2) } }
-        }.buttonStyle(.plain).accessibilityAddTraits(state.rewards == rewards ? [.isSelected] : [])
+            .accessibilityIdentifier("undo-mode")
+            Button {
+                waitingForAdjustmentDismissal = true
+                state.adjustmentOpen = true
+            } label: {
+                Label("临时加减", systemImage: "plusminus")
+                    .frame(maxWidth: .infinity, minHeight: 32)
+            }
+            .accessibilityLabel("临时加减分")
+            .accessibilityIdentifier("adjustment-open")
+        }
+        .buttonStyle(.bordered)
+    }
+
+    @ViewBuilder
+    private func sectionButton(_ title: String, systemImage: String, rewards: Bool) -> some View {
+        let button = Button { state.rewards = rewards } label: {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .accessibilityIdentifier(rewards ? "section-rewards" : "section-tasks")
+        .accessibilityAddTraits(state.rewards == rewards ? [.isSelected] : [])
+        if state.rewards == rewards {
+            button.buttonStyle(.borderedProminent)
+        } else {
+            button.buttonStyle(.bordered)
+        }
+    }
+
+    private func day(_ points: PointsState) -> some View {
+        HStack(spacing: 8) {
+            Text(PacificDate.label(points.dateKey))
+            Text(PacificDate.weekday(points.dateKey))
+            Text("\(points.dailyNet > 0 ? "+" : "")\(points.dailyNet)")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .accessibilityLabel("今日 \(points.dailyNet) 分")
+        }
+        .font(.subheadline).foregroundStyle(.white.opacity(0.9))
+    }
+
+    private func balance(_ points: PointsState) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "star.circle.fill")
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+            Text("\(points.balance)")
+                .monospacedDigit()
+                .contentTransition(.numericText(value: Double(points.balance)))
+                .animation(reduceMotion ? nil : .default, value: points.balance)
+        }
+        .font(.largeTitle.bold())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("总积分 \(points.balance)")
+        .accessibilityIdentifier("points-balance")
     }
 }

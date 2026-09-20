@@ -4,6 +4,7 @@ import Observation
 struct Celebration: Identifiable {
     let id = UUID()
     let value: Int
+    let title: String
     let emoji: String
     let image: String?
 }
@@ -13,7 +14,6 @@ final class AppState {
     private(set) var points: PointsState?
     private(set) var loadError: String?
     private(set) var saving = false
-    private(set) var displayedPoints = 0
     var errorMessage: String?
     var rewards = false
     var undo = false
@@ -21,13 +21,11 @@ final class AppState {
     private(set) var celebration: Celebration?
     private let store: LocalStore
     private let sound = PointSound()
-    private var numberAnimation: Task<Void, Never>?
 
     init(store: LocalStore, date: Date = PacificDate.now) {
         self.store = store
         do {
             points = try store.load(dateKey: PacificDate.key(date))
-            displayedPoints = points?.balance ?? 0
         } catch { loadError = "无法读取本地积分，请重新打开应用。原有数据未被清除。" }
     }
 
@@ -55,18 +53,11 @@ final class AppState {
             try store.save(change, date: date)
             points = candidate
             errorMessage = nil
-            animateBalance(candidate.balance)
             if adjustment != nil || !undo {
                 let item = (Catalog.tasks + Catalog.rewards).first { $0.id == itemID }
-                celebration = Celebration(value: change.points, emoji: item?.emoji ?? "⭐",
-                                          image: item?.isReward == false ? item?.image : nil)
-                let expires = ContinuousClock.now.advanced(by: .milliseconds(2200))
-                Task { [weak self] in
-                    try? await Task.sleep(until: expires, clock: .continuous)
-                    self?.celebration = nil
-                }
-                let sound = sound
-                Task { await sound.play(positive: change.points > 0) }
+                celebration = Celebration(value: change.points,
+                                          title: adjustment != nil ? "积分已调整" : item?.isReward == true ? "奖励兑换成功" : "任务完成！",
+                                          emoji: item?.emoji ?? "⭐", image: item?.image)
             }
             return true
         } catch PointsError.insufficientBalance {
@@ -80,16 +71,11 @@ final class AppState {
         }
     }
 
-    private func animateBalance(_ end: Int) {
-        numberAnimation?.cancel()
-        let start = displayedPoints
-        guard start != 0, start != end else { displayedPoints = end; return }
-        numberAnimation = Task { [weak self] in
-            let steps = min(abs(end - start), 30)
-            for step in 1...steps {
-                do { try await Task.sleep(for: .milliseconds(600 / steps)) } catch { return }
-                self?.displayedPoints = Int((Double(start) + Double(end - start) * Double(step) / Double(steps)).rounded())
-            }
-        }
+    /// Called when the full-screen presentation appears, after any form dismisses.
+    func playCelebration(_ id: UUID) async {
+        guard let celebration, celebration.id == id else { return }
+        await sound.play(positive: celebration.value > 0)
+        do { try await Task.sleep(for: .seconds(2)) } catch { }
+        if self.celebration?.id == id { self.celebration = nil }
     }
 }

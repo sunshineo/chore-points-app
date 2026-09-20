@@ -4,7 +4,7 @@ actor PointSound {
     private var player: AVAudioPlayer?
 
     func play(positive: Bool) {
-        guard let url = Bundle.main.url(forResource: positive ? "ascending" : "descending", withExtension: "wav") else { return }
+        guard let url = Bundle.main.url(forResource: positive ? "points-earned" : "reward-complete", withExtension: "wav") else { return }
         do {
             try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
             try AVAudioSession.sharedInstance().setActive(true)

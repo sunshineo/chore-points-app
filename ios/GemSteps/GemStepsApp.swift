@@ -14,7 +14,6 @@ struct GemStepsApp: App {
                                            description: Text("请重新打开应用。原有数据未被清除。"))
                 } else { ProgressView("正在加载积分…") }
             }
-            .preferredColorScheme(.light)
             .task {
                 guard state == nil, !openFailed else { return }
                 do { state = AppState(store: try LocalStore()) }

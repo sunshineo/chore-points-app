@@ -24,9 +24,9 @@ B2A0925CAAE181D165766139 = { isa = PBXBuildFile; fileRef = 1C7CB3C9D8472215D03EF
 6041C67A0BE984B76CE339C0 = { isa = PBXBuildFile; fileRef = 2BEE8CFF2DEE61A1F3883310; };
 CB6B13756F8CF907DCB333AB = { isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "GemSteps/Assets.xcassets"; sourceTree = SOURCE_ROOT; };
 B1864C1CE6FB29E5510E11D2 = { isa = PBXBuildFile; fileRef = CB6B13756F8CF907DCB333AB; };
-354A29E6BFD667AE89D31112 = { isa = PBXFileReference; lastKnownFileType = audio.wav; path = "GemSteps/Resources/Audio/ascending.wav"; sourceTree = SOURCE_ROOT; };
+354A29E6BFD667AE89D31112 = { isa = PBXFileReference; lastKnownFileType = audio.wav; path = "GemSteps/Resources/Audio/points-earned.wav"; sourceTree = SOURCE_ROOT; };
 99DDF2544F5EBE84A4DE3639 = { isa = PBXBuildFile; fileRef = 354A29E6BFD667AE89D31112; };
-251F53B502A3E95D08A43D8B = { isa = PBXFileReference; lastKnownFileType = audio.wav; path = "GemSteps/Resources/Audio/descending.wav"; sourceTree = SOURCE_ROOT; };
+251F53B502A3E95D08A43D8B = { isa = PBXFileReference; lastKnownFileType = audio.wav; path = "GemSteps/Resources/Audio/reward-complete.wav"; sourceTree = SOURCE_ROOT; };
 01D5E3BAF4E117BE557FEA31 = { isa = PBXBuildFile; fileRef = 251F53B502A3E95D08A43D8B; };
 9A57632D065CEE4E98752540 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GemStepsTests/PointsTests.swift"; sourceTree = SOURCE_ROOT; };
 BD42B692B6C405F93D1B78B0 = { isa = PBXBuildFile; fileRef = 9A57632D065CEE4E98752540; };
