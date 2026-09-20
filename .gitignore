@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/web/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,17 +13,23 @@
 
 # testing
 /coverage
+/web/coverage
 
 # next.js
 /.next/
 /out/
+/web/.next/
+/web/out/
 
 # Serwist service worker build output
 /public/sw.js
 /public/sw.js.map
+/web/public/sw.js
+/web/public/sw.js.map
 
 # production
 /build
+/web/build
 
 # misc
 .DS_Store
@@ -48,6 +55,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+/web/src/generated/prisma
 
 # SSH keys
 Chore_app

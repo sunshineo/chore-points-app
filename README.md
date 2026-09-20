@@ -1,51 +1,48 @@
 # GemSteps
 
-A singleton, offline-first tasks, points, and rewards app.
+A family tasks, points, and rewards project.
 
-## Routes
+## Applications
 
-- `/` is the only user interface.
-- Unknown browser routes redirect to `/`.
-- `GET /api/points` loads points, tasks, and rewards.
-- `POST /api/points` applies queued task and reward events.
+| Directory | Status |
+| --- | --- |
+| [web](web/README.md) | Existing Next.js application with PostgreSQL and offline support |
+| [ios](ios/README.md) | Placeholder for a future native iOS/iPadOS application |
+| [android](android/README.md) | Placeholder for a future native Android application |
 
-## Required environment
+The native applications are planned to run locally without a backend. Their
+initial scope is one task list repeated every day, editable manually or with
+optional device AI assistance. There are no time-of-day or weekday schedules.
 
-- Node.js 24
-- `DATABASE_URL` — the application database connection URL
-- `GEMSTEPS_PIN` — exactly six digits; validated only on the server
-- `GEMSTEPS_SESSION_SECRET` — at least 32 random bytes, stored in a safe textual encoding
+## Web development
 
-`openssl rand -base64 32` prints a generated session secret to standard output:
-
-```sh
-openssl rand -base64 32
-```
-
-Do not commit, record, or share that output. Store it directly as a sensitive
-environment value using an approved secret-management workflow.
-
-The runtime length check is only a minimum guard and cannot measure entropy.
-Operators must generate the value from at least 32 random bytes and store it as a
-sensitive environment variable.
-
-`GEMSTEPS_TEST_DATABASE_URL` is separate and test-only. It must use a loopback
-host, must end in `_test`, and must never contain copied Production credentials.
-
-The database contains only structured point events; there is no user or child model.
-
-## Development
-
-Install Node.js 24, then run:
+Use Node.js 24 and run commands inside `web/`:
 
 ```sh
+cd web
 npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open http://localhost:3000. See the Web README for environment requirements.
+Local environment files belong in `web/` and must remain untracked.
 
-The first visit asks for the six-digit PIN. A successful unlock is remembered for
-30 × 24 hours on that tablet, and the **锁定** button immediately returns to the PIN
-screen. The app can continue from its local snapshot while offline after it has been
-unlocked once on that device.
+GitHub Actions installs, tests, and builds the Web app from `web/`. Dependabot
+tracks its npm dependencies there. Husky hooks stay at the repository root;
+installing Web dependencies configures them, and pre-push runs Web verification.
+
+## Deployment
+
+The existing Vercel project must use `web` as its Root Directory before deploying
+this layout. Retain the existing project, domain, environment variables, and
+database. Check any install/build/output overrides against the new directory;
+the Web build command remains `npm run build` with the Next.js framework preset.
+Repository directory names do not change public URL paths.
+
+The local `.vercel/` link remains at the repository root. This directory migration
+does not itself change remote settings or require a database migration. Coordinate
+the Vercel setting change with the migration push; do not push this layout while
+Vercel is still configured to build the old repository root.
+
+Existing Web operational documentation is in `web/docs/`. Historical completion
+records describe earlier releases, not verification of this directory migration.

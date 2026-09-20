@@ -1,9 +1,19 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Repository layout
 
-# This is NOT the Next.js you know
+- `web/` contains the existing Next.js application, including its database,
+  tests, assets, and operational documentation. Run npm commands from `web/`.
+- `ios/` and `android/` are placeholders for future native applications.
+- `.github/` and `.husky/` remain at the repository root.
+- Follow the platform-specific instructions in each application's directory.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+# Product scope
 
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+The initial native applications use the same task list every day, without
+morning/evening groups or weekday/weekend schedules. Manual editing remains
+available; device AI may assist with the same edits when supported.
 
-<!-- END:nextjs-agent-rules -->
+# Working conventions
+
+Use the primary checkout on `main` unless explicitly instructed otherwise.
+Preserve unrelated changes. Implement first, then verify; do not use TDD.
+Keep environment files and generated build artifacts out of Git.
