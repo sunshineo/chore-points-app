@@ -1,0 +1,862 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project ios/GemSteps.xcodeproj -scheme GemSteps -sdk iphonesimulator -destination "generic/platform=iOS Simulator" -derivedDataPath ios/DerivedData build CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+    SDKROOT = iphonesimulator27.0
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'GemSteps' in project 'GemSteps' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: e5d39642623074f9c1b04dd7c60b16c5
+Build description path: /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/XCBuildData/e5d39642623074f9c1b04dd7c60b16c5.xcbuilddata
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/CompilationCache.noindex
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/CompilationCache.noindex
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex
+
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/PrecompiledHeaders
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/PrecompiledHeaders
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    builtin-create-build-directory /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps-de069baad0ef711ccfdb84015b2fbda2-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps.xcodeproj
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps-de069baad0ef711ccfdb84015b2fbda2-VFS-iphonesimulator/all-product-headers.yaml
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/empty-GemSteps.plist (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/empty-GemSteps.plist
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_const_extract_protocols.json (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftConstValuesFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.LinkFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.LinkFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-OutputFileMap.json (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_const_extract_protocols.json (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftConstValuesFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.LinkFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.LinkFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-OutputFileMap.json (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.hmap (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.hmap
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.DependencyStaticMetadataFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.DependencyMetadataFileList (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-non-framework-target-headers.hmap (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibPath-normal-x86_64.txt (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibPath-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibPath-normal-arm64.txt (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibInstallName-normal-x86_64.txt (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibInstallName-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibInstallName-normal-arm64.txt (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    write-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibInstallName-normal-arm64.txt
+
+MkDir /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /bin/mkdir -p /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app
+
+Ld /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/__preview.dylib normal x86_64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -install_name @rpath/GemSteps.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_dependency_info.dat -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/__preview.dylib
+
+CpResource /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/descending.wav /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Resources/Audio/descending.wav (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Resources/Audio/descending.wav /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app
+
+CpResource /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/ascending.wav /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Resources/Audio/ascending.wav (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Resources/Audio/ascending.wav /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app
+
+MkDir /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/thinned (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /bin/mkdir -p /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/thinned
+
+MkDir /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/unthinned (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /bin/mkdir -p /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/unthinned
+
+Ld /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/__preview.dylib normal arm64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -install_name @rpath/GemSteps.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_dependency_info.dat -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/__preview.dylib
+
+GenerateAssetSymbols /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Assets.xcassets (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Assets.xcassets --compile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_dependencies --output-partial-info-plist /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_generated_info.plist --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region zh_CN --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator --bundle-identifier me.gordon.GemSteps --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+CompileAssetCatalogVariant thinned /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Assets.xcassets (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Assets.xcassets --compile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region zh_CN --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_generated_info.plist_thinned
+/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/thinned/Assets.car
+
+
+CreateUniversalBinary /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/__preview.dylib normal arm64\ x86_64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/__preview.dylib /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/__preview.dylib -output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/__preview.dylib
+
+SwiftDriver GemSteps normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name GemSteps -Onone @/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftFileList -DDEBUG -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Index.noindex/DataStore -swift-version 5 -I /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_const_extract_protocols.json -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources-normal/x86_64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/x86_64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-Swift.h -working-directory /Users/gordon/code/side-projects/chore-points-app/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver GemSteps normal arm64 com.apple.xcode.tools.swift.compiler (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name GemSteps -Onone @/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftFileList -DDEBUG -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Index.noindex/DataStore -swift-version 5 -I /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_const_extract_protocols.json -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources-normal/arm64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/arm64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-Swift.h -working-directory /Users/gordon/code/side-projects/chore-points-app/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ptrcheck-6EEM6QV6OXDM3ADASJ8A72EJB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_SwiftConcurrencyShims-MWO0H6HP7MPR0NFJ4JR4QATB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stddef-7ZI49UWUEXLR7KE8VZFCN4AV6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ptrauth-AHJ0TG2U2Z6F7PS6135EERENT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdbool-B4SUIPRMP980XEG38TKTET8KR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/SwiftShims-DNMIYKX8PETX869H6IIMNMOP9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_AvailabilityInternal-7DB2T2BRS4Z8GF3ZIQT2CTABT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/DeveloperToolsSupport-BQL81CQG0409WEXQB9Z1HHRA6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_float-B6OZ317C6OKNPU84WDW2GE7GP.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stddef-8TEUBSZU53FJ5N41PIYM2SBWY.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_float-1T3WXAHA13K868G4L823MH0MR.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ptrcheck-9GVNK2J3Z0B5DNSREPD2A35GR.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_SwiftConcurrencyShims-B3YJR8T4WX9TNMQWMTS4RGUVY.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/DeveloperToolsSupport-888UJ0IJHVNZAPEXIXG7RKPL2.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_AvailabilityInternal-18JU9XBJ6UCXQBKRX1VGU9QA7.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdbool-2Z8JUFSRMA3QF6ZR07MA54CCL.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdarg-8HJAZ9BLLN8N2WB0T22VMDOQ8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_DarwinFoundation1-14HTPNHNVUR4BHPDB68OC4VHM.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/SwiftShims-9XYM8VFA5L5VKKE3FV1175H5L.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ptrauth-E1R21VPAEB3RL4K5UR4965R16.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdarg-1V4INU4YUIQ38JJXLSK4ZMPLQ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_DarwinFoundation1-9BIG7WVKG8Y6XG8Y17OV8DL7S.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_limits-948LY9DR65LNLBRXYE2NCBONV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_DarwinFoundation2-8YDEW01698SSE3VE0VY2IS3SY.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_limits-538QBOXOTI05HLMPG02287N83.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_DarwinFoundation2-A33BNM39TYIJLO4B935Y3PQ16.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/sys_types-6WHMEVIRYMZPGXT7K7N4SBRRW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/string_h-5T3ZMN9KLUI4RKF892LJZPJC0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_tgmath-58NTWWM3T2JLPOPERU70T7O0C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdint-92DZT7XD82LBHSHRLO2C3Z01G.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/sys_types-B84JU0DU72Q1MQ8ZI1SAF5CX4.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/string_h-7GO9I2HC3HRMCL01R4MNNCO7A.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_tgmath-DV5WQNLYQF1XJ15BCEO2SS6RS.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdint-EM85I78Q5MG5TIYYJSXYZ86F1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_DarwinFoundation3-8XGLQA7ZMBYYYMYHAORHIP0DR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_intrinsics-3457ZEF30KN6OI93538VFA3TL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdatomic-5OY32KSOXA2L0NW1GWZRPJG69.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_DarwinFoundation3-24FHPMFXXA17TYEE5QHHUMAS6.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_stdatomic-59SI3TAI8JSAJAKAOJLD7GMDA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_inttypes-1D7LHI4BPR64UHL2Q5EPEVZ7P.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_intrinsics-5CYWVZM8SX75X83Z0X78VWPWN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_Builtin_inttypes-9A4NDA0EPFTUGH67QIW35KLWC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Darwin-89AACR8HROVF74O0QXIABUPKX.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Darwin-5DQBSBX3XICPXA56SE5U1EF8M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/simd-EE0HH12IW8WP3752K5W6R9RB5.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/MachO-DNHJPNDKJ01YVGCLS4EL7ZCGD.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ObjectiveC-7QSWUOJEKQ8K5J58K31QYCDP8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ObjectiveC-80UG6DFSVGNA06VJZK4RYEURA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/MachO-2C9IMEAXITA0T5VWU2QUP47LW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/simd-8MBWO1W8RLWLDSOX5GKIK6EMN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/os_object-8K3KLV352KUSKUGC14W1MJ0TA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Spatial-2FZY98CF4E1Q87AWVW45JAJHH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/os_object-41E0870SJZWK6F266SLKZ45BE.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/os_workgroup-ALESDAYZ2LTQ8BY7CKNPYKF6G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/os_workgroup-EPUCMMTE1JR2C0563RAYK3I4V.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Dispatch-CZZPXBOYRNB38IDS0D0XC30Z5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Dispatch-B596NDQRQJFTYHUZJIUA8O7XE.pcm
+
+LinkAssetCatalog /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Assets.xcassets (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-linkAssetCatalog --thinned /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/thinned --thinned-dependencies /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_generated_info.plist_unthinned --output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app --plist-output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/AppIcon60x60@2x.png (in target 'GemSteps' from project 'GemSteps')
+note: Emplaced /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Assets.car (in target 'GemSteps' from project 'GemSteps')
+note: Emplaced /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/AppIcon76x76@2x~ipad.png (in target 'GemSteps' from project 'GemSteps')
+
+ProcessInfoPlistFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Info.plist /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/empty-GemSteps.plist (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-infoPlistUtility /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/empty-GemSteps.plist -producttype com.apple.product-type.application -genpkginfo /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/assetcatalog_generated_info.plist -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Info.plist
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreFoundation-9WZ593RVLBK0248SEVN9OBLDS.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/dnssd-DCT3J6NCHAWR6OPPB8FA1MWCY.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/XPC-76Q8PK033FXW1BK399BZ6M9SX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/dnssd-7J8QSUAADIDPSZ5O4QMLCN36M.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/XPC-1M3ZQOH7VR3CHFRGF4SQR0DV2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreFoundation-6XMOWDSV420AYIDE0D18AG26N.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/os-9LDEGIITDXFQI0NAOW9JAE9XP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/os-264N2LQ46M32Z3PGM8RTW5QHC.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CFNetwork-5OIG4085SYSMP7E3H2I4P13V7.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Security-4KOHGAVV6I9PTSCZ8IBDIOGMW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreGraphics-1YAABMXM5TMBA11XDXZBE1ZKM.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreAudioTypes-5YSC0YJO31SATKHRF7JG5RYJH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CFNetwork-3XS5I9IXE47U8VPOA5RM3XV77.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreAudioTypes-B1F2XGMRLEX0UPR6V6JPSCCGN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreGraphics-54F3CEIRBSWIYYZ4HWKSY91IG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Security-AXIK687HLCN59VI727N2MOQG9.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreAudio-79VL8O9WR2WI0AFU9QWWQC773.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreAudio-F4IDKZJ90C28KHPRRKZ56OWO0.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Foundation-EU7MPY4EJQK9VSXMKK1KQ933E.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Foundation-E20PN75Z9I4KIXV1TTLZZCT1D.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ImageIO-8TG6LKIK4QXA0WTJ60XL8PKDM.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreText-9VIN8K1PP9SWROYUXRQUQE9HB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreText-DISDRBALMYG0SOA8H4KMCVQPB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/ImageIO-AXXYH8Y9XTP1U44TY9ZX7FRNW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Spatial-5LFVB8CULM090BW4AFHZVDLG6.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Accessibility-212T5R60OGWNA3L5LAUNBGI4B.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreData-10NF2XXHO32SZ1GOOOAQHGF83.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreMIDI-5DIBMS1JX0EPMSU5I2C82V9F0.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UIUtilities-EO37OZGUL06O9LY5RDT7ONUOE.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/FileProvider-3WFCOYE16C33PA5AW4K4YTSTJ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/OpenGLES-CSPAVF56OR5S1N18WDS7D868D.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/OSLog-6H83W0Y8EM0S2MD57DZPLWNZ2.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreTransferable-2I54L9FD34J781SA6P6W7YPQX.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/DataDetection-3P6N96IITDZ7OIZI9EN4K1CHA.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UniformTypeIdentifiers-6XOICTYCE3XXCPG9SUSXJVHPJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreData-389WT0WBPDLTDN6ZSX7ZBUHGL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Accessibility-5PH8GIWAC2TBK8VTADB79AJ1Z.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UserNotifications-C56ISGWCR4OJA5MHFP4BG14LC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreTransferable-DCADG1TSPUI358QG1OODLON98.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/OSLog-5HTVVYNLUA52DWY3TXEFJR9KH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/OpenGLES-B6D153H3XL9KAW3O39Z3EMVJ7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/IOSurface-APM093RE0CC75H8CDLPQ2WTAD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/FileProvider-1YJ8Z9CMVWDY5J3KDN95UQ8DN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AudioToolbox-3IXYAYDU06EC51KW1CKKE9RYT.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UserNotifications-AV2MB1N6DKRWNH7CRAAIEAZUP.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Network-A5EL21DEEG138FCUTR3GL7CAJ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/IOSurface-SK0IG35W65RF6B82ZVSLQIZ1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Symbols-B9V29NBEHD413VWRP1GD780QO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UniformTypeIdentifiers-6FPLH8AHT95OJW9MD9H8H1F5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UIUtilities-TAHGMILLTGOCO40RURA2XUJE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/DataDetection-C2GCD3I2B1O9PY24GXV4V29ZV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Metal-CRGELFLO7EPWL3Y1HOXIKHUFR.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Symbols-A2NTNR85J0KWZUELPPIL1KYX.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_LocationEssentials-3KGB3MTD282I8WOQ2UGPYKE7F.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreMIDI-6IJV42IRLV92SYX10H8JOS32D.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Metal-7U4VQ8MRT7LPFI4ER4II7UN3K.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/_LocationEssentials-CP5NHRHXF8ZC89VCK2X6VBDGE.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/Network-1LCELDVHLYDF1CZ7JWK0WHTJK.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreLocation-BZSQIQ0YFPQX1XTJ7FYWRVR09.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AVRouting-CF6QIUZFDC1FNOOVMSF0YQM1X.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreLocation-4PTIRMQRGTN5KDUK6M4QL89PM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AudioToolbox-14U2GLKZ5DA6ERC3TYJ80304F.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AVRouting-EQBZ7NMUSYWXLZ039B4KHXK2Y.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreMotion-C15IQ2CTZY4OH2PHBHOE7QNBV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreMotion-5R641O5YZJODZGFNM5EE0WUB.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreVideo-29WWOCCKA2O79XFSJUFFFSEEZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreVideo-78VZGEZA7TPN6MF6OX4LKT2JQ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreMedia-CYVBJ7J75JYZ0LILQVIWNY3V9.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreImage-7L3KLI4RR7ZYGZEYJ6ICESMGI.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/QuartzCore-4E3G6Y2QB37ZTW4NAWWNELDX8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/QuartzCore-5LK3B3HD6UR94QS61KBH4RAGA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreMedia-DOWQEIO137HKKMFFDEF7J7FDT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/CoreImage-266XNUJQ28DN94PQZKZZW9KIB.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/SwiftUICore-9M02NJJGRV8L7OJAOMARIR5SR.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/SwiftUICore-CQSJX4MLK7EWGOQ8270DZIV1S.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/MediaToolbox-5MJP5BCRDU9USSQJ2SYCWANC7.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AVFAudio-5XTS6EH5VJF70R01ESVEBYYU7.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/VideoToolbox-59ZA1I9QNENFSM3PQ53DRRJ8I.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UIKit-9IWRFXQDKRWTNU2HI252YWI7W.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/MediaToolbox-6LV3H1418MSQ8IFT66HNCSQWM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AVFAudio-EYGAJJAYUIHWEHXOUWT6XR56K.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/VideoToolbox-9QTBELSCUCX5ISH4KCO7P8TJX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/UIKit-A17NJJQ6OL0T62ZAO2G37QNKN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AVFoundation-2B4DWHTVGGD523FDO7SPOCLEJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/AVFoundation-GQFIBWO8Z2J1MARKPZ9M2AR3.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/SwiftUI-E6XL2U6W0JDIONFY8TCPIA5L0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules/SwiftUI-DZOFEG9752F5ILTJDLFV06QLV.pcm
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ GemSteps (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    
+
+SwiftCompile normal x86_64 Compiling\ GeneratedAssetSymbols.swift /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile GeneratedAssetSymbols.swift
+
+SwiftCompile normal x86_64 Compiling\ AppState.swift,\ GemStepsApp.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/AppState.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/GemStepsApp.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/AppState.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile AppState.swift
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/GemStepsApp.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile GemStepsApp.swift
+
+SwiftCompile normal x86_64 Compiling\ AdjustmentView.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/AdjustmentView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/AdjustmentView.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile AdjustmentView.swift
+
+SwiftCompile normal x86_64 Compiling\ CelebrationView.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/CelebrationView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/CelebrationView.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile CelebrationView.swift
+
+SwiftCompile normal x86_64 Compiling\ LocalStore.swift,\ Catalog.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/LocalStore.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/Catalog.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/LocalStore.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile LocalStore.swift
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/Catalog.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile Catalog.swift
+
+SwiftCompile normal x86_64 Compiling\ PointCard.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointCard.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointCard.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointCard.swift
+
+SwiftCompile normal x86_64 Compiling\ PointsView.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointsView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointsView.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointsView.swift
+
+SwiftCompile normal x86_64 Compiling\ PointsState.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointsState.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointsState.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointsState.swift
+
+SwiftCompile normal x86_64 Compiling\ PointEntry.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointEntry.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointEntry.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointEntry.swift
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ GemSteps (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for GemSteps (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriver\ Compilation\ Requirements GemSteps normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name GemSteps -Onone @/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftFileList -DDEBUG -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Index.noindex/DataStore -swift-version 5 -I /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_const_extract_protocols.json -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources-normal/x86_64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/x86_64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-Swift.h -working-directory /Users/gordon/code/side-projects/chore-points-app/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for GemSteps (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriver\ Compilation\ Requirements GemSteps normal arm64 com.apple.xcode.tools.swift.compiler (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name GemSteps -Onone @/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftFileList -DDEBUG -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Index.noindex/DataStore -swift-version 5 -I /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_const_extract_protocols.json -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources-normal/arm64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/arm64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-Swift.h -working-directory /Users/gordon/code/side-projects/chore-points-app/ios -experimental-emit-module-separately -disable-cmo
+
+SwiftCompile normal arm64 Compiling\ PointsView.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointsView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointsView.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointsView.swift
+
+SwiftMergeGeneratedHeaders /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GemSteps-Swift.h /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-Swift.h /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-Swift.h (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-swiftHeaderTool -arch arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-Swift.h -arch x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-Swift.h -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GemSteps-Swift.h
+
+SwiftDriverJobDiscovery normal x86_64 Compiling LocalStore.swift, Catalog.swift (in target 'GemSteps' from project 'GemSteps')
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/x86_64-apple-ios-simulator.swiftmodule /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftmodule (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftmodule /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/x86_64-apple-ios-simulator.swiftmodule
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/x86_64-apple-ios-simulator.swiftdoc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftdoc (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftdoc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/x86_64-apple-ios-simulator.swiftdoc
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/x86_64-apple-ios-simulator.abi.json /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.abi.json (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.abi.json /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/x86_64-apple-ios-simulator.abi.json
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftmodule (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftmodule /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftdoc (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftdoc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.abi.json (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.abi.json /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftsourceinfo (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftsourceinfo /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo
+
+Copy /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftsourceinfo (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -strip-unsigned-binaries -strip-deterministic -strip-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip -resolve-src-symlinks -rename /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftsourceinfo /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ PointsState.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointsState.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointsState.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointsState.swift
+
+SwiftCompile normal arm64 Compiling\ CelebrationView.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/CelebrationView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/CelebrationView.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile CelebrationView.swift
+
+SwiftDriverJobDiscovery normal x86_64 Compiling PointsState.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 Compiling\ GeneratedAssetSymbols.swift /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile GeneratedAssetSymbols.swift
+
+SwiftDriverJobDiscovery normal x86_64 Compiling PointEntry.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling GeneratedAssetSymbols.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 Compiling\ AdjustmentView.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/AdjustmentView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/AdjustmentView.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile AdjustmentView.swift
+
+SwiftCompile normal arm64 Compiling\ AppState.swift,\ GemStepsApp.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/AppState.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/GemStepsApp.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/AppState.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile AppState.swift
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/GemStepsApp.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile GemStepsApp.swift
+
+SwiftDriverJobDiscovery normal arm64 Compiling PointsState.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 Compiling\ PointSound.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/PointSound.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/PointSound.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointSound.swift
+
+SwiftDriverJobDiscovery normal arm64 Compiling GeneratedAssetSymbols.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 Compiling\ PointEntry.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointEntry.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/PointEntry.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointEntry.swift
+
+SwiftDriverJobDiscovery normal x86_64 Compiling AppState.swift, GemStepsApp.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 Compiling\ PointCard.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointCard.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Views/PointCard.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointCard.swift
+
+SwiftDriverJobDiscovery normal x86_64 Compiling CelebrationView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 Compiling\ LocalStore.swift,\ Catalog.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/LocalStore.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/Catalog.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/LocalStore.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile LocalStore.swift
+
+SwiftCompile normal arm64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/Models/Catalog.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile Catalog.swift
+
+SwiftDriverJobDiscovery normal x86_64 Compiling PointCard.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 Compiling\ PointSound.swift /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/PointSound.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftCompile normal x86_64 /Users/gordon/code/side-projects/chore-points-app/ios/GemSteps/PointSound.swift (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-SwiftPerFileCompile PointSound.swift
+
+SwiftDriverJobDiscovery normal x86_64 Compiling AdjustmentView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling PointsView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PointEntry.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal arm64 Compiling LocalStore.swift, Catalog.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PointSound.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling PointSound.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriver\ Compilation GemSteps normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name GemSteps -Onone @/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftFileList -DDEBUG -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Index.noindex/DataStore -swift-version 5 -I /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_const_extract_protocols.json -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources-normal/x86_64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/x86_64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps-Swift.h -working-directory /Users/gordon/code/side-projects/chore-points-app/ios -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps.debug.dylib normal x86_64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -filelist /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.LinkFileList -install_name @rpath/GemSteps.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_lto.o -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps.debug.dylib
+
+SwiftDriverJobDiscovery normal arm64 Compiling CelebrationView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AppState.swift, GemStepsApp.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal arm64 Compiling AdjustmentView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PointsView.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriverJobDiscovery normal arm64 Compiling PointCard.swift (in target 'GemSteps' from project 'GemSteps')
+
+SwiftDriver\ Compilation GemSteps normal arm64 com.apple.xcode.tools.swift.compiler (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-Swift-Compilation -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name GemSteps -Onone @/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftFileList -DDEBUG -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Index.noindex/DataStore -swift-version 5 -I /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKStatCaches.noindex/iphonesimulator27.0-24A430-8dc58220667be655e1bcc261a7455254.sdkstatcache -output-file-map /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-OutputFileMap.json -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules -emit-dependencies -emit-module -emit-module-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftmodule -serialize-diagnostics -dependency-scan-serialize-diagnostics-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-dependency-scan.dia -validate-clang-modules-once -clang-build-session-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -fmodules-prune-interval\=86400 -Xcc -fmodules-prune-after\=345600 -emit-const-values -const-gather-protocols-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_const_extract_protocols.json -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-generated-files.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-own-target-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-all-target-headers.hmap -Xcc -iquote -Xcc /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-project-headers.hmap -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources-normal/arm64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources/arm64 -Xcc -I/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/DerivedSources -emit-objc-header -emit-objc-header-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps-Swift.h -working-directory /Users/gordon/code/side-projects/chore-points-app/ios -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps.debug.dylib normal arm64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -filelist /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.LinkFileList -install_name @rpath/GemSteps.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_lto.o -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.swiftmodule -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-ExecutorLinkFileList-normal-x86_64.txt (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    construct-stub-executor-link-file-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-ExecutorLinkFileList-normal-x86_64.txt
+note: Using stub executor library with Swift entry point. (in target 'GemSteps' from project 'GemSteps')
+
+CreateUniversalBinary /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps.debug.dylib normal arm64\ x86_64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps.debug.dylib /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps.debug.dylib -output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-ExecutorLinkFileList-normal-arm64.txt (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    construct-stub-executor-link-file-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps.debug.dylib /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'GemSteps' from project 'GemSteps')
+
+Ld /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps normal x86_64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibPath-normal-x86_64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibInstallName-normal-x86_64.txt -Xlinker -filelist -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-ExecutorLinkFileList-normal-x86_64.txt /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps.debug.dylib -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps
+
+Ld /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps normal arm64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk -Os -Xlinker -no_warn_duplicate_libraries -L/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -F/Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -rdynamic -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps-ExecutorLinkFileList-normal-arm64.txt /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps.debug.dylib -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps
+
+GenerateDSYMFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app.dSYM /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps.debug.dylib (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    export PATH\=/Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/usr/local/bin:/opt/homebrew/bin:/Users/gordon/.local/bin:/Users/gordon/.bun/bin:/Users/gordon/Library/Python/3.9/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/Users/gordon/.codex/tmp/arg0/codex-arg0W6cZnf:/Users/gordon/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/Users/gordon/.cargo/bin:/Users/gordon/.docker/bin:/Users/gordon/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps.debug.dylib -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app.dSYM
+
+CreateUniversalBinary /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps normal arm64\ x86_64 (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/Binary/GemSteps /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/Binary/GemSteps -output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps
+
+GenerateDSYMFile /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app.dSYM /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    export PATH\=/Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/usr/local/bin:/opt/homebrew/bin:/Users/gordon/.local/bin:/Users/gordon/.bun/bin:/Users/gordon/Library/Python/3.9/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/Users/gordon/.codex/tmp/arg0/codex-arg0W6cZnf:/Users/gordon/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/Users/gordon/.cargo/bin:/Users/gordon/.docker/bin:/Users/gordon/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil -q /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps -o /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app.dSYM
+
+ExtractAppIntentsMetadata (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name GemSteps --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.0.sdk --xcode-version 27A266a --platform-family iOS --deployment-target 17.0 --bundle-identifier me.gordon.GemSteps --output /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app --target-triple arm64-apple-ios17.0-simulator --target-triple x86_64-apple-ios17.0-simulator --binary-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps --dependency-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps_dependency_info.dat --dependency-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps_dependency_info.dat --stringsdata-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --stringsdata-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftFileList --source-file-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftFileList --metadata-file-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.DependencyMetadataFileList --static-metadata-file-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.DependencyStaticMetadataFileList --swift-const-vals-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/arm64/GemSteps.SwiftConstValuesFileList --swift-const-vals-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/Objects-normal/x86_64/GemSteps.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --no-app-shortcuts-localization
+2026-09-20 03:05:17.346 appintentsmetadataprocessor[66387:835481] Starting appintentsmetadataprocessor export
+2026-09-20 03:05:17.355 appintentsmetadataprocessor[66387:835481] warning: Metadata extraction skipped, no AppIntents.framework dependency found
+
+CopySwiftLibs /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/GemSteps.debug.dylib --scan-folder /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Frameworks --scan-folder /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/PlugIns --scan-folder /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/SystemExtensions --scan-folder /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Info.plist --temp-dir-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/ssu --bundle-id me.gordon.GemSteps --product-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app --extracted-metadata-path /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Metadata.appintents --metadata-file-list /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/GemSteps.build/Debug-iphonesimulator/GemSteps.build/GemSteps.DependencyMetadataFileList --source-file /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app/Info.plist --archive-ssu-assets
+2026-09-20 03:05:17.378 appintentsnltrainingprocessor[66388:835493] Parsing options for appintentsnltrainingprocessor
+2026-09-20 03:05:17.379 appintentsnltrainingprocessor[66388:835493] Starting AppIntents SSU YAML Generation
+2026-09-20 03:05:17.382 appintentsnltrainingprocessor[66388:835493] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-RegisterExecutionPolicyException /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app
+
+Validate /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    builtin-validationUtility /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app (in target 'GemSteps' from project 'GemSteps')
+    cd /Users/gordon/code/side-projects/chore-points-app/ios
+    /usr/bin/touch -c /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Products/Debug-iphonesimulator/GemSteps.app
+
+PruneExplicitPrecompiledModules /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/SDKExplicitPrecompiledModules
+
+PruneExplicitPrecompiledModules /Users/gordon/code/side-projects/chore-points-app/ios/DerivedData/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+** BUILD SUCCEEDED **
+

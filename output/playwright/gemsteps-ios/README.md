@@ -57,3 +57,7 @@ S2 中还实际尝试余额不足的刷牙撤销，服务器 409 拒绝，最终
 使用仓库现有 `web/scripts/run-with-test-database.mjs` 和 `GEMSTEPS_TEST_DATABASE_URL` 运行迁移／集成测试，目标必须为 localhost 的独立 `*_test` 库。集成测试会清理测试数据，因此先跑测试，再在隔离库归零，最后执行上述 UI 序列。开发服务器显式指定相同测试 DATABASE_URL、临时 GEMSTEPS_PIN 和 GEMSTEPS_SESSION_SECRET；不要直接使用默认环境数据库。
 
 重拍使用独立浏览器会话，校准 viewport、日期、数据和滚动位置。静态截图等待约 2.2 秒庆祝结束及 0.6 秒数值／样式动画结束；不要把刚切标签的过渡帧当基线。原生对照的安全区及截图缩放方式见实施计划第 4 节。
+
+## 实施后的证据
+
+[Web重放与核心检查](implementation/README.md)；[原生构建、测试、同尺寸对照与未验证项](native/README.md)。原生验收进行中，未整体交付。

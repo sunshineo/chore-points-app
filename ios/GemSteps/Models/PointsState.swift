@@ -1,0 +1,93 @@
+import Foundation
+
+enum PacificDate {
+    #if DEBUG
+    private static let launchTime = Date()
+    #endif
+    static var now: Date {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if let index = args.firstIndex(of: "-gemsteps-date"), args.indices.contains(index + 1),
+           let date = ISO8601DateFormatter().date(from: args[index + 1]) {
+            return args.contains("-gemsteps-date-advances")
+                ? date.addingTimeInterval(Date().timeIntervalSince(launchTime)) : date
+        }
+        #endif
+        return Date()
+    }
+
+    static var calendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        return calendar
+    }
+
+    static func key(_ date: Date) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year!, parts.month!, parts.day!)
+    }
+
+    static func label(_ key: String) -> String {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return key }
+        return "\(parts[1])月\(parts[2])日"
+    }
+
+    static func weekday(_ key: String) -> String {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3,
+              let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)) else { return "" }
+        return ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][calendar.component(.weekday, from: date) - 1]
+    }
+}
+
+struct PointChange {
+    let kind: String
+    let itemID: String
+    let points: Int
+}
+
+enum PointsError: Error, Equatable {
+    case invalidAmount, unknownItem, noOccurrence, insufficientBalance, overflow
+}
+
+struct PointsState {
+    var dateKey: String
+    var balance = 0
+    var dailyNet = 0
+    var counts: [String: Int] = [:]
+
+    func change(itemID: String, undo: Bool) throws -> PointChange {
+        guard let item = (Catalog.tasks + Catalog.rewards).first(where: { $0.id == itemID }) else {
+            throw PointsError.unknownItem
+        }
+        if undo && counts[itemID, default: 0] <= 0 { throw PointsError.noOccurrence }
+        let points = item.points * (item.isReward ? -1 : 1) * (undo ? -1 : 1)
+        try validateBalance(points)
+        return PointChange(kind: item.isReward ? "reward" : "task", itemID: itemID, points: points)
+    }
+
+    func adjustment(_ points: Int) throws -> PointChange {
+        guard (-100...100).contains(points), points != 0 else { throw PointsError.invalidAmount }
+        try validateBalance(points)
+        return PointChange(kind: "adjustment", itemID: "manual-adjustment", points: points)
+    }
+
+    func validateBalance(_ points: Int) throws {
+        let result = balance.addingReportingOverflow(points)
+        guard !result.overflow else { throw PointsError.overflow }
+        guard result.partialValue >= 0 else { throw PointsError.insufficientBalance }
+    }
+
+    mutating func include(_ change: PointChange, on key: String) throws {
+        let total = balance.addingReportingOverflow(change.points)
+        guard !total.overflow else { throw PointsError.overflow }
+        balance = total.partialValue
+        guard key == dateKey else { return }
+        let daily = dailyNet.addingReportingOverflow(change.points)
+        guard !daily.overflow else { throw PointsError.overflow }
+        dailyNet = daily.partialValue
+        if change.kind == "task" { counts[change.itemID, default: 0] += change.points > 0 ? 1 : -1 }
+        if change.kind == "reward" { counts[change.itemID, default: 0] += change.points < 0 ? 1 : -1 }
+    }
+}
