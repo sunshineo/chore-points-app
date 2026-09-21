@@ -51,6 +51,8 @@ struct PointCard: View {
                     .font(.headline)
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
                     .fixedSize(horizontal: false, vertical: true)
                 score.font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
