@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 
 struct PointsView: View {
+    @Environment(\.locale) private var locale
     @Bindable var state: AppState
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -14,7 +15,7 @@ struct PointsView: View {
                 if let points = state.points {
                     page(points)
                 } else {
-                    ContentUnavailableView("Unable to load points", systemImage: "exclamationmark.triangle", description: Text(state.loadError ?? String(localized: "Please reopen the app. Your existing data has not been deleted.")))
+                    ContentUnavailableView("Unable to load points", systemImage: "exclamationmark.triangle", description: Text(locale.interfaceText(String.LocalizationValue(state.loadError ?? "Please reopen the app. Your existing data has not been deleted."))))
                 }
             }
             .sheet(isPresented: $state.adjustmentOpen) {
@@ -50,7 +51,7 @@ struct PointsView: View {
                                 .padding(.horizontal, -16)
                         }
                     if let error = state.errorMessage {
-                        Text(error).foregroundStyle(.red).accessibilityIdentifier("points-error")
+                        Text(locale.interfaceText(String.LocalizationValue(error))).foregroundStyle(.red).accessibilityIdentifier("points-error")
                     }
                     HStack(spacing: 12) {
                         sectionButton("Tasks", systemImage: "checkmark.circle", rewards: false)
@@ -84,12 +85,17 @@ struct PointsView: View {
                 Spacer(minLength: 0)
                 day(points).fixedSize(horizontal: true, vertical: false)
                 actions.fixedSize(horizontal: true, vertical: false)
+                LanguageMenu()
             }
             VStack(spacing: 12) {
                 ViewThatFits(in: .horizontal) {
                     summaryRow(points)
                     VStack(alignment: .leading, spacing: 8) {
-                        balance(points)
+                        HStack {
+                            balance(points)
+                            Spacer()
+                            LanguageMenu()
+                        }
                         day(points)
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -99,10 +105,11 @@ struct PointsView: View {
     }
 
     private func summaryRow(_ points: PointsState) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 8) {
             balance(points).fixedSize(horizontal: true, vertical: false)
             Spacer(minLength: 0)
             day(points).fixedSize(horizontal: true, vertical: false)
+            LanguageMenu()
         }
     }
 
@@ -111,7 +118,7 @@ struct PointsView: View {
             Button {
                 state.undo.toggle()
             } label: {
-                Label(state.undo ? String(localized: "Exit Undo") : String(localized: "Undo Mode"), systemImage: "arrow.uturn.backward")
+                Label(state.undo ? locale.interfaceText("Exit Undo") : locale.interfaceText("Undo Mode"), systemImage: "arrow.uturn.backward")
                     .frame(maxWidth: .infinity, minHeight: 32)
             }
             .accessibilityIdentifier("undo-mode")
@@ -145,8 +152,8 @@ struct PointsView: View {
 
     private func day(_ points: PointsState) -> some View {
         HStack(spacing: 8) {
-            Text(PacificDate.label(points.dateKey))
-            Text(PacificDate.weekday(points.dateKey))
+            Text(PacificDate.label(points.dateKey, locale: locale))
+            Text(PacificDate.weekday(points.dateKey, locale: locale))
             Text("\(points.dailyNet > 0 ? "+" : "")\(points.dailyNet)")
                 .font(.headline)
                 .foregroundStyle(.white)

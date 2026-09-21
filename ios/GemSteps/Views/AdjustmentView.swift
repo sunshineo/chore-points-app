@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AdjustmentView: View {
+    @Environment(\.locale) private var locale
     @Bindable var state: AppState
     @State private var subtract = false
     @State private var digits = ""
@@ -69,7 +70,7 @@ struct AdjustmentView: View {
                     .minimumScaleFactor(0.45)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity)
-                    .accessibilityLabel(subtract ? String(localized: "Points to subtract: \(amount)") : String(localized: "Points to add: \(amount)"))
+                    .accessibilityLabel(subtract ? locale.interfaceText("Points to subtract: \(amount)") : locale.interfaceText("Points to add: \(amount)"))
                     .accessibilityIdentifier("adjustment-amount")
                 modeButton(isSubtract: true)
                 ForEach(1...9, id: \.self) { digit in digitButton(digit) }
@@ -89,7 +90,7 @@ struct AdjustmentView: View {
                 confirmButton
             }
             if let validation {
-                Text(validation)
+                Text(locale.interfaceText(String.LocalizationValue(validation)))
                     .foregroundStyle(.red)
                     .accessibilityIdentifier("adjustment-validation")
             }
@@ -111,7 +112,7 @@ struct AdjustmentView: View {
         }
         .buttonStyle(.plain)
         .disabled(amount == 0)
-        .accessibilityLabel(subtract ? String(localized: "Confirm deduction. Points: \(amount)") : String(localized: "Confirm addition. Points: \(amount)"))
+        .accessibilityLabel(subtract ? locale.interfaceText("Confirm deduction. Points: \(amount)") : locale.interfaceText("Confirm addition. Points: \(amount)"))
         .accessibilityIdentifier("adjustment-confirm")
     }
 
@@ -144,7 +145,7 @@ struct AdjustmentView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isSubtract ? String(localized: "Subtract points") : String(localized: "Add points"))
+        .accessibilityLabel(isSubtract ? locale.interfaceText("Subtract points") : locale.interfaceText("Add points"))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityIdentifier(isSubtract ? "adjustment-minus" : "adjustment-plus")
     }
@@ -172,7 +173,7 @@ struct AdjustmentView: View {
             validation = nil
             submittedCelebration = state.celebration
         } else {
-            validation = state.errorMessage ?? String(localized: "Could not save. Please try again. Your points have not changed.")
+            validation = state.errorMessage ?? "Could not save. Please try again. Your points have not changed."
         }
     }
 }

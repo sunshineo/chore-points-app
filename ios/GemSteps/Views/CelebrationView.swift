@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct CelebrationView: View {
+    @Environment(\.locale) private var locale
     let celebration: Celebration
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
@@ -34,7 +35,7 @@ struct CelebrationView: View {
         .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .interactiveDismissDisabled()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(celebration.value >= 0 ? String(localized: "\(celebration.title). Points added: \(abs(celebration.value))") : String(localized: "\(celebration.title). Points subtracted: \(abs(celebration.value))"))
+        .accessibilityLabel(celebration.value >= 0 ? locale.interfaceText("\(locale.interfaceText(String.LocalizationValue(celebration.title))). Points added: \(abs(celebration.value))") : locale.interfaceText("\(locale.interfaceText(String.LocalizationValue(celebration.title))). Points subtracted: \(abs(celebration.value))"))
         .accessibilityIdentifier("celebration")
         .sensoryFeedback(.success, trigger: appeared)
         .onAppear { appeared = true }

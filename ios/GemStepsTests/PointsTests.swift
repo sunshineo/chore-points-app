@@ -98,4 +98,31 @@ final class PointsTests: XCTestCase {
         }
     }
 
+
+    func testLanguageSelectionAndLiveTextResolution() throws {
+        for identifier in ["zh-Hans-CN", "zh-Hant-TW", "zh-HK"] {
+            XCTAssertEqual(AppLanguage.initial(preferredLanguages: [identifier]), .chinese)
+        }
+        for languages in [["en-US"], ["ja-JP", "zh-Hans"], ["fr-FR"], []] {
+            XCTAssertEqual(AppLanguage.initial(preferredLanguages: languages), .english)
+        }
+        let chinese = AppLanguage.chinese.locale()
+        let english = AppLanguage.english.locale()
+        XCTAssertEqual(chinese.interfaceText("Manual Adjustment"), "手动加减")
+        XCTAssertEqual(english.interfaceText("Manual Adjustment"), "Adjustment")
+        let amount = 3
+        XCTAssertEqual(chinese.interfaceText("Points to add: \(amount)"), "加 3 分")
+        XCTAssertEqual(english.interfaceText("Points to add: \(amount)"), "Points to add: 3")
+        let existingError = "Could not save. Please try again. Your points have not changed."
+        XCTAssertEqual(chinese.interfaceText(String.LocalizationValue(existingError)), "保存失败，请重试。积分未改变。")
+        XCTAssertEqual(english.interfaceText(String.LocalizationValue(existingError)), existingError)
+        let suite = "GemSteps.LanguageTests." + UUID().uuidString
+        let preferences = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { preferences.removePersistentDomain(forName: suite) }
+        XCTAssertEqual(AppLanguage.initializePreference(in: preferences, preferredLanguages: ["zh-Hant"]), .chinese)
+        XCTAssertEqual(AppLanguage.initializePreference(in: preferences, preferredLanguages: ["en-US"]), .chinese)
+        let reopened = try XCTUnwrap(UserDefaults(suiteName: suite))
+        XCTAssertEqual(AppLanguage(rawValue: reopened.string(forKey: AppLanguage.preferenceKey) ?? ""), .chinese)
+    }
+
 }

@@ -4,6 +4,7 @@ import Observation
 struct Celebration: Identifiable {
     let id = UUID()
     let value: Int
+    // Keep a resource key so an already-presented result can change language.
     let title: String
     let emoji: String
     let image: String?
@@ -26,7 +27,7 @@ final class AppState {
         self.store = store
         do {
             points = try store.load(dateKey: PacificDate.key(date))
-        } catch { loadError = String(localized: "Please reopen the app. Your existing data has not been deleted.") }
+        } catch { loadError = "Please reopen the app. Your existing data has not been deleted." }
     }
 
     func refreshDate(_ date: Date = PacificDate.now) {
@@ -34,7 +35,7 @@ final class AppState {
         do {
             self.points = try store.day(dateKey: PacificDate.key(date), balance: points.balance)
             errorMessage = nil
-        } catch { errorMessage = String(localized: "Unable to load today’s points. Please try again later.") }
+        } catch { errorMessage = "Unable to load today’s points. Please try again later." }
     }
 
     @discardableResult
@@ -56,17 +57,17 @@ final class AppState {
             if adjustment != nil || !undo {
                 let item = (Catalog.tasks + Catalog.rewards).first { $0.id == itemID }
                 celebration = Celebration(value: change.points,
-                                          title: adjustment != nil ? String(localized: "Points adjusted") : item?.isReward == true ? String(localized: "Reward redeemed") : String(localized: "Task completed!"),
+                                          title: adjustment != nil ? "Points adjusted" : item?.isReward == true ? "Reward redeemed" : "Task completed!",
                                           emoji: item?.emoji ?? "⭐", image: item?.image)
             }
             return true
         } catch PointsError.insufficientBalance {
             // Extra visible undo feedback awaits the explicit section 5 decision.
-            if adjustment != nil { errorMessage = String(localized: "Not enough points") }
+            if adjustment != nil { errorMessage = "Not enough points" }
             return false
         } catch PointsError.noOccurrence { return false }
         catch {
-            errorMessage = String(localized: "Could not save. Please try again. Your points have not changed.")
+            errorMessage = "Could not save. Please try again. Your points have not changed."
             return false
         }
     }

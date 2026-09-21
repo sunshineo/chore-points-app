@@ -46,7 +46,7 @@ final class LocalStoreTests: XCTestCase {
         XCTAssertNil(app.celebration)
         XCTAssertTrue(app.perform(itemID: "reward-tv", date: date))
         XCTAssertEqual(app.celebration?.image, "reward-tv-transparent")
-        XCTAssertEqual(app.celebration?.title, String(localized: "Reward redeemed"))
+        XCTAssertEqual(app.celebration?.title, "Reward redeemed")
         XCTAssertEqual(app.points?.balance, 15)
         // A stale presentation cannot dismiss the next celebration.
         await app.playCelebration(adjustment.id)

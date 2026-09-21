@@ -16,6 +16,7 @@ enum PointsColors {
 }
 
 struct PointCard: View {
+    @Environment(\.locale) private var locale
     let item: CatalogItem
     let color: Color
     let count: Int
@@ -76,7 +77,7 @@ struct PointCard: View {
         .foregroundStyle(.white)
         .disabled(disabled)
         .accessibilityLabel(item.title)
-        .accessibilityValue(item.isReward ? String(localized: "Redeemed today: \(count). Points: \(item.points)") : String(localized: "Completed today: \(count). Points: \(item.points)"))
+        .accessibilityValue(item.isReward ? locale.interfaceText("Redeemed today: \(count). Points: \(item.points)") : locale.interfaceText("Completed today: \(count). Points: \(item.points)"))
         .accessibilityIdentifier(item.id)
     }
 }
