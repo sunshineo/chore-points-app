@@ -236,8 +236,8 @@ extension LocalStoreTests {
 
     @MainActor func testFirstLaunchUpgradeAndAllInactiveRemainInactive() throws {
         try withDatabase { url in
-            let original = Array(Catalog.tasks.prefix(2))
-            let newTemplate = Catalog.tasks[2]
+            let original = Array(Catalog.tasks.filter(\.enabledByDefault).prefix(2))
+            let newTemplate = try XCTUnwrap(Catalog.tasks.first { !original.map(\.id).contains($0.id) })
             do {
                 let store = try LocalStore(url: url, templates: original)
                 XCTAssertTrue(try store.catalog().allSatisfy(\.isActive))
@@ -259,8 +259,8 @@ extension LocalStoreTests {
             let items = try latestFreshInstall.catalog()
             XCTAssertEqual(items.count, 38)
             XCTAssertEqual(Set(items.filter { !$0.isReward && $0.isActive }.map(\.id)), [
-                "seed-task-brush", "seed-task-evening-brush", "seed-task-clothes", "seed-task-handwash",
-                "seed-task-tidy-toys", "seed-task-laundry-basket", "seed-task-put-things-away", "seed-task-reading"
+                "seed-task-make-bed", "seed-task-evening-brush", "seed-task-clothes", "seed-task-handwash",
+                "seed-task-tidy-toys", "seed-task-shoes", "seed-task-bedtime", "seed-task-reading"
             ])
             XCTAssertEqual(Set(items.filter { $0.isReward && $0.isActive }.map(\.id)), [
                 "reward-sticker", "reward-family-game", "reward-craft", "reward-weekend-activity"
@@ -419,14 +419,14 @@ extension LocalStoreTests {
                                       image: nil, isReward: false, isTemplate: false)
             try store.updateItem(custom)
             var state = try store.load(dateKey: PacificDate.key(date))
-            for id in [custom.id, "seed-task-brush"] {
+            for id in [custom.id, "seed-task-evening-brush"] {
                 let change = try state.change(itemID: id, undo: false, items: store.catalog())
                 try store.save(change, date: date)
                 try state.include(change, on: state.dateKey)
             }
             let app = AppState(store: store, date: date)
             XCTAssertTrue(app.deleteItem(id: custom.id))
-            var template = try XCTUnwrap(app.items.first { $0.id == "seed-task-brush" })
+            var template = try XCTUnwrap(app.items.first { $0.id == "seed-task-evening-brush" })
             template.isActive = false
             XCTAssertTrue(app.saveItem(template))
             XCTAssertFalse(app.visibleItems.contains { $0.id == custom.id || $0.id == template.id })
@@ -445,7 +445,7 @@ extension LocalStoreTests {
 extension LocalStoreTests {
     @MainActor func testMixedOrderingSurvivesReopenEditsAndNewTemplates() throws {
         try withDatabase { url in
-            let templates = Array(Catalog.tasks.prefix(2)) + Array(Catalog.rewards.prefix(2))
+            let templates = Array(Catalog.tasks.filter(\.enabledByDefault).prefix(2)) + Array(Catalog.rewards.prefix(2))
             let custom = CatalogItem(id: "custom-" + UUID().uuidString, title: "Read", emoji: "📚", points: 4,
                                      image: nil, isReward: false, isTemplate: false)
             let desired = [templates[1].id, custom.id, templates[0].id]
@@ -461,7 +461,7 @@ extension LocalStoreTests {
             }
             let store = try LocalStore(url: url, templates: templates + [Catalog.tasks[2]])
             let app = AppState(store: store)
-            XCTAssertEqual(app.items.filter { !$0.isReward }.map(\.id), [Catalog.tasks[2].id] + desired)
+            XCTAssertEqual(app.items.filter { !$0.isReward }.map(\.id), desired + [Catalog.tasks[2].id])
             XCTAssertEqual(app.items.filter(\.isReward).map(\.id), rewardOrder)
             XCTAssertEqual(app.visibleItems.map(\.id), [templates[1].id, templates[0].id])
             XCTAssertFalse(try XCTUnwrap(app.items.first { $0.id == Catalog.tasks[2].id }).isActive)
@@ -491,6 +491,36 @@ extension LocalStoreTests {
             XCTAssertEqual(app.items, before)
             XCTAssertFalse(readOnly.context.hasChanges)
             XCTAssertEqual(try LocalStore(url: url).catalog(), before)
+        }
+    }
+}
+
+
+extension LocalStoreTests {
+    @MainActor func testChronologicalOrderReplacesLegacyOrderOnceWithoutChangingSettings() throws {
+        try withDatabase { url in
+            let taskIDs = Catalog.tasks.map(\.id)
+            do {
+                let store = try LocalStore(url: url)
+                var item = try XCTUnwrap(store.catalog().first { $0.id == "seed-task-face" })
+                item.isActive = true
+                try store.updateItem(item)
+                let configuration = try XCTUnwrap(store.context.fetch(FetchDescriptor<CatalogInitialization>()).first)
+                configuration.orderedIDs = Array(taskIDs.reversed()) + Catalog.rewards.map(\.id)
+                configuration.dailyTaskOrderApplied = nil
+                try store.context.save()
+            }
+            let upgraded = try LocalStore(url: url)
+            let items = try upgraded.catalog()
+            XCTAssertEqual(items.filter { !$0.isReward }.map(\.id), taskIDs)
+            XCTAssertTrue(try XCTUnwrap(items.first { $0.id == "seed-task-face" }).isActive)
+            XCTAssertFalse(try XCTUnwrap(items.first { $0.id == "seed-task-brush" }).isActive)
+            let app = AppState(store: upgraded)
+            XCTAssertEqual(app.visibleItems.map(\.id), items.filter { !$0.isReward && $0.isActive }.map(\.id))
+            let manualOrder = Array(taskIDs.reversed())
+            try upgraded.reorderItems(ids: manualOrder, isReward: false)
+            let reopened = try LocalStore(url: url)
+            XCTAssertEqual(try reopened.catalog().filter { !$0.isReward }.map(\.id), manualOrder)
         }
     }
 }

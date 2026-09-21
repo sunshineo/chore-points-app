@@ -36,7 +36,18 @@ final class LocalStore {
                   let configuration = try context.fetch(FetchDescriptor<CatalogInitialization>()).first {
             let newIDs = newTemplates.map(\.id)
             let existingIDs = try catalog().map(\.id).filter { !newIDs.contains($0) }
-            configuration.orderedIDs = newIDs + existingIDs
+            configuration.orderedIDs = existingIDs + newIDs
+        }
+        if let configuration = try context.fetch(FetchDescriptor<CatalogInitialization>()).first,
+           configuration.dailyTaskOrderApplied != true {
+            // Apply the chronological template order once, keeping custom items in their slots.
+            let taskIDs = templates.filter { !$0.isReward }.map(\.id)
+            let taskSet = Set(taskIDs)
+            var remaining = taskIDs.makeIterator()
+            configuration.orderedIDs = try catalog().map { item in
+                taskSet.contains(item.id) ? remaining.next()! : item.id
+            }
+            configuration.dailyTaskOrderApplied = true
         }
         if context.hasChanges { try commit() }
     }

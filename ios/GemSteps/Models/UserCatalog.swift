@@ -18,6 +18,7 @@ final class TemplateSetting {
 final class CatalogInitialization {
     @Attribute(.unique) var key: String
     var orderedIDs: [String]?
+    var dailyTaskOrderApplied: Bool?
     init() { key = "catalog" }
 }
 
