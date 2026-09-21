@@ -95,7 +95,13 @@ struct CatalogManagementView: View {
                 ForEach(matching) { item in
                     HStack(spacing: 4) {
                         HStack(spacing: 6) {
-                            Text(item.emoji).font(.title3).accessibilityHidden(true)
+                            if let image = item.image {
+                                Image(image).resizable().scaledToFit()
+                                    .frame(width: 28, height: 28)
+                                    .accessibilityHidden(true)
+                            } else {
+                                Text(item.emoji).font(.title3).accessibilityHidden(true)
+                            }
                             Text(verbatim: item.title(locale: locale))
                                 .lineLimit(1)
                                 .truncationMode(.tail)
@@ -180,7 +186,15 @@ struct CatalogItemEditor: View {
             Section {
                 if item.isTemplate {
                     LabeledContent("Name") { Text(verbatim: item.title(locale: locale)) }
-                    LabeledContent("Icon") { Text(item.emoji) }
+                    LabeledContent("Icon") {
+                        if let image = item.image {
+                            Image(image).resizable().scaledToFit()
+                                .frame(width: 44, height: 44)
+                                .accessibilityHidden(true)
+                        } else {
+                            Text(item.emoji)
+                        }
+                    }
                 } else {
                     LabeledContent("Name") {
                         TextField("Name", text: $title, axis: .vertical)

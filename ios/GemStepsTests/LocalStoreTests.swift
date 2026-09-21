@@ -11,19 +11,19 @@ final class LocalStoreTests: XCTestCase {
         let store = try LocalStore(url: folder.appendingPathComponent("test.sqlite"))
         let date = ISO8601DateFormatter().date(from: "2026-09-20T19:00:00Z")!
         let app = AppState(store: store, date: date)
-        XCTAssertTrue(app.perform(itemID: "seed-task-face", date: date))
+        XCTAssertTrue(app.perform(itemID: "seed-task-handwash", date: date))
         XCTAssertEqual(app.points?.balance, 1)
-        XCTAssertEqual(app.celebration?.image, "face-wash")
-        XCTAssertFalse(app.perform(itemID: "seed-task-face", date: date))
+        XCTAssertEqual(app.celebration?.image, "handwash-faucet")
+        XCTAssertFalse(app.perform(itemID: "seed-task-handwash", date: date))
         XCTAssertFalse(app.perform(adjustment: 100, date: date))
         XCTAssertEqual(try store.context.fetchCount(FetchDescriptor<PointEntry>()), 1)
         await app.playCelebration(try XCTUnwrap(app.celebration?.id))
         XCTAssertNil(app.celebration)
         app.undo = true
-        XCTAssertTrue(app.perform(itemID: "seed-task-face", date: date))
+        XCTAssertTrue(app.perform(itemID: "seed-task-handwash", date: date))
         XCTAssertNil(app.celebration)
         XCTAssertEqual(app.points?.balance, 0)
-        XCTAssertFalse(app.perform(itemID: "seed-task-face", date: date))
+        XCTAssertFalse(app.perform(itemID: "seed-task-handwash", date: date))
         XCTAssertEqual(try store.context.fetchCount(FetchDescriptor<PointEntry>()), 2)
     }
 
@@ -34,17 +34,20 @@ final class LocalStoreTests: XCTestCase {
         let store = try LocalStore(url: folder.appendingPathComponent("test.sqlite"))
         let date = ISO8601DateFormatter().date(from: "2026-09-20T19:00:00Z")!
         let app = AppState(store: store, date: date)
+        var video = try XCTUnwrap(app.items.first { $0.id == "reward-video" })
+        video.isActive = true
+        XCTAssertTrue(app.saveItem(video))
         app.adjustmentOpen = true
         XCTAssertTrue(app.perform(adjustment: 30, date: date))
         let adjustment = try XCTUnwrap(app.celebration)
         // Time spent dismissing a form must not consume the celebration's lifetime.
         try await Task.sleep(for: .milliseconds(2100))
         XCTAssertEqual(app.celebration?.id, adjustment.id)
-        XCTAssertFalse(app.perform(itemID: "reward-tv", date: date))
+        XCTAssertFalse(app.perform(itemID: "reward-video", date: date))
         app.adjustmentOpen = false
         await app.playCelebration(adjustment.id)
         XCTAssertNil(app.celebration)
-        XCTAssertTrue(app.perform(itemID: "reward-tv", date: date))
+        XCTAssertTrue(app.perform(itemID: "reward-video", date: date))
         XCTAssertEqual(app.celebration?.image, "reward-tv-transparent")
         XCTAssertEqual(app.celebration?.title, "Reward redeemed")
         XCTAssertEqual(app.points?.balance, 15)
@@ -100,25 +103,25 @@ final class LocalStoreTests: XCTestCase {
         let parser = ISO8601DateFormatter()
         let before = parser.date(from: "2026-09-21T06:59:59Z")!
         let after = parser.date(from: "2026-09-21T07:00:00Z")!
-        try store.save(PointChange(kind: "task", itemID: "seed-task-face", points: 1), date: before)
+        try store.save(PointChange(kind: "task", itemID: "seed-task-handwash", points: 1), date: before)
         try store.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 11), date: before)
         let app = AppState(store: store, date: before)
         app.undo = true
-        XCTAssertFalse(app.perform(itemID: "seed-task-face", date: after))
+        XCTAssertFalse(app.perform(itemID: "seed-task-handwash", date: after))
         XCTAssertEqual(app.points?.dateKey, "2026-09-21")
         XCTAssertEqual(app.points?.balance, 12)
         XCTAssertEqual(app.points?.dailyNet, 0)
         XCTAssertTrue(app.points?.counts.isEmpty == true)
         app.undo = false
-        XCTAssertTrue(app.perform(itemID: "reward-ice-stick", date: after))
+        XCTAssertTrue(app.perform(itemID: "reward-sticker", date: after))
         XCTAssertEqual(app.points?.balance, 7)
         XCTAssertEqual(app.points?.dailyNet, -5)
-        XCTAssertEqual(app.celebration?.emoji, "🍭")
+        XCTAssertEqual(app.celebration?.emoji, "⭐")
         XCTAssertNil(app.celebration?.image)
         app.refreshDate(before)
         XCTAssertEqual(app.points?.balance, 7)
         XCTAssertEqual(app.points?.dailyNet, 12)
-        XCTAssertEqual(app.points?.counts["seed-task-face"], 1)
+        XCTAssertEqual(app.points?.counts["seed-task-handwash"], 1)
     }
 
     @MainActor func testBatchedStartupAtOneYearOfFiftyEntriesPerDay() throws {
@@ -253,8 +256,23 @@ extension LocalStoreTests {
         }
         try withDatabase { url in
             let latestFreshInstall = try LocalStore(url: url)
-            XCTAssertEqual(try latestFreshInstall.catalog().count, 41)
-            XCTAssertTrue(try latestFreshInstall.catalog().allSatisfy(\.isActive))
+            let items = try latestFreshInstall.catalog()
+            XCTAssertEqual(items.count, 38)
+            XCTAssertEqual(Set(items.filter { !$0.isReward && $0.isActive }.map(\.id)), [
+                "seed-task-brush", "seed-task-evening-brush", "seed-task-clothes", "seed-task-handwash",
+                "seed-task-tidy-toys", "seed-task-laundry-basket", "seed-task-put-things-away", "seed-task-reading"
+            ])
+            XCTAssertEqual(Set(items.filter { $0.isReward && $0.isActive }.map(\.id)), [
+                "reward-sticker", "reward-family-game", "reward-craft", "reward-weekend-activity"
+            ])
+            var optional = try XCTUnwrap(items.first { $0.id == "seed-task-face" })
+            XCTAssertFalse(optional.isActive)
+            optional.isActive = true
+            try latestFreshInstall.updateItem(optional)
+            let reopened = try LocalStore(url: url)
+            let saved = try XCTUnwrap(reopened.catalog().first { $0.id == optional.id })
+            XCTAssertTrue(saved.isActive)
+            XCTAssertEqual(saved.points, optional.points)
         }
     }
 
@@ -276,7 +294,7 @@ extension LocalStoreTests {
             }
             let store = try LocalStore(url: url)
             XCTAssertEqual(Set(try store.context.fetch(FetchDescriptor<PointEntry>()).map(\.id)), ids)
-            XCTAssertTrue(try store.catalog().allSatisfy(\.isActive))
+            XCTAssertEqual(try store.catalog().filter(\.isActive).count, 12)
             let state = try store.load(dateKey: PacificDate.key(date))
             XCTAssertEqual(state.balance, 3)
             XCTAssertEqual(state.counts["seed-task-brush"], 1)
@@ -415,7 +433,7 @@ extension LocalStoreTests {
             app.undo = true
             XCTAssertEqual(Set(app.visibleItems.map(\.id)), [custom.id, template.id])
             XCTAssertTrue(app.perform(itemID: custom.id, date: date))
-            XCTAssertEqual(app.points?.balance, 3)
+            XCTAssertEqual(app.points?.balance, 2)
             XCTAssertTrue(app.perform(itemID: template.id, date: date))
             XCTAssertEqual(app.points?.balance, 0)
             app.refreshDate(date.addingTimeInterval(86400))

@@ -8,19 +8,19 @@ final class PointsTests: XCTestCase {
             let change = try state.change(itemID: id, undo: undo)
             try state.include(change, on: state.dateKey)
         }
-        try act("seed-task-face"); try act("seed-task-face"); try act("seed-task-brush")
+        try act("seed-task-face"); try act("seed-task-face"); try act("seed-task-reading")
         XCTAssertEqual(state.balance, 5)
         XCTAssertEqual(state.counts["seed-task-face"], 2)
         XCTAssertEqual(state.dailyNet, 5)
-        try act("reward-ice-stick")
+        try act("reward-sticker")
         XCTAssertEqual(state.balance, 0)
-        XCTAssertThrowsError(try state.change(itemID: "seed-task-brush", undo: true)) { XCTAssertEqual($0 as? PointsError, .insufficientBalance) }
-        XCTAssertThrowsError(try state.change(itemID: "reward-ice-stick", undo: false))
-        XCTAssertEqual(state.counts["seed-task-brush"], 1)
-        try act("reward-ice-stick", undo: true)
+        XCTAssertThrowsError(try state.change(itemID: "seed-task-reading", undo: true)) { XCTAssertEqual($0 as? PointsError, .insufficientBalance) }
+        XCTAssertThrowsError(try state.change(itemID: "reward-sticker", undo: false))
+        XCTAssertEqual(state.counts["seed-task-reading"], 1)
+        try act("reward-sticker", undo: true)
         try act("seed-task-face", undo: true)
         XCTAssertEqual(state.balance, 4)
-        XCTAssertEqual(state.counts["reward-ice-stick"], 0)
+        XCTAssertEqual(state.counts["reward-sticker"], 0)
         XCTAssertThrowsError(try state.change(itemID: "seed-task-math", undo: true))
         for amount in [-2, 10] { try state.include(state.adjustment(amount), on: state.dateKey) }
         XCTAssertEqual(state.balance, 12)
@@ -28,14 +28,14 @@ final class PointsTests: XCTestCase {
         XCTAssertEqual(state.dailyNet, 12)
         var next = PointsState(dateKey: "2026-09-21", balance: state.balance)
         XCTAssertThrowsError(try next.change(itemID: "seed-task-face", undo: true))
-        try next.include(next.change(itemID: "reward-ice-stick", undo: false), on: next.dateKey)
+        try next.include(next.change(itemID: "reward-sticker", undo: false), on: next.dateKey)
         XCTAssertEqual(next.balance, 7); XCTAssertEqual(next.dailyNet, -5)
     }
 
     func testAllCatalogActionsAndNoDailyLimit() throws {
         var state = PointsState(dateKey: "2026-09-20", balance: 1000)
-        XCTAssertEqual(Catalog.tasks.count, 32); XCTAssertEqual(Catalog.rewards.count, 9)
-        XCTAssertEqual(Set((Catalog.tasks + Catalog.rewards).map(\.id)).count, 41)
+        XCTAssertEqual(Catalog.tasks.count, 28); XCTAssertEqual(Catalog.rewards.count, 10)
+        XCTAssertEqual(Set((Catalog.tasks + Catalog.rewards).map(\.id)).count, 38)
         for item in Catalog.tasks + Catalog.rewards {
             for _ in 0..<3 { try state.include(state.change(itemID: item.id, undo: false), on: state.dateKey) }
             XCTAssertEqual(state.counts[item.id], 3)
@@ -86,7 +86,7 @@ final class PointsTests: XCTestCase {
         XCTAssertEqual(PacificDate.label("2026-09-20", locale: Locale(identifier: "en")), "Sep 20")
         XCTAssertEqual(PacificDate.weekday("2026-09-20", locale: Locale(identifier: "en")), "Sun")
         for (language, title, format) in [
-            ("en", "Adjustment", "Completed today: %lld. Points: %lld"),
+            ("en", "Adjust", "Completed today: %lld. Points: %lld"),
             ("zh-Hans", "手动加减", "今天完成 %lld 次，%lld 分")
         ] {
             let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
@@ -109,7 +109,7 @@ final class PointsTests: XCTestCase {
         let chinese = AppLanguage.chinese.locale()
         let english = AppLanguage.english.locale()
         XCTAssertEqual(chinese.interfaceText("Manual Adjustment"), "手动加减")
-        XCTAssertEqual(english.interfaceText("Manual Adjustment"), "Adjustment")
+        XCTAssertEqual(english.interfaceText("Manual Adjustment"), "Adjust")
         let amount = 3
         XCTAssertEqual(chinese.interfaceText("Points to add: \(amount)"), "加 3 分")
         XCTAssertEqual(english.interfaceText("Points to add: \(amount)"), "Points to add: 3")

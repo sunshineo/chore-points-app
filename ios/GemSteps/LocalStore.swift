@@ -28,7 +28,7 @@ final class LocalStore {
         let known = Set(try context.fetch(FetchDescriptor<TemplateSetting>()).map(\.templateID))
         let newTemplates = templates.filter { !known.contains($0.id) }
         for template in newTemplates {
-            context.insert(TemplateSetting(template: template, isActive: !initialized))
+            context.insert(TemplateSetting(template: template, isActive: !initialized && template.enabledByDefault))
         }
         if !initialized {
             context.insert(CatalogInitialization())
