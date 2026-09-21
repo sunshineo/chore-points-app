@@ -139,10 +139,8 @@ struct CatalogManagementView: View {
                     .foregroundStyle(item.isActive ? Color.primary : Color.secondary)
                     .tint(item.isActive ? PointsColors.accent : Color.gray)
                     .saturation(item.isActive ? 1 : 0)
-                    .listRowBackground(
-                        Color(uiColor: .secondarySystemGroupedBackground)
-                            .overlay(Color.gray.opacity(item.isActive ? 0 : 0.12))
-                    )
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                    .listRowBackground(Color(uiColor: .secondarySystemGroupedBackground))
                 }
                 .onMove { offsets, destination in
                     var ids = matching.map(\.id)
