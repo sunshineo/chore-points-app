@@ -10,9 +10,9 @@ struct GemStepsApp: App {
             Group {
                 if let state { PointsView(state: state) }
                 else if openFailed {
-                    ContentUnavailableView("无法加载积分", systemImage: "externaldrive.badge.exclamationmark",
-                                           description: Text("请重新打开应用。原有数据未清除。"))
-                } else { ProgressView().accessibilityLabel("正在加载积分") }
+                    ContentUnavailableView("Unable to load points", systemImage: "externaldrive.badge.exclamationmark",
+                                           description: Text("Please reopen the app. Your existing data has not been deleted."))
+                } else { ProgressView().accessibilityLabel("Loading points") }
             }
             .task {
                 guard state == nil, !openFailed else { return }

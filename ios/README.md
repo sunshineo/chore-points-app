@@ -37,12 +37,20 @@ xcodebuild -project ios/GemSteps.xcodeproj -scheme GemSteps \
   -derivedDataPath ios/DerivedData test CODE_SIGNING_ALLOWED=NO
 ```
 
-从仓库根目录运行以上命令。已在 Xcode 27 / iOS 27 模拟器通过构建和 14 项 XCTest，
+从仓库根目录运行以上命令。已在 Xcode 27 / iOS 27 模拟器通过构建和 15 项 XCTest，
 包括积分规则、跨日、数据库重开、保存失败回滚、损坏库不覆盖、庆祝锁定与延后呈现、
 新音效打包及解码。没有新增第三方代码依赖，没有更改持久化模型。
 
 iOS 17 实际运行和真机音效／静音／蓝牙仍待验证；模拟器不代表真机听感与触觉。
 应用图标仍是原有低分辨率素材放大的内部开发图标。
+
+## 界面语言
+
+`GemSteps/Localizable.xcstrings` 管理英文和简体中文界面文案，包括按钮、错误提示和辅助朗读。
+当前由系统选择应用语言，英文为开发及回退语言；App 内语言选择入口尚未实现。
+日期和星期使用应用语言格式化，积分归属日期继续采用原有洛杉矶时区。
+任务和奖励名称属于内容数据，不参与界面翻译，也不会因语言变化而改写。
+英文计数使用 “Points: …” 和 “Count: …” 等格式，避免单复数歧义。
 
 ## 固定业务时间
 

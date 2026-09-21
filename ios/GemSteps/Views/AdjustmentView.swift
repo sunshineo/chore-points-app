@@ -30,7 +30,7 @@ struct AdjustmentView: View {
                         .background(Color(uiColor: .tertiarySystemFill), in: Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("关闭")
+                .accessibilityLabel("Close")
                 .accessibilityIdentifier("adjustment-close")
                 .keyboardShortcut(.cancelAction)
                 .disabled(state.saving || submitted)
@@ -69,7 +69,7 @@ struct AdjustmentView: View {
                     .minimumScaleFactor(0.45)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity)
-                    .accessibilityLabel("\(subtract ? "减" : "加") \(amount) 分")
+                    .accessibilityLabel(subtract ? String(localized: "Points to subtract: \(amount)") : String(localized: "Points to add: \(amount)"))
                     .accessibilityIdentifier("adjustment-amount")
                 modeButton(isSubtract: true)
                 ForEach(1...9, id: \.self) { digit in digitButton(digit) }
@@ -84,7 +84,7 @@ struct AdjustmentView: View {
                         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("删除最后一位")
+                .accessibilityLabel("Delete last digit")
                 .accessibilityIdentifier("adjustment-delete")
                 confirmButton
             }
@@ -111,7 +111,7 @@ struct AdjustmentView: View {
         }
         .buttonStyle(.plain)
         .disabled(amount == 0)
-        .accessibilityLabel("确认\(subtract ? "减" : "加") \(amount) 分")
+        .accessibilityLabel(subtract ? String(localized: "Confirm deduction. Points: \(amount)") : String(localized: "Confirm addition. Points: \(amount)"))
         .accessibilityIdentifier("adjustment-confirm")
     }
 
@@ -144,7 +144,7 @@ struct AdjustmentView: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isSubtract ? "减分" : "加分")
+        .accessibilityLabel(isSubtract ? String(localized: "Subtract points") : String(localized: "Add points"))
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityIdentifier(isSubtract ? "adjustment-minus" : "adjustment-plus")
     }
@@ -172,7 +172,7 @@ struct AdjustmentView: View {
             validation = nil
             submittedCelebration = state.celebration
         } else {
-            validation = state.errorMessage ?? "保存失败，请重试。积分未改变。"
+            validation = state.errorMessage ?? String(localized: "Could not save. Please try again. Your points have not changed.")
         }
     }
 }

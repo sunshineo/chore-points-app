@@ -31,7 +31,7 @@ struct PointCard: View {
     }
 
     private var occurrences: some View {
-        Text("\(count) 次").foregroundStyle(.white)
+        Text("Count: \(count)").foregroundStyle(.white)
     }
 
     var body: some View {
@@ -76,7 +76,7 @@ struct PointCard: View {
         .foregroundStyle(.white)
         .disabled(disabled)
         .accessibilityLabel(item.title)
-        .accessibilityValue("今天\(item.isReward ? "兑换" : "完成") \(count) 次，\(item.points) 分")
+        .accessibilityValue(item.isReward ? String(localized: "Redeemed today: \(count). Points: \(item.points)") : String(localized: "Completed today: \(count). Points: \(item.points)"))
         .accessibilityIdentifier(item.id)
     }
 }

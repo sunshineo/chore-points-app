@@ -14,7 +14,7 @@ struct PointsView: View {
                 if let points = state.points {
                     page(points)
                 } else {
-                    ContentUnavailableView("无法加载积分", systemImage: "exclamationmark.triangle", description: Text(state.loadError ?? "请重新打开应用。原有数据未清除。"))
+                    ContentUnavailableView("Unable to load points", systemImage: "exclamationmark.triangle", description: Text(state.loadError ?? String(localized: "Please reopen the app. Your existing data has not been deleted.")))
                 }
             }
             .sheet(isPresented: $state.adjustmentOpen) {
@@ -53,8 +53,8 @@ struct PointsView: View {
                         Text(error).foregroundStyle(.red).accessibilityIdentifier("points-error")
                     }
                     HStack(spacing: 12) {
-                        sectionButton("任务", systemImage: "checkmark.circle", rewards: false)
-                        sectionButton("奖励", systemImage: "gift", rewards: true)
+                        sectionButton("Tasks", systemImage: "checkmark.circle", rewards: false)
+                        sectionButton("Rewards", systemImage: "gift", rewards: true)
                     }
                     .accessibilityIdentifier("section-switcher")
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: count), spacing: 12) {
@@ -111,24 +111,24 @@ struct PointsView: View {
             Button {
                 state.undo.toggle()
             } label: {
-                Label(state.undo ? "退出撤销" : "撤销模式", systemImage: "arrow.uturn.backward")
+                Label(state.undo ? String(localized: "Exit Undo") : String(localized: "Undo Mode"), systemImage: "arrow.uturn.backward")
                     .frame(maxWidth: .infinity, minHeight: 32)
             }
             .accessibilityIdentifier("undo-mode")
             Button {
                 state.adjustmentOpen = true
             } label: {
-                Label("手动加减", systemImage: "plusminus")
+                Label("Manual Adjustment", systemImage: "plusminus")
                     .frame(maxWidth: .infinity, minHeight: 32)
             }
-            .accessibilityLabel("手动加减积分")
+            .accessibilityLabel("Manually adjust points")
             .accessibilityIdentifier("adjustment-open")
         }
         .buttonStyle(.bordered)
     }
 
     @ViewBuilder
-    private func sectionButton(_ title: String, systemImage: String, rewards: Bool) -> some View {
+    private func sectionButton(_ title: LocalizedStringKey, systemImage: String, rewards: Bool) -> some View {
         let button = Button { state.rewards = rewards } label: {
             Label(title, systemImage: systemImage)
                 .font(.headline)
@@ -150,7 +150,7 @@ struct PointsView: View {
             Text("\(points.dailyNet > 0 ? "+" : "")\(points.dailyNet)")
                 .font(.headline)
                 .foregroundStyle(.white)
-                .accessibilityLabel("今日 \(points.dailyNet) 分")
+                .accessibilityLabel("Today’s points: \(points.dailyNet)")
         }
         .font(.subheadline).foregroundStyle(.white.opacity(0.9))
     }
@@ -167,7 +167,7 @@ struct PointsView: View {
         }
         .font(.largeTitle.bold())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("总积分 \(points.balance)")
+        .accessibilityLabel("Total points: \(points.balance)")
         .accessibilityIdentifier("points-balance")
     }
 }

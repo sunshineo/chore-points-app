@@ -27,18 +27,31 @@ enum PacificDate {
         return String(format: "%04d-%02d-%02d", parts.year!, parts.month!, parts.day!)
     }
 
-    static func label(_ key: String) -> String {
-        let parts = key.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return key }
-        return "\(parts[1])月\(parts[2])日"
+    // Match date text to the app language; keep the existing business time zone.
+    static var displayLocale: Locale {
+        Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
     }
 
-    static func weekday(_ key: String) -> String {
+    static func label(_ key: String, locale: Locale = displayLocale) -> String {
+        formatted(key, template: "MMMd", locale: locale)
+    }
+
+    static func weekday(_ key: String, locale: Locale = displayLocale) -> String {
+        formatted(key, template: "EEE", locale: locale)
+    }
+
+    private static func formatted(_ key: String, template: String, locale: Locale) -> String {
         let parts = key.split(separator: "-").compactMap { Int($0) }
         guard parts.count == 3,
-              let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)) else { return "" }
-        return ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][calendar.component(.weekday, from: date) - 1]
+              let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12)) else { return key }
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        return formatter.string(from: date)
     }
+
 }
 
 struct PointChange {

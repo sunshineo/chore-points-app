@@ -34,7 +34,7 @@ struct CelebrationView: View {
         .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .interactiveDismissDisabled()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(celebration.title)，\(celebration.value > 0 ? "加" : "减") \(abs(celebration.value)) 分")
+        .accessibilityLabel(celebration.value >= 0 ? String(localized: "\(celebration.title). Points added: \(abs(celebration.value))") : String(localized: "\(celebration.title). Points subtracted: \(abs(celebration.value))"))
         .accessibilityIdentifier("celebration")
         .sensoryFeedback(.success, trigger: appeared)
         .onAppear { appeared = true }

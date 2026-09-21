@@ -26,7 +26,7 @@ final class AppState {
         self.store = store
         do {
             points = try store.load(dateKey: PacificDate.key(date))
-        } catch { loadError = "请重新打开应用。原有数据未清除。" }
+        } catch { loadError = String(localized: "Please reopen the app. Your existing data has not been deleted.") }
     }
 
     func refreshDate(_ date: Date = PacificDate.now) {
@@ -34,7 +34,7 @@ final class AppState {
         do {
             self.points = try store.day(dateKey: PacificDate.key(date), balance: points.balance)
             errorMessage = nil
-        } catch { errorMessage = "无法加载今日积分，请稍后重试。" }
+        } catch { errorMessage = String(localized: "Unable to load today’s points. Please try again later.") }
     }
 
     @discardableResult
@@ -56,17 +56,17 @@ final class AppState {
             if adjustment != nil || !undo {
                 let item = (Catalog.tasks + Catalog.rewards).first { $0.id == itemID }
                 celebration = Celebration(value: change.points,
-                                          title: adjustment != nil ? "积分已调整" : item?.isReward == true ? "奖励兑换成功" : "任务完成！",
+                                          title: adjustment != nil ? String(localized: "Points adjusted") : item?.isReward == true ? String(localized: "Reward redeemed") : String(localized: "Task completed!"),
                                           emoji: item?.emoji ?? "⭐", image: item?.image)
             }
             return true
         } catch PointsError.insufficientBalance {
             // Extra visible undo feedback awaits the explicit section 5 decision.
-            if adjustment != nil { errorMessage = "积分不足" }
+            if adjustment != nil { errorMessage = String(localized: "Not enough points") }
             return false
         } catch PointsError.noOccurrence { return false }
         catch {
-            errorMessage = "保存失败，请重试。积分未改变。"
+            errorMessage = String(localized: "Could not save. Please try again. Your points have not changed.")
             return false
         }
     }

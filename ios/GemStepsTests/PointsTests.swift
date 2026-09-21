@@ -78,6 +78,24 @@ final class PointsTests: XCTestCase {
             ("2026-11-01T08:59:59Z", "2026-11-01"), ("2026-11-01T09:00:00Z", "2026-11-01")
         ]
         for (timestamp, key) in cases { XCTAssertEqual(PacificDate.key(parser.date(from: timestamp)!), key) }
-        XCTAssertEqual(PacificDate.weekday("2026-09-20"), "周日")
+        XCTAssertEqual(PacificDate.weekday("2026-09-20", locale: Locale(identifier: "zh-Hans")), "周日")
     }
+
+    func testLocalizedDatesAndBundledInterfaceResources() throws {
+        XCTAssertEqual(PacificDate.label("2026-09-20", locale: Locale(identifier: "zh-Hans")), "9月20日")
+        XCTAssertEqual(PacificDate.label("2026-09-20", locale: Locale(identifier: "en")), "Sep 20")
+        XCTAssertEqual(PacificDate.weekday("2026-09-20", locale: Locale(identifier: "en")), "Sun")
+        for (language, title, format) in [
+            ("en", "Adjustment", "Completed today: %lld. Points: %lld"),
+            ("zh-Hans", "手动加减", "今天完成 %lld 次，%lld 分")
+        ] {
+            let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
+            let bundle = try XCTUnwrap(Bundle(path: path))
+            XCTAssertEqual(bundle.localizedString(forKey: "Manual Adjustment", value: nil, table: nil), title)
+            let actual = bundle.localizedString(forKey: "Completed today: %lld. Points: %lld", value: nil, table: nil)
+            XCTAssertEqual(actual, format)
+            XCTAssertEqual(String(format: actual, Int64(2), Int64(3)), language == "en" ? "Completed today: 2. Points: 3" : "今天完成 2 次，3 分")
+        }
+    }
+
 }
