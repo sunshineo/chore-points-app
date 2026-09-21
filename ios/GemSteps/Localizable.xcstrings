@@ -361,6 +361,7 @@
       }
     },
     "Drag the handles to reorder. This order also applies to the daily list." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
