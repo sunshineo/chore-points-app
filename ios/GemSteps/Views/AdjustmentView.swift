@@ -3,85 +3,127 @@ import SwiftUI
 struct AdjustmentView: View {
     @Bindable var state: AppState
     @State private var subtract = false
-    @State private var amount = "1"
     @State private var validation: String?
-    @FocusState private var focused: Bool
+    @State private var submittedCelebration: Celebration?
+
+    private var submitted: Bool { submittedCelebration != nil }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Picker("调整方式", selection: $subtract) {
-                        Text("加分").tag(false)
-                        Text("减分").tag(true)
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: subtract) { _, _ in validation = nil }
-                    TextField("分值（1–100）", text: $amount)
-                        .keyboardType(.numberPad)
-                        .focused($focused)
-                        .accessibilityIdentifier("adjustment-amount")
-                        .onChange(of: amount) { _, _ in validation = nil }
-                        .onSubmit { submit() }
-                } footer: {
-                    Text("不关联任务或奖励。当前共有 \(state.points?.balance ?? 0) 分。")
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button { state.adjustmentOpen = false } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                        .background(Color(uiColor: .tertiarySystemFill), in: Circle())
                 }
-                Section("常用分值") {
-                    ViewThatFits(in: .horizontal) {
-                        HStack { presets }
-                        VStack { presets }
+                .buttonStyle(.plain)
+                .accessibilityLabel("关闭")
+                .accessibilityIdentifier("adjustment-close")
+                .keyboardShortcut(.cancelAction)
+                .disabled(state.saving || submitted)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+
+            ScrollView {
+                VStack(spacing: 28) {
+                    HStack(spacing: 24) {
+                        modeButton(isSubtract: false)
+                        modeButton(isSubtract: true)
                     }
-                }
-                if let validation {
-                    Section {
-                        Text(validation).foregroundStyle(.red)
+                    .padding(.top, 8)
+
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 3), spacing: 14) {
+                        ForEach(1...10, id: \.self) { value in
+                            if value == 10 {
+                                Color.clear
+                                    .accessibilityHidden(true)
+                            }
+                            Button { submit(value) } label: {
+                                Text("\(value)")
+                                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .frame(minHeight: 80)
+                                    .aspectRatio(1, contentMode: .fit)
+                                    .background(modeColor(subtract).gradient, in: RoundedRectangle(cornerRadius: 18))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(subtract ? "减" : "加") \(value) 分")
+                            .accessibilityIdentifier("adjustment-value-\(value)")
+                        }
+                    }
+                    .frame(maxWidth: 320)
+                    if let validation {
+                        Text(validation)
+                            .foregroundStyle(.red)
                             .accessibilityIdentifier("adjustment-validation")
                     }
                 }
+                .frame(maxWidth: 540)
+                .padding(24)
+                .frame(maxWidth: .infinity)
             }
-            .navigationTitle("临时加减分")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { state.adjustmentOpen = false }
-                        .keyboardShortcut(.cancelAction)
-                        .disabled(state.saving)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { submit() }
-                        .disabled(state.saving)
-                        .accessibilityIdentifier("adjustment-submit")
-                }
-            }
-            .interactiveDismissDisabled(state.saving)
+            .disabled(state.saving || submitted)
         }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .overlay {
+            if let celebration = submittedCelebration {
+                CelebrationView(celebration: celebration)
+                    .task {
+                        await state.playCelebration(celebration.id)
+                        state.adjustmentOpen = false
+                    }
+            }
+        }
+        .interactiveDismissDisabled(state.saving || submitted)
     }
 
-    private var presets: some View {
-        ForEach([1, 2, 3, 5, 10], id: \.self) { value in
-            Button("\(value)") {
-                amount = String(value)
-                validation = nil
-                focused = false
-            }
-            .buttonStyle(.bordered)
-            .frame(maxWidth: .infinity)
-            .accessibilityLabel("选择 \(value) 分")
-        }
+    private func modeColor(_ isSubtract: Bool) -> Color {
+        isSubtract
+            ? Color(red: 0.80, green: 0.18, blue: 0.22)
+            : Color(red: 0.08, green: 0.53, blue: 0.30)
     }
 
-    private func submit() {
-        guard let value = Int(amount.trimmingCharacters(in: .whitespaces)), (1...100).contains(value) else {
-            validation = "请输入 1–100 的整数"
-            return
+    private func modeButton(isSubtract: Bool) -> some View {
+        let selected = subtract == isSubtract
+        return Button {
+            subtract = isSubtract
+            validation = nil
+        } label: {
+            Image(systemName: isSubtract ? "minus" : "plus")
+                .resizable()
+                .scaledToFit()
+                .fontWeight(.heavy)
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .frame(width: 88, height: 88)
+                .background(modeColor(isSubtract).gradient, in: RoundedRectangle(cornerRadius: 22))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 27)
+                        .strokeBorder(selected ? modeColor(isSubtract) : .clear, lineWidth: 3)
+                        .padding(-6)
+                }
+                .opacity(selected ? 1 : 0.55)
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isSubtract ? "减分" : "加分")
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+        .accessibilityIdentifier(isSubtract ? "adjustment-minus" : "adjustment-plus")
+    }
+
+    private func submit(_ value: Int) {
+        guard !submitted, !state.saving else { return }
         if subtract && value > (state.points?.balance ?? 0) {
             validation = "当前最多可减 \(state.points?.balance ?? 0) 分"
             return
         }
         if state.perform(adjustment: value * (subtract ? -1 : 1)) {
-            focused = false
-            state.adjustmentOpen = false
+            validation = nil
+            submittedCelebration = state.celebration
         } else {
             validation = state.errorMessage ?? "保存失败，请重试"
         }

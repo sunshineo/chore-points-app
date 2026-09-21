@@ -5,12 +5,10 @@ struct PointsView: View {
     @Bindable var state: AppState
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var waitingForAdjustmentDismissal = false
     @State private var presentedCelebration: Celebration?
     private let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        // Separate presentation hosts prevent form dismissal from dismissing the celebration.
         ZStack {
             Group {
                 if let points = state.points {
@@ -19,11 +17,7 @@ struct PointsView: View {
                     ContentUnavailableView("无法读取积分", systemImage: "exclamationmark.triangle", description: Text(state.loadError ?? "加载失败"))
                 }
             }
-            .sheet(isPresented: $state.adjustmentOpen, onDismiss: {
-                // Present only after the system form has left the screen.
-                waitingForAdjustmentDismissal = false
-                presentedCelebration = state.celebration
-            }) {
+            .sheet(isPresented: $state.adjustmentOpen) {
                 AdjustmentView(state: state)
             }
         }
@@ -34,7 +28,7 @@ struct PointsView: View {
         }
         .onChange(of: state.celebration?.id) { _, id in
             if id == nil { presentedCelebration = nil }
-            else if !waitingForAdjustmentDismissal { presentedCelebration = state.celebration }
+            else if !state.adjustmentOpen { presentedCelebration = state.celebration }
         }
         .onReceive(timer) { _ in if scenePhase == .active { state.refreshDate() } }
         .onChange(of: scenePhase) { _, phase in if phase == .active { state.refreshDate() } }
@@ -126,7 +120,6 @@ struct PointsView: View {
             }
             .accessibilityIdentifier("undo-mode")
             Button {
-                waitingForAdjustmentDismissal = true
                 state.adjustmentOpen = true
             } label: {
                 Label("临时加减", systemImage: "plusminus")

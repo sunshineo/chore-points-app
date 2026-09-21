@@ -71,7 +71,7 @@ final class AppState {
         }
     }
 
-    /// Called when the full-screen presentation appears, after any form dismisses.
+    /// Called when the celebration appears in the adjustment sheet or full-screen cover.
     func playCelebration(_ id: UUID) async {
         guard let celebration, celebration.id == id else { return }
         await sound.play(positive: celebration.value > 0)
