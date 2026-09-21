@@ -201,3 +201,278 @@ final class LocalStoreTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), bytes)
     }
 }
+
+// The exact pre-customization entity shape, for an actual on-disk migration test.
+private enum OriginalSchema {
+    @Model final class PointEntry {
+        @Attribute(.unique) var id: UUID
+        var occurredAt: Date
+        var dateKey: String
+        var kind: String
+        var itemID: String
+        var points: Int
+
+        init(points: Int, date: Date) {
+            id = UUID()
+            occurredAt = date
+            dateKey = PacificDate.key(date)
+            kind = "task"
+            itemID = "seed-task-brush"
+            self.points = points
+        }
+    }
+}
+
+extension LocalStoreTests {
+    @MainActor private func withDatabase(_ body: (URL) throws -> Void) throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try body(folder.appendingPathComponent("test.sqlite"))
+    }
+
+    @MainActor func testFirstLaunchUpgradeAndAllInactiveRemainInactive() throws {
+        try withDatabase { url in
+            let original = Array(Catalog.tasks.prefix(2))
+            let newTemplate = Catalog.tasks[2]
+            do {
+                let store = try LocalStore(url: url, templates: original)
+                XCTAssertTrue(try store.catalog().allSatisfy(\.isActive))
+                for item in try store.catalog() {
+                    var disabled = item
+                    disabled.isActive = false
+                    try store.updateItem(disabled)
+                }
+            }
+            let upgraded = try LocalStore(url: url, templates: original + [newTemplate])
+            XCTAssertEqual(try upgraded.catalog().count, 3)
+            XCTAssertTrue(try upgraded.catalog().allSatisfy { !$0.isActive })
+            XCTAssertEqual(try upgraded.context.fetchCount(FetchDescriptor<CatalogInitialization>()), 1)
+            let reopened = try LocalStore(url: url, templates: original + [newTemplate])
+            XCTAssertTrue(try reopened.catalog().allSatisfy { !$0.isActive })
+        }
+        try withDatabase { url in
+            let latestFreshInstall = try LocalStore(url: url)
+            XCTAssertEqual(try latestFreshInstall.catalog().count, 41)
+            XCTAssertTrue(try latestFreshInstall.catalog().allSatisfy(\.isActive))
+        }
+    }
+
+    @MainActor func testOriginalLedgerMigratesWithoutLosingIDsBalanceOrUndo() throws {
+        try withDatabase { url in
+            let date = ISO8601DateFormatter().date(from: "2026-09-20T19:00:00Z")!
+            var ids: Set<UUID> = []
+            try autoreleasepool {
+                let old = try ModelContainer(for: OriginalSchema.PointEntry.self,
+                                             configurations: ModelConfiguration(url: url, cloudKitDatabase: .none))
+                let context = ModelContext(old)
+                // Equal timestamps exercise the old ledger's missing sequence numbers.
+                for points in [3, 3, -3] {
+                    let entry = OriginalSchema.PointEntry(points: points, date: date)
+                    ids.insert(entry.id)
+                    context.insert(entry)
+                }
+                try context.save()
+            }
+            let store = try LocalStore(url: url)
+            XCTAssertEqual(Set(try store.context.fetch(FetchDescriptor<PointEntry>()).map(\.id)), ids)
+            XCTAssertTrue(try store.catalog().allSatisfy(\.isActive))
+            let state = try store.load(dateKey: PacificDate.key(date))
+            XCTAssertEqual(state.balance, 3)
+            XCTAssertEqual(state.counts["seed-task-brush"], 1)
+            XCTAssertEqual(state.occurrences["seed-task-brush"]?.count, 1)
+            let undo = try state.change(itemID: "seed-task-brush", undo: true)
+            XCTAssertEqual(undo.points, -3)
+            try store.save(undo, date: date)
+            let reopened = try LocalStore(url: url)
+            XCTAssertEqual(try reopened.load(dateKey: PacificDate.key(date)).balance, 0)
+            XCTAssertTrue(try reopened.load(dateKey: PacificDate.key(date)).undoItems.isEmpty)
+        }
+    }
+
+    @MainActor func testCustomLifecycleSnapshotsAndUndoSurviveDeletionAndReopen() throws {
+        try withDatabase { url in
+            let date = ISO8601DateFormatter().date(from: "2026-09-20T19:00:00Z")!
+            let id = "custom-" + UUID().uuidString
+            do {
+                let store = try LocalStore(url: url)
+                let first = CatalogItem(id: id, title: "给小白喂食", emoji: "🐰", points: 3, image: nil, isReward: false, isTemplate: false)
+                try store.updateItem(first)
+                var state = try store.load(dateKey: PacificDate.key(date))
+                let change = try state.change(itemID: id, undo: false, items: store.catalog())
+                try state.include(change, on: state.dateKey)
+                try store.save(change, date: date)
+                let edited = CatalogItem(id: id, title: "Feed the rabbit", emoji: "🥕", points: 8, image: nil, isReward: false, isTemplate: false)
+                try store.updateItem(edited)
+                let second = try state.change(itemID: id, undo: false, items: store.catalog())
+                try store.save(second, date: date)
+                var inactive = edited
+                inactive.isActive = false
+                try store.updateItem(inactive)
+                XCTAssertThrowsError(try state.change(itemID: id, undo: false, items: store.catalog()))
+                try store.deleteItem(id: id)
+                XCTAssertFalse(try store.catalog().contains { $0.id == id })
+            }
+            let store = try LocalStore(url: url)
+            var state = try store.load(dateKey: PacificDate.key(date))
+            XCTAssertEqual(state.balance, 11)
+            XCTAssertEqual(state.undoItems.first?.title, "Feed the rabbit")
+            XCTAssertEqual(state.undoItems.first?.points, 8)
+            let secondUndo = try state.change(itemID: id, undo: true, items: store.catalog())
+            XCTAssertEqual(secondUndo.points, -8)
+            try state.include(secondUndo, on: state.dateKey)
+            try store.save(secondUndo, date: date)
+            XCTAssertEqual(state.undoItems.first?.title, "给小白喂食")
+            XCTAssertEqual(state.undoItems.first?.points, 3)
+            let reopened = try LocalStore(url: url)
+            let restored = try reopened.load(dateKey: PacificDate.key(date))
+            XCTAssertEqual(restored.balance, 3)
+            let firstUndo = try restored.change(itemID: id, undo: true, items: reopened.catalog())
+            XCTAssertEqual(firstUndo.points, -3)
+            try reopened.save(firstUndo, date: date)
+            XCTAssertTrue(try reopened.load(dateKey: PacificDate.key(date)).undoItems.isEmpty)
+            XCTAssertEqual(try reopened.context.fetchCount(FetchDescriptor<PointEntry>()), 4)
+            let entries = try reopened.context.fetch(FetchDescriptor<PointEntry>())
+            XCTAssertEqual(Set(entries.compactMap(\.titleSnapshot)), ["给小白喂食", "Feed the rabbit"])
+            XCTAssertEqual(entries.filter { $0.reversedEntryID != nil }.count, 2)
+        }
+    }
+
+    @MainActor func testTemplateEditsProtectedAndPointsPersistAcrossUpgrade() throws {
+        try withDatabase { url in
+            let store = try LocalStore(url: url)
+            let template = Catalog.tasks[2]
+            let modified = CatalogItem(id: template.id, title: template.title, emoji: template.emoji, points: 7,
+                                       image: template.image, isReward: false, englishTitle: template.englishTitle)
+            try store.updateItem(modified)
+            XCTAssertThrowsError(try store.deleteItem(id: template.id))
+            for forged in [
+                CatalogItem(id: template.id, title: "Renamed", emoji: template.emoji, points: 7, image: nil, isReward: false),
+                CatalogItem(id: template.id, title: template.title, emoji: "⭐", points: 7, image: nil, isReward: false),
+                CatalogItem(id: template.id, title: template.title, emoji: template.emoji, points: 7, image: nil, isReward: true)
+            ] { XCTAssertThrowsError(try store.updateItem(forged)) }
+            let reopened = try LocalStore(url: url)
+            XCTAssertEqual(try reopened.catalog().first(where: { $0.id == template.id })?.points, 7)
+            XCTAssertEqual(try reopened.catalog().first(where: { $0.id == template.id })?.englishTitle, template.englishTitle)
+        }
+    }
+
+    @MainActor func testCatalogSaveAndDeleteFailuresDoNotPublishOrPersist() throws {
+        try withDatabase { url in
+            let item = CatalogItem(id: "custom-" + UUID().uuidString, title: "Read", emoji: "📚", points: 2,
+                                   image: nil, isReward: false, isTemplate: false)
+            do { try LocalStore(url: url).updateItem(item) }
+            let store = try LocalStore(url: url, allowsSave: false)
+            let app = AppState(store: store)
+            var disabled = item
+            disabled.isActive = false
+            XCTAssertFalse(app.saveItem(disabled))
+            XCTAssertEqual(app.items.first(where: { $0.id == item.id })?.isActive, true)
+            XCTAssertFalse(store.context.hasChanges)
+            XCTAssertFalse(app.deleteItem(id: item.id))
+            XCTAssertTrue(app.items.contains { $0.id == item.id })
+            XCTAssertFalse(store.context.hasChanges)
+            XCTAssertEqual(try LocalStore(url: url).catalog().first(where: { $0.id == item.id }), item)
+        }
+    }
+}
+
+extension LocalStoreTests {
+    @MainActor func testInvalidCustomContentDoesNotWriteAnything() throws {
+        try withDatabase { url in
+            let store = try LocalStore(url: url)
+            for (title, emoji, points) in [("  ", "⭐", 1), (String(repeating: "a", count: 101), "⭐", 1),
+                                           ("Read", "", 1), ("Read", "ab", 1), ("Read", "⭐", 0),
+                                           ("Read", "⭐", 1000), ("Read", "⭐", -1)] {
+                let item = CatalogItem(id: "custom-" + UUID().uuidString, title: title, emoji: emoji, points: points,
+                                       image: nil, isReward: false, isTemplate: false)
+                XCTAssertThrowsError(try store.updateItem(item))
+            }
+            XCTAssertEqual(try store.context.fetchCount(FetchDescriptor<CustomItem>()), 0)
+            XCTAssertFalse(store.context.hasChanges)
+        }
+    }
+
+    @MainActor func testAppUndoListIncludesDeletedAndInactiveItemsAndRolloverClearsIt() throws {
+        try withDatabase { url in
+            let date = ISO8601DateFormatter().date(from: "2026-09-20T19:00:00Z")!
+            let store = try LocalStore(url: url)
+            let custom = CatalogItem(id: "custom-" + UUID().uuidString, title: "Read", emoji: "📚", points: 4,
+                                      image: nil, isReward: false, isTemplate: false)
+            try store.updateItem(custom)
+            var state = try store.load(dateKey: PacificDate.key(date))
+            for id in [custom.id, "seed-task-brush"] {
+                let change = try state.change(itemID: id, undo: false, items: store.catalog())
+                try store.save(change, date: date)
+                try state.include(change, on: state.dateKey)
+            }
+            let app = AppState(store: store, date: date)
+            XCTAssertTrue(app.deleteItem(id: custom.id))
+            var template = try XCTUnwrap(app.items.first { $0.id == "seed-task-brush" })
+            template.isActive = false
+            XCTAssertTrue(app.saveItem(template))
+            XCTAssertFalse(app.visibleItems.contains { $0.id == custom.id || $0.id == template.id })
+            app.undo = true
+            XCTAssertEqual(Set(app.visibleItems.map(\.id)), [custom.id, template.id])
+            XCTAssertTrue(app.perform(itemID: custom.id, date: date))
+            XCTAssertEqual(app.points?.balance, 3)
+            XCTAssertTrue(app.perform(itemID: template.id, date: date))
+            XCTAssertEqual(app.points?.balance, 0)
+            app.refreshDate(date.addingTimeInterval(86400))
+            XCTAssertTrue(app.visibleItems.isEmpty)
+        }
+    }
+}
+
+extension LocalStoreTests {
+    @MainActor func testMixedOrderingSurvivesReopenEditsAndNewTemplates() throws {
+        try withDatabase { url in
+            let templates = Array(Catalog.tasks.prefix(2)) + Array(Catalog.rewards.prefix(2))
+            let custom = CatalogItem(id: "custom-" + UUID().uuidString, title: "Read", emoji: "📚", points: 4,
+                                     image: nil, isReward: false, isTemplate: false)
+            let desired = [templates[1].id, custom.id, templates[0].id]
+            let rewardOrder = [templates[3].id, templates[2].id]
+            do {
+                let store = try LocalStore(url: url, templates: templates)
+                try store.updateItem(custom)
+                try store.reorderItems(ids: desired, isReward: false)
+                try store.reorderItems(ids: rewardOrder, isReward: true)
+                var inactive = custom
+                inactive.isActive = false
+                try store.updateItem(inactive)
+            }
+            let store = try LocalStore(url: url, templates: templates + [Catalog.tasks[2]])
+            let app = AppState(store: store)
+            XCTAssertEqual(app.items.filter { !$0.isReward }.map(\.id), [Catalog.tasks[2].id] + desired)
+            XCTAssertEqual(app.items.filter(\.isReward).map(\.id), rewardOrder)
+            XCTAssertEqual(app.visibleItems.map(\.id), [templates[1].id, templates[0].id])
+            XCTAssertFalse(try XCTUnwrap(app.items.first { $0.id == Catalog.tasks[2].id }).isActive)
+            XCTAssertTrue(app.saveItem(custom))
+            XCTAssertEqual(app.visibleItems.map(\.id), desired)
+            XCTAssertTrue(app.deleteItem(id: custom.id))
+            XCTAssertEqual(app.visibleItems.map(\.id), [templates[1].id, templates[0].id])
+            let newCustom = CatalogItem(id: "custom-" + UUID().uuidString, title: "Water plants", emoji: "🌱", points: 2,
+                                        image: nil, isReward: false, isTemplate: false)
+            XCTAssertTrue(app.saveItem(newCustom))
+            XCTAssertEqual(app.visibleItems.map(\.id), [newCustom.id, templates[1].id, templates[0].id])
+        }
+    }
+
+    @MainActor func testInvalidAndFailedReorderLeaveExistingOrderUnchanged() throws {
+        try withDatabase { url in
+            let store = try LocalStore(url: url)
+            let before = try store.catalog()
+            let tasks = before.filter { !$0.isReward }.map(\.id)
+            for invalid in [Array(tasks.dropLast()), tasks + [tasks[0]], tasks + [Catalog.rewards[0].id], ["missing"]] {
+                XCTAssertThrowsError(try store.reorderItems(ids: invalid, isReward: false))
+            }
+            XCTAssertEqual(try store.catalog(), before)
+            let readOnly = try LocalStore(url: url, allowsSave: false)
+            let app = AppState(store: readOnly)
+            XCTAssertFalse(app.reorderItems(ids: tasks.reversed(), isReward: false))
+            XCTAssertEqual(app.items, before)
+            XCTAssertFalse(readOnly.context.hasChanges)
+            XCTAssertEqual(try LocalStore(url: url).catalog(), before)
+        }
+    }
+}

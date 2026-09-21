@@ -19,6 +19,52 @@ final class AppState {
     var rewards = false
     var undo = false
     var adjustmentOpen = false
+    var managementOpen = false
+    private(set) var items: [CatalogItem] = []
+
+    var visibleItems: [CatalogItem] {
+        let source = undo ? (points?.undoItems ?? []) : items.filter(\.isActive)
+        return source.filter { $0.isReward == rewards }
+    }
+
+    @discardableResult
+    func reorderItems(ids: [String], isReward: Bool) -> Bool {
+        do {
+            try store.reorderItems(ids: ids, isReward: isReward)
+            items = try store.catalog()
+            errorMessage = nil
+            return true
+        } catch {
+            errorMessage = "Could not save changes. Please try again."
+            return false
+        }
+    }
+
+    @discardableResult
+    func saveItem(_ item: CatalogItem) -> Bool {
+        do {
+            try store.updateItem(item)
+            items = try store.catalog()
+            errorMessage = nil
+            return true
+        } catch {
+            errorMessage = "Could not save changes. Please try again."
+            return false
+        }
+    }
+
+    @discardableResult
+    func deleteItem(id: String) -> Bool {
+        do {
+            try store.deleteItem(id: id)
+            items = try store.catalog()
+            errorMessage = nil
+            return true
+        } catch {
+            errorMessage = "Could not save changes. Please try again."
+            return false
+        }
+    }
     private(set) var celebration: Celebration?
     private let store: LocalStore
     private let sound = PointSound()
@@ -26,6 +72,7 @@ final class AppState {
     init(store: LocalStore, date: Date = PacificDate.now) {
         self.store = store
         do {
+            items = try store.catalog()
             points = try store.load(dateKey: PacificDate.key(date))
         } catch { loadError = "Please reopen the app. Your existing data has not been deleted." }
     }
@@ -48,22 +95,21 @@ final class AppState {
         do {
             let change: PointChange
             if let adjustment { change = try candidate.adjustment(adjustment) }
-            else if let itemID { change = try candidate.change(itemID: itemID, undo: undo) }
+            else if let itemID { change = try candidate.change(itemID: itemID, undo: undo, items: items) }
             else { return false }
             try candidate.include(change, on: candidate.dateKey)
             try store.save(change, date: date)
             points = candidate
             errorMessage = nil
             if adjustment != nil || !undo {
-                let item = (Catalog.tasks + Catalog.rewards).first { $0.id == itemID }
+                let item = items.first { $0.id == itemID }
                 celebration = Celebration(value: change.points,
                                           title: adjustment != nil ? "Points adjusted" : item?.isReward == true ? "Reward redeemed" : "Task completed!",
                                           emoji: item?.emoji ?? "⭐", image: item?.image)
             }
             return true
         } catch PointsError.insufficientBalance {
-            // Extra visible undo feedback awaits the explicit section 5 decision.
-            if adjustment != nil { errorMessage = "Not enough points" }
+            errorMessage = "Not enough points"
             return false
         } catch PointsError.noOccurrence { return false }
         catch {

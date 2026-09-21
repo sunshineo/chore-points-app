@@ -58,6 +58,12 @@ struct PointChange {
     let kind: String
     let itemID: String
     let points: Int
+    var id = UUID()
+    var reversedEntryID: UUID? = nil
+    var title: String? = nil
+    var englishTitle: String? = nil
+    var emoji: String? = nil
+    var image: String? = nil
 }
 
 enum PointsError: Error, Equatable {
@@ -70,14 +76,38 @@ struct PointsState {
     var dailyNet = 0
     var counts: [String: Int] = [:]
 
-    func change(itemID: String, undo: Bool) throws -> PointChange {
-        guard let item = (Catalog.tasks + Catalog.rewards).first(where: { $0.id == itemID }) else {
+    // Outstanding occurrences for the selected day, oldest first.
+    var occurrences: [String: [PointChange]] = [:]
+    var unmatchedLegacyUndos: [String: Int] = [:]
+
+    func change(itemID: String, undo: Bool, items: [CatalogItem] = Catalog.tasks + Catalog.rewards) throws -> PointChange {
+        if undo {
+            guard let original = occurrences[itemID]?.last else { throw PointsError.noOccurrence }
+            try validateBalance(-original.points)
+            return PointChange(kind: original.kind, itemID: itemID, points: -original.points,
+                               reversedEntryID: original.id, title: original.title,
+                               englishTitle: original.englishTitle, emoji: original.emoji, image: original.image)
+        }
+        guard let item = items.first(where: { $0.id == itemID && $0.isActive }) else {
             throw PointsError.unknownItem
         }
-        if undo && counts[itemID, default: 0] <= 0 { throw PointsError.noOccurrence }
-        let points = item.points * (item.isReward ? -1 : 1) * (undo ? -1 : 1)
+        guard (1...999).contains(item.points) else { throw PointsError.invalidAmount }
+        let points = item.points * (item.isReward ? -1 : 1)
         try validateBalance(points)
-        return PointChange(kind: item.isReward ? "reward" : "task", itemID: itemID, points: points)
+        return PointChange(kind: item.isReward ? "reward" : "task", itemID: itemID, points: points,
+                           title: item.title, englishTitle: item.englishTitle, emoji: item.emoji, image: item.image)
+    }
+
+    var undoItems: [CatalogItem] {
+        occurrences.compactMap { id, entries in
+            guard let last = entries.last else { return nil }
+            let template = (Catalog.tasks + Catalog.rewards).first { $0.id == id }
+            return CatalogItem(id: id, title: last.title ?? template?.title ?? id,
+                               emoji: last.emoji ?? template?.emoji ?? "⭐", points: abs(last.points),
+                               image: last.image ?? template?.image, isReward: last.kind == "reward",
+                               englishTitle: last.englishTitle ?? template?.englishTitle,
+                               isTemplate: template != nil)
+        }.sorted { $0.id < $1.id }
     }
 
     func adjustment(_ points: Int) throws -> PointChange {
@@ -101,7 +131,22 @@ struct PointsState {
         let daily = dailyNet.addingReportingOverflow(change.points)
         guard !daily.overflow else { throw PointsError.overflow }
         dailyNet = daily.partialValue
-        if change.kind == "task" { counts[change.itemID, default: 0] += change.points > 0 ? 1 : -1 }
-        if change.kind == "reward" { counts[change.itemID, default: 0] += change.points < 0 ? 1 : -1 }
+        guard change.kind == "task" || change.kind == "reward" else { return }
+        let forward = change.kind == "task" ? change.points > 0 : change.points < 0
+        counts[change.itemID, default: 0] += forward ? 1 : -1
+        if forward {
+            if unmatchedLegacyUndos[change.itemID, default: 0] > 0 {
+                unmatchedLegacyUndos[change.itemID, default: 0] -= 1
+            } else {
+                occurrences[change.itemID, default: []].append(change)
+            }
+        } else if let reversedID = change.reversedEntryID {
+            occurrences[change.itemID]?.removeAll { $0.id == reversedID }
+        } else {
+            // Original releases recorded reversals only by sign and fixed amount.
+            if occurrences[change.itemID]?.popLast() == nil {
+                unmatchedLegacyUndos[change.itemID, default: 0] += 1
+            }
+        }
     }
 }

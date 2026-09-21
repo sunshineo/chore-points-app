@@ -22,6 +22,9 @@ struct PointsView: View {
                 AdjustmentView(state: state)
             }
         }
+        .sheet(isPresented: $state.managementOpen) {
+            CatalogManagementView(state: state)
+        }
         .tint(PointsColors.accent)
         .fullScreenCover(item: $presentedCelebration) { celebration in
             CelebrationView(celebration: celebration)
@@ -58,8 +61,17 @@ struct PointsView: View {
                         sectionButton("Rewards", systemImage: "gift", rewards: true)
                     }
                     .accessibilityIdentifier("section-switcher")
+                    if state.visibleItems.isEmpty {
+                        ContentUnavailableView {
+                            Label(state.undo ? "Nothing to undo" : "No active items", systemImage: "checklist")
+                        } description: {
+                            Text(state.undo ? "Completed tasks and redeemed rewards appear here today." : "Enable a template or add your own item in Manage.")
+                        } actions: {
+                            if !state.undo { Button("Manage") { state.managementOpen = true } }
+                        }
+                    }
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: count), spacing: 12) {
-                        ForEach(Array((state.rewards ? Catalog.rewards : Catalog.tasks).enumerated()), id: \.element.id) { index, item in
+                        ForEach(Array(state.visibleItems.enumerated()), id: \.element.id) { index, item in
                             let occurrences = points.counts[item.id, default: 0]
                             PointCard(item: item, color: PointsColors.cards[index % PointsColors.cards.count], count: occurrences,
                                       disabled: state.saving || (state.undo ? occurrences <= 0 : item.isReward && points.balance < item.points),
@@ -130,6 +142,14 @@ struct PointsView: View {
             }
             .accessibilityLabel("Manually adjust points")
             .accessibilityIdentifier("adjustment-open")
+            Button {
+                state.errorMessage = nil
+                state.managementOpen = true
+            } label: {
+                Image(systemName: "slider.horizontal.3").frame(minWidth: 32, minHeight: 32)
+            }
+            .accessibilityLabel("Manage tasks and rewards")
+            .accessibilityIdentifier("manage-open")
         }
         .buttonStyle(.bordered)
     }

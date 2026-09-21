@@ -47,7 +47,7 @@ struct PointCard: View {
                 }
                 .frame(height: side * 0.36)
                 .accessibilityHidden(true)
-                Text(item.title)
+                Text(verbatim: item.title(locale: locale))
                     .font(.headline)
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
@@ -76,7 +76,7 @@ struct PointCard: View {
         .tint(color)
         .foregroundStyle(.white)
         .disabled(disabled)
-        .accessibilityLabel(item.title)
+        .accessibilityLabel(item.title(locale: locale))
         .accessibilityValue(item.isReward ? locale.interfaceText("Redeemed today: \(count). Points: \(item.points)") : locale.interfaceText("Completed today: \(count). Points: \(item.points)"))
         .accessibilityIdentifier(item.id)
     }

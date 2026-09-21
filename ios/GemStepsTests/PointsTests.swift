@@ -126,3 +126,34 @@ final class PointsTests: XCTestCase {
     }
 
 }
+
+extension PointsTests {
+    func testTemplatesAreBilingualAndCustomNamesAreLiteral() {
+        for template in Catalog.tasks + Catalog.rewards {
+            XCTAssertFalse(template.englishTitle?.isEmpty ?? true)
+            XCTAssertEqual(template.title(locale: Locale(identifier: "zh-Hans")), template.title)
+            XCTAssertEqual(template.title(locale: Locale(identifier: "en")), template.englishTitle)
+        }
+        let custom = CatalogItem(id: "custom-test", title: "Tasks", emoji: "⭐", points: 2,
+                                 image: nil, isReward: false, isTemplate: false)
+        XCTAssertEqual(custom.title(locale: Locale(identifier: "zh-Hans")), "Tasks")
+        XCTAssertEqual(custom.title(locale: Locale(identifier: "en")), "Tasks")
+    }
+
+    func testRewardRefundUsesOriginalCostAfterPriceChangeAndDeletion() throws {
+        var state = PointsState(dateKey: "2026-09-20", balance: 100)
+        let reward = CatalogItem(id: "custom-reward", title: "Park", emoji: "🌳", points: 12,
+                                 image: nil, isReward: true, isTemplate: false)
+        let redemption = try state.change(itemID: reward.id, undo: false, items: [reward])
+        try state.include(redemption, on: state.dateKey)
+        XCTAssertEqual(state.balance, 88)
+        let expensive = CatalogItem(id: reward.id, title: reward.title, emoji: reward.emoji, points: 50,
+                                    image: nil, isReward: true, isTemplate: false)
+        XCTAssertEqual(try state.change(itemID: reward.id, undo: true, items: [expensive]).points, 12)
+        let refund = try state.change(itemID: reward.id, undo: true, items: [])
+        XCTAssertEqual(refund.reversedEntryID, redemption.id)
+        try state.include(refund, on: state.dateKey)
+        XCTAssertEqual(state.balance, 100)
+        XCTAssertThrowsError(try state.change(itemID: reward.id, undo: true, items: []))
+    }
+}
