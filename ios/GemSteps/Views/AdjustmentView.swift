@@ -125,7 +125,7 @@ struct AdjustmentView: View {
             validation = nil
             submittedCelebration = state.celebration
         } else {
-            validation = state.errorMessage ?? "保存失败，请重试"
+            validation = state.errorMessage ?? "保存失败，请重试。积分未改变。"
         }
     }
 }

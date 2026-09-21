@@ -14,7 +14,7 @@ struct PointsView: View {
                 if let points = state.points {
                     page(points)
                 } else {
-                    ContentUnavailableView("无法读取积分", systemImage: "exclamationmark.triangle", description: Text(state.loadError ?? "加载失败"))
+                    ContentUnavailableView("无法加载积分", systemImage: "exclamationmark.triangle", description: Text(state.loadError ?? "请重新打开应用。原有数据未清除。"))
                 }
             }
             .sheet(isPresented: $state.adjustmentOpen) {
@@ -51,10 +51,6 @@ struct PointsView: View {
                         }
                     if let error = state.errorMessage {
                         Text(error).foregroundStyle(.red).accessibilityIdentifier("points-error")
-                    }
-                    if state.undo {
-                        Label("撤销模式：点击方块撤销当天一次记录", systemImage: "arrow.uturn.backward")
-                            .font(.callout).foregroundStyle(.secondary)
                     }
                     HStack(spacing: 12) {
                         sectionButton("任务", systemImage: "checkmark.circle", rewards: false)
@@ -122,10 +118,10 @@ struct PointsView: View {
             Button {
                 state.adjustmentOpen = true
             } label: {
-                Label("临时加减", systemImage: "plusminus")
+                Label("手动加减", systemImage: "plusminus")
                     .frame(maxWidth: .infinity, minHeight: 32)
             }
-            .accessibilityLabel("临时加减分")
+            .accessibilityLabel("手动加减积分")
             .accessibilityIdentifier("adjustment-open")
         }
         .buttonStyle(.bordered)

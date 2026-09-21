@@ -10,9 +10,9 @@ struct GemStepsApp: App {
             Group {
                 if let state { PointsView(state: state) }
                 else if openFailed {
-                    ContentUnavailableView("无法打开本地积分", systemImage: "externaldrive.badge.exclamationmark",
-                                           description: Text("请重新打开应用。原有数据未被清除。"))
-                } else { ProgressView("正在加载积分…") }
+                    ContentUnavailableView("无法加载积分", systemImage: "externaldrive.badge.exclamationmark",
+                                           description: Text("请重新打开应用。原有数据未清除。"))
+                } else { ProgressView().accessibilityLabel("正在加载积分") }
             }
             .task {
                 guard state == nil, !openFailed else { return }

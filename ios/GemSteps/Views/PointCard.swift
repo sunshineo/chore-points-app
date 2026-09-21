@@ -25,7 +25,7 @@ struct PointCard: View {
     let action: () -> Void
 
     private var score: some View {
-        Text("\(item.isReward ? "−" : "+")\(item.points) 分")
+        Text("\(item.isReward ? "−" : "+")\(item.points)")
             .padding(.horizontal, 12).padding(.vertical, 4)
             .background(.white.opacity(0.18), in: Capsule())
     }

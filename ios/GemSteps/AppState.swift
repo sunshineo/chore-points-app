@@ -26,7 +26,7 @@ final class AppState {
         self.store = store
         do {
             points = try store.load(dateKey: PacificDate.key(date))
-        } catch { loadError = "无法读取本地积分，请重新打开应用。原有数据未被清除。" }
+        } catch { loadError = "请重新打开应用。原有数据未清除。" }
     }
 
     func refreshDate(_ date: Date = PacificDate.now) {
@@ -34,7 +34,7 @@ final class AppState {
         do {
             self.points = try store.day(dateKey: PacificDate.key(date), balance: points.balance)
             errorMessage = nil
-        } catch { errorMessage = "无法读取当天积分，请稍后重试" }
+        } catch { errorMessage = "无法加载今日积分，请稍后重试。" }
     }
 
     @discardableResult

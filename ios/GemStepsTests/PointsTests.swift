@@ -64,6 +64,6 @@ final class PointsTests: XCTestCase {
             ("2026-11-01T08:59:59Z", "2026-11-01"), ("2026-11-01T09:00:00Z", "2026-11-01")
         ]
         for (timestamp, key) in cases { XCTAssertEqual(PacificDate.key(parser.date(from: timestamp)!), key) }
-        XCTAssertEqual(PacificDate.weekday("2026-09-20"), "星期日")
+        XCTAssertEqual(PacificDate.weekday("2026-09-20"), "周日")
     }
 }
