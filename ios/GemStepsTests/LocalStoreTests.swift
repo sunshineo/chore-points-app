@@ -54,6 +54,31 @@ final class LocalStoreTests: XCTestCase {
         XCTAssertEqual(try store.context.fetchCount(FetchDescriptor<PointEntry>()), 2)
     }
 
+    @MainActor func testOversizedAdjustmentPersistsActualDeduction() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let url = folder.appendingPathComponent("test.sqlite")
+        let date = ISO8601DateFormatter().date(from: "2026-09-20T19:00:00Z")!
+        do {
+            let store = try LocalStore(url: url)
+            try store.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 86), date: date)
+            let app = AppState(store: store, date: date)
+            XCTAssertTrue(app.perform(adjustment: -999, date: date))
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertEqual(app.points?.dailyNet, 0)
+            XCTAssertEqual(app.celebration?.value, -86)
+            let entries = try store.context.fetch(FetchDescriptor<PointEntry>())
+            XCTAssertEqual(entries.map(\.points).sorted(), [-86, 86])
+        }
+        let reopened = try LocalStore(url: url)
+        XCTAssertEqual(try reopened.load(dateKey: PacificDate.key(date)).balance, 0)
+        let empty = AppState(store: reopened, date: date)
+        XCTAssertTrue(empty.perform(adjustment: -999, date: date))
+        XCTAssertEqual(empty.points?.balance, 0)
+        XCTAssertEqual(empty.celebration?.value, 0)
+    }
+
     func testReplacementSoundsAreBundledAndPlayable() throws {
         let bundle = try XCTUnwrap(Bundle(identifier: "me.gordon.GemSteps"))
         for name in ["points-earned", "reward-complete"] {

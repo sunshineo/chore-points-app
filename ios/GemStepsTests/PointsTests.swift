@@ -49,10 +49,24 @@ final class PointsTests: XCTestCase {
 
     func testAdjustmentBoundsAndOverflow() throws {
         let state = PointsState(dateKey: "2026-09-20", balance: 100)
-        for value in [1, 2, 3, 5, 10, 100, -1, -100] { XCTAssertNoThrow(try state.adjustment(value)) }
-        for value in [0, 101, -101, Int.min, Int.max] { XCTAssertThrowsError(try state.adjustment(value)) }
-        XCTAssertThrowsError(try PointsState(dateKey: state.dateKey).adjustment(-1))
+        for value in [1, 100, 101, 999, -1, -100, -101, -999] { XCTAssertNoThrow(try state.adjustment(value)) }
+        for value in [0, 1000, -1000, Int.min, Int.max] { XCTAssertThrowsError(try state.adjustment(value)) }
+        XCTAssertEqual(try PointsState(dateKey: state.dateKey).adjustment(-999).points, 0)
         XCTAssertThrowsError(try PointsState(dateKey: state.dateKey, balance: Int.max).adjustment(1))
+    }
+
+    func testOversizedDeductionRecordsActualAmount() throws {
+        var state = PointsState(dateKey: "2026-09-20", balance: 86, dailyNet: 10)
+        let change = try state.adjustment(-999)
+        XCTAssertEqual(change.points, -86)
+        try state.include(change, on: state.dateKey)
+        XCTAssertEqual(state.balance, 0)
+        XCTAssertEqual(state.dailyNet, -76)
+        XCTAssertTrue(state.counts.isEmpty)
+        try state.include(state.adjustment(999), on: state.dateKey)
+        XCTAssertEqual(state.balance, 999)
+        try state.include(state.adjustment(-999), on: state.dateKey)
+        XCTAssertEqual(state.balance, 0)
     }
 
     func testPacificMidnightsAndDST() {

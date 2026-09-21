@@ -68,9 +68,10 @@ struct PointsState {
     }
 
     func adjustment(_ points: Int) throws -> PointChange {
-        guard (-100...100).contains(points), points != 0 else { throw PointsError.invalidAmount }
-        try validateBalance(points)
-        return PointChange(kind: "adjustment", itemID: "manual-adjustment", points: points)
+        guard (-999...999).contains(points), points != 0 else { throw PointsError.invalidAmount }
+        let actual = points < 0 ? -min(balance, -points) : points
+        try validateBalance(actual)
+        return PointChange(kind: "adjustment", itemID: "manual-adjustment", points: actual)
     }
 
     func validateBalance(_ points: Int) throws {

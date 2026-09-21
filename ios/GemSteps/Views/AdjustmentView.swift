@@ -3,12 +3,22 @@ import SwiftUI
 struct AdjustmentView: View {
     @Bindable var state: AppState
     @State private var subtract = false
+    @State private var digits = ""
     @State private var validation: String?
     @State private var submittedCelebration: Celebration?
 
+    private var amount: Int { Int(digits) ?? 0 }
     private var submitted: Bool { submittedCelebration != nil }
 
     var body: some View {
+        if #available(iOS 18.0, *) {
+            panel.presentationSizing(.fitted)
+        } else {
+            panel
+        }
+    }
+
+    private var panel: some View {
         VStack(spacing: 0) {
             HStack {
                 Spacer()
@@ -26,49 +36,15 @@ struct AdjustmentView: View {
                 .disabled(state.saving || submitted)
             }
             .padding(.horizontal, 20)
-            .padding(.top, 16)
+            .padding(.top, 8)
 
-            ScrollView {
-                VStack(spacing: 28) {
-                    HStack(spacing: 24) {
-                        modeButton(isSubtract: false)
-                        modeButton(isSubtract: true)
-                    }
-                    .padding(.top, 8)
-
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 3), spacing: 14) {
-                        ForEach(1...10, id: \.self) { value in
-                            if value == 10 {
-                                Color.clear
-                                    .accessibilityHidden(true)
-                            }
-                            Button { submit(value) } label: {
-                                Text("\(value)")
-                                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .frame(minHeight: 80)
-                                    .aspectRatio(1, contentMode: .fit)
-                                    .background(modeColor(subtract).gradient, in: RoundedRectangle(cornerRadius: 18))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(subtract ? "减" : "加") \(value) 分")
-                            .accessibilityIdentifier("adjustment-value-\(value)")
-                        }
-                    }
-                    .frame(maxWidth: 320)
-                    if let validation {
-                        Text(validation)
-                            .foregroundStyle(.red)
-                            .accessibilityIdentifier("adjustment-validation")
-                    }
-                }
-                .frame(maxWidth: 540)
-                .padding(24)
-                .frame(maxWidth: .infinity)
+            ViewThatFits(in: .vertical) {
+                keypad.fixedSize(horizontal: false, vertical: true)
+                ScrollView { keypad }
             }
             .disabled(state.saving || submitted)
         }
+        .frame(idealWidth: 438, maxWidth: 438)
         .background(Color(uiColor: .systemGroupedBackground))
         .overlay {
             if let celebration = submittedCelebration {
@@ -80,6 +56,63 @@ struct AdjustmentView: View {
             }
         }
         .interactiveDismissDisabled(state.saving || submitted)
+    }
+
+    private var keypad: some View {
+        VStack(spacing: 16) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                modeButton(isSubtract: false)
+                Text("\(subtract ? "−" : "+")\(amount)")
+                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(modeColor(subtract))
+                    .minimumScaleFactor(0.45)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("\(subtract ? "减" : "加") \(amount) 分")
+                    .accessibilityIdentifier("adjustment-amount")
+                modeButton(isSubtract: true)
+                ForEach(1...9, id: \.self) { digit in digitButton(digit) }
+                digitButton(0)
+                Button {
+                    if !digits.isEmpty { digits.removeLast() }
+                    validation = nil
+                } label: {
+                    Image(systemName: "delete.left")
+                        .font(.title2)
+                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("删除最后一位")
+                .accessibilityIdentifier("adjustment-delete")
+                confirmButton
+            }
+            if let validation {
+                Text(validation)
+                    .foregroundStyle(.red)
+                    .accessibilityIdentifier("adjustment-validation")
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 4)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var confirmButton: some View {
+        Button { submit(amount) } label: {
+            Image(systemName: "checkmark")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .background(modeColor(subtract), in: RoundedRectangle(cornerRadius: 16))
+                .opacity(amount == 0 ? 0.3 : 1)
+        }
+        .buttonStyle(.plain)
+        .disabled(amount == 0)
+        .accessibilityLabel("确认\(subtract ? "减" : "加") \(amount) 分")
+        .accessibilityIdentifier("adjustment-confirm")
     }
 
     private func modeColor(_ isSubtract: Bool) -> Color {
@@ -100,14 +133,15 @@ struct AdjustmentView: View {
                 .fontWeight(.heavy)
                 .foregroundStyle(.white)
                 .frame(width: 34, height: 34)
-                .frame(width: 88, height: 88)
-                .background(modeColor(isSubtract).gradient, in: RoundedRectangle(cornerRadius: 22))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 27)
-                        .strokeBorder(selected ? modeColor(isSubtract) : .clear, lineWidth: 3)
-                        .padding(-6)
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .background {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(uiColor: .systemGray4))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(modeColor(isSubtract).opacity(selected ? 1 : 0.28))
+                        }
                 }
-                .opacity(selected ? 1 : 0.55)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isSubtract ? "减分" : "加分")
@@ -115,12 +149,25 @@ struct AdjustmentView: View {
         .accessibilityIdentifier(isSubtract ? "adjustment-minus" : "adjustment-plus")
     }
 
+    private func digitButton(_ digit: Int) -> some View {
+        Button {
+            guard digits.count < 3 else { return }
+            digits = digits == "0" ? "\(digit)" : digits + "\(digit)"
+            validation = nil
+        } label: {
+            Text("\(digit)")
+                .font(.system(.largeTitle, design: .rounded, weight: .medium))
+                .frame(maxWidth: .infinity, minHeight: 64)
+                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(digit)")
+        .accessibilityIdentifier("adjustment-value-\(digit)")
+    }
+
     private func submit(_ value: Int) {
         guard !submitted, !state.saving else { return }
-        if subtract && value > (state.points?.balance ?? 0) {
-            validation = "当前最多可减 \(state.points?.balance ?? 0) 分"
-            return
-        }
+        guard (1...999).contains(value) else { return }
         if state.perform(adjustment: value * (subtract ? -1 : 1)) {
             validation = nil
             submittedCelebration = state.celebration

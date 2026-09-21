@@ -1,0 +1,31 @@
+<style>
+#minimal-points-minus{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:390px;margin:auto;padding:16px 22px 24px;border-radius:28px;background:light-dark(#f2f2f7,#1c1c1e);color:light-dark(#24242b,#f4f4f7);--green:light-dark(#16804a,#238853);--red:light-dark(#c13240,#ce4050);--action:var(--red)}
+#minimal-points-minus *{box-sizing:border-box}#minimal-points-minus button{font:inherit;border:0;display:flex;align-items:center;justify-content:center;touch-action:manipulation}#minimal-points-minus .top{display:flex;justify-content:flex-end;margin-bottom:14px}#minimal-points-minus .close{height:44px;width:44px;border-radius:50%;background:light-dark(#e4e4ea,#343439);color:light-dark(#686871,#bdbdc5)}#minimal-points-minus .modes{display:grid;grid-template-columns:1fr 1fr;gap:14px}#minimal-points-minus .mode{height:68px;border-radius:18px;font-size:40px;font-weight:600;color:white}#minimal-points-minus .plus{background:light-dark(#a9c0b2,#44594c)}#minimal-points-minus .minus{background:light-dark(#cfafb2,#67494e)}#minimal-points-minus .plus[aria-pressed=true]{background:var(--green)}#minimal-points-minus .minus[aria-pressed=true]{background:var(--red)}#minimal-points-minus .amount{text-align:center;padding:27px 0 29px;font-size:72px;font-weight:650;line-height:1.2;font-variant-numeric:tabular-nums;color:var(--action)}#minimal-points-minus .keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}#minimal-points-minus .key{height:66px;border-radius:16px;font-size:30px;font-weight:500;background:light-dark(#fff,#303034);color:inherit}#minimal-points-minus .delete{background:transparent}#minimal-points-minus .confirm{margin-top:20px;width:100%;height:60px;border-radius:17px;background:var(--action);color:white}#minimal-points-minus .confirm svg{width:30px;height:30px;stroke-width:3}#minimal-points-minus button:disabled{opacity:.3}#minimal-points-minus .error{font-size:14px;color:var(--red);text-align:center;margin-top:12px}#minimal-points-minus [hidden]{display:none!important}#minimal-points-minus .complete{display:flex;min-height:465px;align-items:center;justify-content:center;flex-direction:column;gap:30px;color:var(--action)}#minimal-points-minus .complete>span{font-size:68px}#minimal-points-minus .again{width:64px;height:64px;border-radius:50%;background:light-dark(#e4e4ea,#343439);color:inherit}
+</style>
+<div id="minimal-points-minus" aria-label="精简版手动加减">
+<div class="top"><button class="close cursor-interaction" aria-label="关闭"><i data-lucide="x" aria-hidden="true"></i></button></div>
+<div class="entry">
+<div class="modes"><button class="mode plus cursor-interaction" aria-label="加分" aria-pressed="false">＋</button><button class="mode minus cursor-interaction" aria-label="减分" aria-pressed="true">−</button></div>
+<div class="amount" aria-live="polite" aria-label="减12分">−12</div>
+<div class="keys" aria-label="数字键盘">
+<button class="key cursor-interaction">1</button><button class="key cursor-interaction">2</button><button class="key cursor-interaction">3</button>
+<button class="key cursor-interaction">4</button><button class="key cursor-interaction">5</button><button class="key cursor-interaction">6</button>
+<button class="key cursor-interaction">7</button><button class="key cursor-interaction">8</button><button class="key cursor-interaction">9</button>
+<span aria-hidden="true"></span><button class="key cursor-interaction">0</button><button class="key delete cursor-interaction" aria-label="删除最后一位"><i data-lucide="delete" aria-hidden="true"></i></button>
+</div>
+<div class="error" role="alert" hidden></div>
+<button class="confirm cursor-interaction" aria-label="确认减12分"><i data-lucide="check" aria-hidden="true"></i></button>
+</div>
+<div class="complete" hidden><span aria-live="polite">✓</span><button class="again cursor-interaction" aria-label="重新体验"><i data-lucide="rotate-ccw" aria-hidden="true"></i></button></div>
+</div>
+<script>
+(()=>{const root=document.getElementById('minimal-points-minus');const q=s=>root.querySelector(s);let digits='12',minus=true;
+function render(){const n=Number(digits);root.style.setProperty('--action',minus?'var(--red)':'var(--green)');q('.plus').setAttribute('aria-pressed',String(!minus));q('.minus').setAttribute('aria-pressed',String(minus));q('.amount').textContent=(minus?'−':'+')+(digits||'0');q('.amount').setAttribute('aria-label',(minus?'减':'加')+(digits||'0')+'分');q('.confirm').setAttribute('aria-label','确认'+(minus?'减':'加')+(digits||'0')+'分');const error=n>100?'每次最多调整 100 分':minus&&n>86?'当前最多可减 86 分':'';q('.error').textContent=error;q('.error').hidden=!error;q('.confirm').disabled=n<1||!!error;}
+function save(){window.openai?.setWidgetState?.({modelContent:{design:'精简版',mode:minus?'减':'加',amount:digits},privateContent:{version:3,digits,minus}}).catch(()=>{});}
+function restore(s){const p=s?.privateContent;if(p?.version===3&&typeof p.digits==='string'&&/^\d{0,3}$/.test(p.digits)){digits=p.digits;minus=!!p.minus;}render();}
+restore(window.openai?.widgetState);window.addEventListener('openai:set_globals',e=>{if(e.detail?.globals?.widgetState)restore(e.detail.globals.widgetState)});
+q('.plus').onclick=()=>{minus=false;render();save()};q('.minus').onclick=()=>{minus=true;render();save()};root.querySelectorAll('.key').forEach(b=>b.onclick=()=>{if(b.classList.contains('delete'))digits=digits.slice(0,-1);else if(digits.length<3)digits=(digits+b.textContent).replace(/^0+(?=\d)/,'');render();save()});
+function finish(success){q('.entry').hidden=true;q('.complete').hidden=false;q('.complete>span').textContent=success?'✓':'×';q('.complete>span').setAttribute('aria-label',success?'已确认，演示操作完成':'已关闭，未修改积分');}
+q('.confirm').onclick=()=>{if(!q('.confirm').disabled)finish(true)};q('.close').onclick=()=>finish(false);q('.again').onclick=()=>{digits='';q('.entry').hidden=false;q('.complete').hidden=true;render();save()};
+})();
+</script>
