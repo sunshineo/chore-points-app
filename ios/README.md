@@ -28,7 +28,7 @@ SwiftUI 单设备本地应用，最低 iOS / iPadOS 17。使用 SwiftData / SQLi
 ## 运行与验证
 
 打开 `ios/GemSteps.xcodeproj`，选择 `GemSteps` scheme 和 iPhone / iPad 模拟器，
-⌘R 运行、⌘U 测试。模拟器不需要 Apple 登录。真机需自行选择 Signing Team。
+⌘R 运行、⌘U 测试。模拟器不需要 Apple 登录。项目签名团队已设为 Shi Sun 个人团队（`6NFS3QF8P3`）；真机与发布构建需要在 Xcode 登录有权限的 Apple 账号。
 
 ```sh
 xcodebuild -project ios/GemSteps.xcodeproj -scheme GemSteps -showdestinations
@@ -101,3 +101,12 @@ iPhone SE 小屏已检查主页、管理列表、任务／奖励切换和新增�
 
 任务模板按起床、出门、回家、学习与收拾、晚餐、睡前的生活顺序混排，不按启用状态分组。
 本次更新对已有目录一次性应用新的任务模板顺序，保留自定义条目所在位置、奖励顺序、分值和开关；之后手动排序仍会保存。
+
+## TestFlight 发布配置（2026-09-21）
+
+- Bundle ID：`me.gordon.GemSteps`；App Store Connect App ID：`6814635171`。
+- `PrivacyInfo.xcprivacy` 声明只在本 App 内使用 UserDefaults 保存语言偏好，无追踪或数据收集。
+- 图标使用不含 alpha 通道的 PNG，满足上传校验。
+- 无自定义加密，Info.plist 的 `ITSAppUsesNonExemptEncryption` 为 `NO`。
+- 命令行归档／导出时使用 `PATH=/usr/bin:/bin:/usr/sbin:/sbin`，避免 Homebrew rsync 与 Xcode 打包工具冲突。
+- 归档和导出产物放在仓库外；外部测试需填写审核联系人并通过 Beta App Review。
