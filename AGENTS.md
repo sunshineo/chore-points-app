@@ -2,7 +2,7 @@
 
 - `web/` contains the existing Next.js application, including its database,
   tests, assets, and operational documentation. Run npm commands from `web/`.
-- `ios/` and `android/` are placeholders for future native applications.
+- `ios/` and `android/` contain the native SwiftUI and Kotlin/Compose applications.
 - `.github/` and `.husky/` remain at the repository root.
 - Follow the platform-specific instructions in each application's directory.
 

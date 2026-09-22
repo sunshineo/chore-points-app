@@ -7,12 +7,14 @@ A family tasks, points, and rewards project.
 | Directory | Status |
 | --- | --- |
 | [web](web/README.md) | Existing Next.js application with PostgreSQL and offline support |
-| [ios](ios/README.md) | Placeholder for a future native iOS/iPadOS application |
-| [android](android/README.md) | Placeholder for a future native Android application |
+| [ios](ios/README.md) | Native SwiftUI iOS/iPadOS application with local storage |
+| [android](android/README.md) | Native Kotlin / Compose Android application with local storage |
 
-The native applications are planned to run locally without a backend. Their
-initial scope is one task list repeated every day, editable manually or with
-optional device AI assistance. There are no time-of-day or weekday schedules.
+The native applications run locally without a backend. Both use one task list
+repeated every day, with manual task/reward editing, points, same-day undo and
+English/Simplified Chinese. There are no time-of-day or weekday schedules.
+Device AI assistance remains a possible future addition. See each app README
+for build instructions and verification.
 
 ## Web development
 

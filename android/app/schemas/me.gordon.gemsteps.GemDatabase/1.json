@@ -1,0 +1,230 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "38b29554b7f6eb88ed1fb0fbee6a4edc",
+    "entities": [
+      {
+        "tableName": "items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `englishTitle` TEXT, `emoji` TEXT NOT NULL, `points` INTEGER NOT NULL, `reward` INTEGER NOT NULL, `active` INTEGER NOT NULL, `template` INTEGER NOT NULL, `image` TEXT, `position` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "englishTitle",
+            "columnName": "englishTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "emoji",
+            "columnName": "emoji",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "points",
+            "columnName": "points",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reward",
+            "columnName": "reward",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "template",
+            "columnName": "template",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "image",
+            "columnName": "image",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sequence` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `day` TEXT NOT NULL, `kind` TEXT NOT NULL, `points` INTEGER NOT NULL, `reversedId` TEXT, `snapshot_id` TEXT, `snapshot_title` TEXT, `snapshot_englishTitle` TEXT, `snapshot_emoji` TEXT, `snapshot_points` INTEGER, `snapshot_reward` INTEGER, `snapshot_active` INTEGER, `snapshot_template` INTEGER, `snapshot_image` TEXT, `snapshot_position` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "sequence",
+            "columnName": "sequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "day",
+            "columnName": "day",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "points",
+            "columnName": "points",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reversedId",
+            "columnName": "reversedId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snapshot.id",
+            "columnName": "snapshot_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snapshot.title",
+            "columnName": "snapshot_title",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snapshot.englishTitle",
+            "columnName": "snapshot_englishTitle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snapshot.emoji",
+            "columnName": "snapshot_emoji",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snapshot.points",
+            "columnName": "snapshot_points",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "snapshot.reward",
+            "columnName": "snapshot_reward",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "snapshot.active",
+            "columnName": "snapshot_active",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "snapshot.template",
+            "columnName": "snapshot_template",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "snapshot.image",
+            "columnName": "snapshot_image",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snapshot.position",
+            "columnName": "snapshot_position",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "sequence"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_entries_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_entries_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_entries_day",
+            "unique": false,
+            "columnNames": [
+              "day"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_entries_day` ON `${TABLE_NAME}` (`day`)"
+          }
+        ]
+      },
+      {
+        "tableName": "metadata",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '38b29554b7f6eb88ed1fb0fbee6a4edc')"
+    ]
+  }
+}
