@@ -24,7 +24,9 @@ struct CelebrationView: View {
                     .font(.system(size: 72, weight: .bold, design: .rounded))
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(celebration.value > 0
+                        ? Color(red: 0.08, green: 0.53, blue: 0.30)
+                        : Color(red: 0.80, green: 0.18, blue: 0.22))
             }
             .multilineTextAlignment(.center)
             .padding(24)
