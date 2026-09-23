@@ -191,21 +191,6 @@ struct PointsView: View {
 
     private func balance(_ points: PointsState) -> some View {
         HStack(spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "star.circle.fill")
-                    .foregroundStyle(.yellow)
-                    .accessibilityHidden(true)
-                Text("\(points.balance)")
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .contentTransition(.numericText(value: Double(points.balance)))
-                    .animation(reduceMotion ? nil : .default, value: points.balance)
-            }
-            .font(.largeTitle.bold())
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Total points: \(points.balance)")
-            .accessibilityIdentifier("points-balance")
             Button {
                 state.errorMessage = nil
                 state.childrenOpen = true
@@ -222,6 +207,21 @@ struct PointsView: View {
             .disabled(!state.canSwitchChild)
             .accessibilityLabel(locale.interfaceText("Switch child") + ": " + state.currentChildLabel(locale: locale))
             .accessibilityIdentifier("child-switcher")
+            HStack(spacing: 8) {
+                Text("\(points.balance)")
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .contentTransition(.numericText(value: Double(points.balance)))
+                    .animation(reduceMotion ? nil : .default, value: points.balance)
+                Image(systemName: "star.fill")
+                    .foregroundStyle(.yellow)
+                    .accessibilityHidden(true)
+            }
+            .font(.largeTitle.bold())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Total points: \(points.balance)")
+            .accessibilityIdentifier("points-balance")
         }
     }
 }
