@@ -3,6 +3,14 @@ import SwiftData
 
 @MainActor
 final class LocalStore {
+    // SwiftData does not expose a synchronous close. Even released containers may
+    // retain SQLite handles, so never unlink a store opened during this process.
+    private static var openedURLs = Set<URL>()
+
+    static func wasOpened(_ url: URL) -> Bool {
+        openedURLs.contains(url.standardizedFileURL.resolvingSymlinksInPath())
+    }
+
     let container: ModelContainer
     private(set) var context: ModelContext
     let templates: [CatalogItem]
@@ -24,6 +32,7 @@ final class LocalStore {
            !FileManager.default.fileExists(atPath: configuration.url.path) {
             throw CocoaError(.fileNoSuchFile)
         }
+        Self.openedURLs.insert(configuration.url.standardizedFileURL.resolvingSymlinksInPath())
         container = try ModelContainer(for: PointEntry.self, TemplateSetting.self, CustomItem.self,
                                        CatalogInitialization.self, configurations: configuration)
         context = ModelContext(container)
@@ -241,6 +250,7 @@ final class FamilyStore {
             manifest = saved
             cleanupRemovedStores()
         }
+        cleanupUnpublishedStores()
     }
 
     private func directory(for id: UUID) -> URL {
@@ -294,6 +304,7 @@ final class FamilyStore {
         updated.removedIDs = (updated.removedIDs ?? []) + [id]
         // Publish removal first; interrupted cleanup is retried on next launch.
         try commit(updated)
+        // Keep SQLite files intact until a later process can safely remove them.
         cleanupRemovedStores()
         return result
     }
@@ -308,13 +319,27 @@ final class FamilyStore {
                     for setting in try original.context.fetch(FetchDescriptor<TemplateSetting>()) { original.context.delete(setting) }
                     for config in try original.context.fetch(FetchDescriptor<CatalogInitialization>()) { original.context.delete(config) }
                     try original.context.save()
-                } else if FileManager.default.fileExists(atPath: directory(for: id).path) {
+                } else if !LocalStore.wasOpened(directory(for: id).appendingPathComponent("points.store")),
+                          FileManager.default.fileExists(atPath: directory(for: id).path) {
                     try FileManager.default.removeItem(at: directory(for: id))
                 }
             } catch {
                 original.context.rollback()
                 // The removed profile is already inaccessible; retry cleanup on launch.
             }
+        }
+    }
+
+    private func cleanupUnpublishedStores() {
+        guard original.allowsSave else { return }
+        let root = original.url.appendingPathExtension("children")
+        guard let folders = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil) else { return }
+        let published = Set(children.map(\.id))
+        for folder in folders {
+            guard let id = UUID(uuidString: folder.lastPathComponent),
+                  !published.contains(id),
+                  !LocalStore.wasOpened(folder.appendingPathComponent("points.store")) else { continue }
+            try? FileManager.default.removeItem(at: folder)
         }
     }
 
@@ -337,8 +362,11 @@ final class FamilyStore {
             try commit(updated)
             return result
         } catch {
-            // This directory was created by this attempt and is never a published child's store.
-            try? FileManager.default.removeItem(at: folder)
+            // Failed activation may still leave SQLite handles alive. Unpublished
+            // UUID directories are reclaimed on a later launch before being opened.
+            if !LocalStore.wasOpened(folder.appendingPathComponent("points.store")) {
+                try? FileManager.default.removeItem(at: folder)
+            }
             throw error
         }
     }

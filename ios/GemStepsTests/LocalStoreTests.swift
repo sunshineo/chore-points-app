@@ -45,7 +45,7 @@ final class LocalStoreTests: XCTestCase {
             XCTAssertEqual(app.childLabel(app.children[0], locale: Locale(identifier: "en")), "Child 2")
             XCTAssertEqual(app.currentChildLabel(locale: Locale(identifier: "en")), "Child 2")
             XCTAssertFalse(app.removeChild(second))
-            XCTAssertFalse(FileManager.default.fileExists(atPath: url.appendingPathExtension("children").appendingPathComponent(third.uuidString).path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: url.appendingPathExtension("children").appendingPathComponent(third.uuidString).path))
             let reopened = AppState(store: try LocalStore(url: url))
             XCTAssertEqual(reopened.currentChildID, second)
             XCTAssertEqual(reopened.points?.balance, 25)
@@ -838,6 +838,48 @@ extension LocalStoreTests {
             XCTAssertTrue(reopened.switchChild(ids[0]))
             XCTAssertEqual(reopened.points?.balance, 18)
             XCTAssertEqual(reopened.childLabel(reopened.children[0], locale: Locale(identifier: "zh-Hans")), "孩子 1")
+        }
+    }
+}
+
+
+extension LocalStoreTests {
+    @MainActor func testRemovalDoesNotUnlinkAnOpenChildStore() throws {
+        try withDatabase { url in
+            let date = Date()
+            let key = PacificDate.key(date)
+            let original = try LocalStore(url: url)
+            let family = try FamilyStore(original: original)
+            let child = try family.add(dateKey: key)
+            let id = try XCTUnwrap(family.selectedID)
+            try child.store.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 7), date: date)
+            _ = try family.remove(id, dateKey: key)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: child.store.url.path))
+            XCTAssertEqual(try child.store.load(dateKey: key).balance, 7)
+            XCTAssertThrowsError(try family.select(id, dateKey: key))
+            // Recreating app state in the same process is not a safe SQLite close.
+            _ = try FamilyStore(original: original)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: child.store.url.path))
+            try child.store.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 1), date: date)
+            XCTAssertEqual(try child.store.load(dateKey: key).balance, 8)
+        }
+    }
+
+    @MainActor func testStartupCleansUnopenedUnpublishedDirectoriesOnly() throws {
+        try withDatabase { url in
+            let original = try LocalStore(url: url)
+            let family = try FamilyStore(original: original)
+            let child = try family.add(dateKey: PacificDate.key(Date()))
+            let root = url.appendingPathExtension("children")
+            let abandoned = root.appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: abandoned, withIntermediateDirectories: true)
+            for name in ["points.store", "points.store-wal", "points.store-shm"] {
+                try Data("previous process fixture".utf8).write(to: abandoned.appendingPathComponent(name))
+            }
+            let reopened = try FamilyStore(original: original)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: abandoned.path))
+            XCTAssertTrue(FileManager.default.fileExists(atPath: child.store.url.path))
+            XCTAssertEqual(reopened.children, family.children)
         }
     }
 }
