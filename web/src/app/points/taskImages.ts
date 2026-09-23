@@ -1,4 +1,5 @@
 const TASK_IMAGE_SRC_BY_ID: Readonly<Record<string, string>> = {
+  "seed-task-comb-hair": "/icons/wooden-comb.png",
   "seed-task-face": "/icons/face-wash.png",
   "seed-task-floss": "/icons/floss-pick.png",
   "seed-task-rinse": "/icons/mouthwash.png",

@@ -9,6 +9,11 @@ afterEach(cleanup);
 describe("TaskSection task icons", () => {
   it.each([
     {
+      taskId: "seed-task-comb-hair",
+      imageSrc: "/icons/wooden-comb.png",
+      emoji: "🪮",
+    },
+    {
       taskId: "seed-task-face",
       imageSrc: "/icons/face-wash.png",
       emoji: "🚿",
