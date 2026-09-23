@@ -4,6 +4,81 @@ import AVFoundation
 @testable import GemSteps
 
 final class LocalStoreTests: XCTestCase {
+    @MainActor func testChildListSortsReusedNumbersWithoutChangingSelection() throws {
+        try withDatabase { url in
+            let app = AppState(store: try LocalStore(url: url))
+            XCTAssertTrue(app.addChild())
+            XCTAssertTrue(app.addChild())
+            XCTAssertTrue(app.addChild())
+            let first = app.children[0].id, third = app.children[2].id
+            XCTAssertTrue(app.removeChild(first))
+            XCTAssertTrue(app.removeChild(third))
+            XCTAssertTrue(app.addChild())
+            XCTAssertTrue(app.addChild())
+            let selected = app.currentChildID
+            let locale = Locale(identifier: "en")
+            XCTAssertEqual(app.sortedChildren.map { app.childLabel($0, locale: locale) },
+                           ["Child 1", "Child 2", "Child 3", "Child 4"])
+            let reopened = AppState(store: try LocalStore(url: url))
+            XCTAssertEqual(reopened.sortedChildren.map(\.id), app.sortedChildren.map(\.id))
+            XCTAssertEqual(reopened.currentChildID, selected)
+        }
+    }
+
+    @MainActor func testRemoveOriginalAndCurrentChildPreservesSurvivorAcrossRestart() throws {
+        try withDatabase { url in
+            let original = try LocalStore(url: url)
+            try original.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 18), date: Date())
+            let app = AppState(store: original)
+            XCTAssertTrue(app.addChild())
+            let first = app.children[0].id, second = app.children[1].id
+            let secondStore = try LocalStore(url: url.appendingPathExtension("children").appendingPathComponent(second.uuidString).appendingPathComponent("points.store"))
+            try secondStore.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 25), date: Date())
+            XCTAssertTrue(app.addChild())
+            let third = app.children[2].id
+            XCTAssertTrue(app.removeChild(first))
+            XCTAssertEqual(app.currentChildID, third)
+            XCTAssertEqual(try original.context.fetchCount(FetchDescriptor<PointEntry>()), 0)
+            XCTAssertTrue(app.removeChild(third))
+            XCTAssertEqual(app.currentChildID, second)
+            XCTAssertEqual(app.points?.balance, 25)
+            XCTAssertEqual(app.childLabel(app.children[0], locale: Locale(identifier: "en")), "Child 2")
+            XCTAssertEqual(app.currentChildLabel(locale: Locale(identifier: "en")), "Child 2")
+            XCTAssertFalse(app.removeChild(second))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: url.appendingPathExtension("children").appendingPathComponent(third.uuidString).path))
+            let reopened = AppState(store: try LocalStore(url: url))
+            XCTAssertEqual(reopened.currentChildID, second)
+            XCTAssertEqual(reopened.points?.balance, 25)
+            XCTAssertTrue(reopened.addChild())
+            XCTAssertEqual(reopened.childLabel(try XCTUnwrap(reopened.currentChild), locale: Locale(identifier: "en")), "Child 1")
+            XCTAssertEqual(reopened.points?.balance, 0)
+            XCTAssertTrue(reopened.switchChild(second))
+            XCTAssertEqual(reopened.points?.balance, 25)
+        }
+    }
+
+    @MainActor func testRemovalCommitFailureLeavesProfilesAndDataIntact() throws {
+        try withDatabase { url in
+            let app = AppState(store: try LocalStore(url: url))
+            XCTAssertTrue(app.addChild())
+            let before = app.children
+            let selected = app.currentChildID
+            let manifest = url.appendingPathExtension("children.json")
+            let data = try Data(contentsOf: manifest)
+            try FileManager.default.removeItem(at: manifest)
+            try FileManager.default.createDirectory(at: manifest, withIntermediateDirectories: false)
+            XCTAssertFalse(app.removeChild(before[0].id))
+            XCTAssertEqual(app.children, before)
+            XCTAssertEqual(app.currentChildID, selected)
+            try FileManager.default.removeItem(at: manifest)
+            try data.write(to: manifest)
+            XCTAssertTrue(app.switchChild(before[0].id))
+            XCTAssertTrue(app.removeChild(before[1].id))
+            XCTAssertEqual(app.currentChildID, before[0].id)
+            XCTAssertEqual(AppState(store: try LocalStore(url: url)).children.count, 1)
+        }
+    }
+
     @MainActor func testSuccessfulActionBlocksReentryAndUndoStaysSilent() async throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -521,6 +596,248 @@ extension LocalStoreTests {
             try upgraded.reorderItems(ids: manualOrder, isReward: false)
             let reopened = try LocalStore(url: url)
             XCTAssertEqual(try reopened.catalog().filter { !$0.isReward }.map(\.id), manualOrder)
+        }
+    }
+}
+
+extension LocalStoreTests {
+    @MainActor func testSingleChildDoesNotCreateProfilesOrRewriteLedger() throws {
+        try withDatabase { url in
+            let date = Date()
+            let original = try LocalStore(url: url)
+            let change = PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 12)
+            try original.save(change, date: date)
+            let before = try original.catalog()
+            for _ in 0..<2 {
+                let app = AppState(store: try LocalStore(url: url), date: date)
+                XCTAssertNil(app.loadError)
+                XCTAssertTrue(app.children.isEmpty)
+                XCTAssertNil(app.currentChild)
+                XCTAssertEqual(app.currentChildLabel(locale: Locale(identifier: "en")), "Child 1")
+                XCTAssertEqual(app.currentChildLabel(locale: Locale(identifier: "zh-Hans")), "孩子 1")
+                XCTAssertTrue(app.canSwitchChild)
+                XCTAssertEqual(app.points?.balance, 12)
+                XCTAssertEqual(app.items, before)
+                XCTAssertFalse(FileManager.default.fileExists(atPath: url.appendingPathExtension("children.json").path))
+            }
+            XCTAssertEqual(try original.context.fetch(FetchDescriptor<PointEntry>()).map(\.id), [change.id])
+        }
+    }
+
+    @MainActor func testNineChildLimitIsEnforcedWithoutChangingSelectionOrData() throws {
+        try withDatabase { url in
+            let app = AppState(store: try LocalStore(url: url))
+            XCTAssertTrue(app.addChild())
+            for _ in 3...9 { XCTAssertTrue(app.addChild()) }
+            XCTAssertEqual(app.children.count, 9)
+            XCTAssertFalse(app.canAddChild)
+            let selected = app.currentChildID
+            let before = try Data(contentsOf: url.appendingPathExtension("children.json"))
+            XCTAssertFalse(app.addChild())
+            XCTAssertEqual(app.children.count, 9)
+            XCTAssertEqual(app.currentChildID, selected)
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertEqual(try Data(contentsOf: url.appendingPathExtension("children.json")), before)
+            let reopened = AppState(store: try LocalStore(url: url))
+            XCTAssertEqual(reopened.children, app.children)
+            XCTAssertFalse(reopened.canAddChild)
+            XCTAssertEqual(reopened.childLabel(reopened.children[8], locale: Locale(identifier: "zh-Hans")), "孩子 9")
+            XCTAssertEqual(reopened.childLabel(reopened.children[0], locale: Locale(identifier: "en")), "Child 1")
+        }
+    }
+
+    @MainActor func testAddingChildrenUsesDefaultsAndPreservesOriginalHistory() throws {
+        try withDatabase { url in
+            let date = Date()
+            let original = try LocalStore(url: url)
+            var task = try XCTUnwrap(original.catalog().first { $0.id == "seed-task-handwash" })
+            task = CatalogItem(id: task.id, title: task.title, emoji: task.emoji, points: 7,
+                               image: task.image, isReward: false, englishTitle: task.englishTitle)
+            try original.updateItem(task)
+            let custom = CatalogItem(id: "custom-" + UUID().uuidString, title: "Read together", emoji: "📖", points: 4,
+                                     image: nil, isReward: false, isActive: false, isTemplate: false)
+            try original.updateItem(custom)
+            let before = try original.catalog()
+            let change = try original.load(dateKey: PacificDate.key(date)).change(itemID: task.id, undo: false, items: before)
+            try original.save(change, date: date)
+            let app = AppState(store: original, date: date)
+            XCTAssertTrue(app.addChild(date: date))
+            let defaults = try LocalStore(url: url.deletingLastPathComponent().appendingPathComponent("fresh-defaults.store")).catalog()
+            XCTAssertEqual(app.items, defaults)
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertTrue(app.points?.counts.isEmpty == true)
+            XCTAssertTrue(app.points?.undoItems.isEmpty == true)
+            // Even after customizing Child 2, Child 3 starts with factory defaults.
+            XCTAssertTrue(app.saveItem(custom))
+            XCTAssertTrue(app.addChild(date: date))
+            XCTAssertEqual(app.currentChildID, app.children[2].id)
+            XCTAssertEqual(app.items, defaults)
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertTrue(app.points?.counts.isEmpty == true)
+            XCTAssertTrue(app.points?.undoItems.isEmpty == true)
+            XCTAssertTrue(app.switchChild(app.children[0].id, date: date))
+            XCTAssertEqual(app.items, before)
+            XCTAssertEqual(app.points?.balance, 7)
+            XCTAssertEqual(app.points?.counts[task.id], 1)
+            app.undo = true
+            XCTAssertTrue(app.perform(itemID: task.id, date: date))
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertEqual(try original.context.fetch(FetchDescriptor<PointEntry>()).count, 2)
+            XCTAssertTrue(try original.context.fetch(FetchDescriptor<PointEntry>()).contains { $0.id == change.id })
+            XCTAssertTrue(app.switchChild(app.children[1].id, date: date))
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertFalse(app.undo)
+        }
+    }
+
+    @MainActor func testTwoChildrenEarnRedeemUndoAdjustAndRolloverIndependently() throws {
+        try withDatabase { url in
+            let date = Date()
+            let family = try FamilyStore(original: LocalStore(url: url))
+            let second = try family.add(dateKey: PacificDate.key(date))
+            let firstID = family.children[0].id, secondID = family.children[1].id
+            @MainActor func act(_ store: LocalStore, item: String? = nil, amount: Int? = nil, undo: Bool = false) throws {
+                let state = try store.load(dateKey: PacificDate.key(date))
+                let change = try amount.map { try state.adjustment($0) } ?? state.change(itemID: item!, undo: undo, items: store.catalog())
+                try store.save(change, date: date)
+            }
+            try act(second.store, amount: 30)
+            try act(second.store, item: "seed-task-handwash")
+            try act(second.store, item: "reward-sticker")
+            try act(second.store, item: "reward-sticker", undo: true)
+            let first = try family.select(firstID, dateKey: PacificDate.key(date))
+            XCTAssertEqual(first.points.balance, 0)
+            try act(first.store, item: "seed-task-handwash")
+            try act(first.store, item: "seed-task-handwash", undo: true)
+            XCTAssertEqual(try first.store.load(dateKey: PacificDate.key(date)).balance, 0)
+            let restored = try family.select(secondID, dateKey: PacificDate.key(date))
+            XCTAssertEqual(restored.points.balance, 31)
+            XCTAssertEqual(restored.points.counts["seed-task-handwash"], 1)
+            let nextDay = try restored.store.load(dateKey: PacificDate.key(date.addingTimeInterval(86400)))
+            XCTAssertEqual(nextDay.balance, 31)
+            XCTAssertEqual(nextDay.dailyNet, 0)
+            XCTAssertTrue(nextDay.undoItems.isEmpty)
+        }
+    }
+
+    @MainActor func testNumberedSelectionAndThirdChildSurviveRestart() throws {
+        try withDatabase { url in
+            let original = try LocalStore(url: url)
+            try original.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 18), date: Date())
+            let app = AppState(store: original)
+            XCTAssertTrue(app.addChild())
+            let firstID = app.children[0].id
+            XCTAssertTrue(app.addChild())
+            XCTAssertEqual(app.children.count, 3)
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertTrue(app.switchChild(firstID))
+            let reopened = AppState(store: try LocalStore(url: url))
+            XCTAssertEqual(reopened.currentChildID, firstID)
+            XCTAssertEqual(reopened.points?.balance, 18)
+            XCTAssertEqual(reopened.children, app.children)
+            XCTAssertEqual(try original.context.fetchCount(FetchDescriptor<PointEntry>()), 1)
+        }
+    }
+
+    @MainActor func testFailedActivationKeepsOriginalAndCanRetry() throws {
+        try withDatabase { url in
+            let original = try LocalStore(url: url)
+            let app = AppState(store: original)
+            let manifest = url.appendingPathExtension("children.json")
+            // Block the atomic manifest write after initialization, not the source ledger.
+            try FileManager.default.createDirectory(at: manifest, withIntermediateDirectories: false)
+            XCTAssertFalse(app.addChild())
+            XCTAssertTrue(app.children.isEmpty)
+            XCTAssertNil(app.currentChildID)
+            XCTAssertEqual(app.items, try original.catalog())
+            try FileManager.default.removeItem(at: manifest)
+            XCTAssertTrue(app.addChild())
+            XCTAssertEqual(app.children.count, 2)
+            XCTAssertEqual(AppState(store: try LocalStore(url: url)).children.count, 2)
+        }
+    }
+
+    @MainActor func testFailedSwitchKeepsNamePointsAndRememberedSelection() throws {
+        try withDatabase { url in
+            let app = AppState(store: try LocalStore(url: url))
+            XCTAssertTrue(app.addChild())
+            let firstID = app.children[0].id, secondID = app.children[1].id
+            XCTAssertTrue(app.switchChild(firstID))
+            let childDirectory = url.appendingPathExtension("children").appendingPathComponent(secondID.uuidString)
+            try FileManager.default.removeItem(at: childDirectory)
+            XCTAssertFalse(app.switchChild(secondID))
+            XCTAssertEqual(app.currentChildID, firstID)
+            XCTAssertEqual(app.currentChildID, firstID)
+            XCTAssertEqual(app.points?.balance, 0)
+            XCTAssertEqual(AppState(store: try LocalStore(url: url)).currentChildID, firstID)
+            XCTAssertFalse(FileManager.default.fileExists(atPath: childDirectory.path))
+        }
+    }
+
+    @MainActor func testSwitchIsBlockedDuringFormsAndCelebration() throws {
+        try withDatabase { url in
+            let app = AppState(store: try LocalStore(url: url))
+            XCTAssertTrue(app.addChild())
+            let firstID = app.children[0].id
+            app.managementOpen = true
+            XCTAssertFalse(app.switchChild(firstID))
+            app.managementOpen = false
+            app.adjustmentOpen = true
+            XCTAssertFalse(app.switchChild(firstID))
+            app.adjustmentOpen = false
+            XCTAssertTrue(app.perform(adjustment: 3))
+            XCTAssertFalse(app.switchChild(firstID))
+            XCTAssertFalse(app.addChild())
+            XCTAssertEqual(app.currentChildID, app.children[1].id)
+            XCTAssertEqual(app.points?.balance, 3)
+        }
+    }
+
+    @MainActor func testCorruptManifestDoesNotSilentlyFallBackToSingleChild() throws {
+        try withDatabase { url in
+            let store = try LocalStore(url: url)
+            try Data("invalid".utf8).write(to: url.appendingPathExtension("children.json"))
+            let app = AppState(store: store)
+            XCTAssertNotNil(app.loadError)
+            XCTAssertNil(app.points)
+            XCTAssertFalse(app.addChild())
+            XCTAssertEqual(try Data(contentsOf: url.appendingPathExtension("children.json")), Data("invalid".utf8))
+        }
+    }
+}
+
+extension LocalStoreTests {
+    @MainActor func testMissingOriginalStoreIsNotRecreatedAfterMultiChildActivation() throws {
+        try withDatabase { url in
+            try Data("manifest exists".utf8).write(to: url.appendingPathExtension("children.json"))
+            XCTAssertThrowsError(try LocalStore(url: url))
+            XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        }
+    }
+}
+
+extension LocalStoreTests {
+    @MainActor func testExistingNamedProfilesKeepIDsLedgerAndNumberOrder() throws {
+        try withDatabase { url in
+            let original = try LocalStore(url: url)
+            try original.save(PointChange(kind: "adjustment", itemID: "manual-adjustment", points: 18), date: Date())
+            let app = AppState(store: original)
+            XCTAssertTrue(app.addChild())
+            let ids = app.children.map(\.id)
+            let manifest = url.appendingPathExtension("children.json")
+            var json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: manifest)) as? [String: Any])
+            var children = try XCTUnwrap(json["children"] as? [[String: Any]])
+            for i in children.indices { children[i]["name"] = "A very long old name \(i)" }
+            json["children"] = children
+            let oldData = try JSONSerialization.data(withJSONObject: json)
+            try oldData.write(to: manifest, options: .atomic)
+            let reopened = AppState(store: try LocalStore(url: url))
+            XCTAssertEqual(reopened.children.map(\.id), ids)
+            XCTAssertEqual(try Data(contentsOf: manifest), oldData)
+            XCTAssertEqual(reopened.currentChildID, ids[1])
+            XCTAssertTrue(reopened.switchChild(ids[0]))
+            XCTAssertEqual(reopened.points?.balance, 18)
+            XCTAssertEqual(reopened.childLabel(reopened.children[0], locale: Locale(identifier: "zh-Hans")), "孩子 1")
         }
     }
 }

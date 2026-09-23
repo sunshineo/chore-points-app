@@ -20,6 +20,11 @@ final class AppState {
     var undo = false
     var adjustmentOpen = false
     var managementOpen = false
+    var childrenOpen = false
+    private(set) var children: [ChildProfile] = []
+    private(set) var currentChildID: UUID?
+    var currentChild: ChildProfile? { children.first { $0.id == currentChildID } }
+    var canSwitchChild: Bool { !saving && celebration == nil && !adjustmentOpen && !managementOpen }
     private(set) var items: [CatalogItem] = []
 
     var visibleItems: [CatalogItem] {
@@ -66,15 +71,92 @@ final class AppState {
         }
     }
     private(set) var celebration: Celebration?
-    private let store: LocalStore
+    private var store: LocalStore
+    private var family: FamilyStore?
     private let sound = PointSound()
 
     init(store: LocalStore, date: Date = PacificDate.now) {
         self.store = store
         do {
-            items = try store.catalog()
-            points = try store.load(dateKey: PacificDate.key(date))
+            let family = try FamilyStore(original: store)
+            let selection = try family.current(dateKey: PacificDate.key(date))
+            self.family = family
+            apply(selection)
         } catch { loadError = "Please reopen the app. Your existing data has not been deleted." }
+    }
+
+    private func apply(_ selection: FamilyStore.Selection) {
+        store = selection.store
+        items = selection.items
+        points = selection.points
+        children = family?.children ?? []
+        currentChildID = family?.selectedID
+        rewards = false
+        undo = false
+        errorMessage = nil
+    }
+
+    var canAddChild: Bool { children.count < FamilyStore.maximumChildren }
+
+    var sortedChildren: [ChildProfile] {
+        children.enumerated()
+            .sorted { ($0.element.number ?? $0.offset + 1) < ($1.element.number ?? $1.offset + 1) }
+            .map(\.element)
+    }
+
+    func currentChildLabel(locale: Locale) -> String {
+        currentChild.map { childLabel($0, locale: locale) } ?? locale.interfaceText("Child \(1)")
+    }
+
+    func childLabel(_ child: ChildProfile, locale: Locale) -> String {
+        let number = child.number ?? (children.firstIndex(where: { $0.id == child.id }) ?? 0) + 1
+        return locale.interfaceText("Child \(number)")
+    }
+
+    @discardableResult
+    func switchChild(_ id: UUID, date: Date = PacificDate.now) -> Bool {
+        guard canSwitchChild, let family else { return false }
+        do {
+            apply(try family.select(id, dateKey: PacificDate.key(date)))
+            childrenOpen = false
+            return true
+        } catch {
+            errorMessage = "Could not open this child’s data. Your current child has not changed."
+            return false
+        }
+    }
+
+    @discardableResult
+    func addChild(date: Date = PacificDate.now) -> Bool {
+        guard !saving, celebration == nil, !adjustmentOpen, let family else { return false }
+        saving = true
+        defer { saving = false }
+        do {
+            apply(try family.add(dateKey: PacificDate.key(date)))
+            childrenOpen = false
+            managementOpen = false
+            return true
+        } catch ChildProfileError.limitReached {
+            errorMessage = "Up to 9 children are supported."
+            return false
+        } catch {
+            errorMessage = "Could not add the child. Your existing data has not changed. Please try again."
+            return false
+        }
+    }
+
+    @discardableResult
+    func removeChild(_ id: UUID, date: Date = PacificDate.now) -> Bool {
+        guard canSwitchChild, children.count > 1, let family else { return false }
+        saving = true
+        defer { saving = false }
+        do {
+            apply(try family.remove(id, dateKey: PacificDate.key(date)))
+            return true
+        } catch {
+            errorMessage = "Could not remove the child. Please try again."
+            return false
+        }
     }
 
     func refreshDate(_ date: Date = PacificDate.now) {

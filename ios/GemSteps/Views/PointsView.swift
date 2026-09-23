@@ -6,6 +6,7 @@ struct PointsView: View {
     @Bindable var state: AppState
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var presentedCelebration: Celebration?
     private let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
 
@@ -24,6 +25,9 @@ struct PointsView: View {
         }
         .sheet(isPresented: $state.managementOpen) {
             CatalogManagementView(state: state)
+        }
+        .sheet(isPresented: $state.childrenOpen) {
+            ChildrenView(state: state)
         }
         .tint(PointsColors.accent)
         .fullScreenCover(item: $presentedCelebration) { celebration in
@@ -100,8 +104,7 @@ struct PointsView: View {
                 LanguageMenu()
             }
             VStack(spacing: 12) {
-                ViewThatFits(in: .horizontal) {
-                    summaryRow(points)
+                if dynamicTypeSize.isAccessibilitySize {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             balance(points)
@@ -110,6 +113,8 @@ struct PointsView: View {
                         }
                         day(points)
                     }.frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    summaryRow(points)
                 }
                 actions
             }
@@ -118,15 +123,17 @@ struct PointsView: View {
 
     private func summaryRow(_ points: PointsState) -> some View {
         HStack(spacing: 8) {
-            balance(points).fixedSize(horizontal: true, vertical: false)
+            balance(points)
             Spacer(minLength: 0)
-            day(points).fixedSize(horizontal: true, vertical: false)
+            day(points).lineLimit(1).minimumScaleFactor(0.7)
             LanguageMenu()
         }
     }
 
     private var actions: some View {
-        HStack(spacing: 12) {
+        let layout = dynamicTypeSize.isAccessibilitySize && UIDevice.current.userInterfaceIdiom == .phone
+            ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
             Button {
                 state.undo.toggle()
             } label: {
@@ -184,17 +191,118 @@ struct PointsView: View {
 
     private func balance(_ points: PointsState) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: "star.circle.fill")
-                .foregroundStyle(.yellow)
-                .accessibilityHidden(true)
-            Text("\(points.balance)")
-                .monospacedDigit()
-                .contentTransition(.numericText(value: Double(points.balance)))
-                .animation(reduceMotion ? nil : .default, value: points.balance)
+            HStack(spacing: 8) {
+                Image(systemName: "star.circle.fill")
+                    .foregroundStyle(.yellow)
+                    .accessibilityHidden(true)
+                Text("\(points.balance)")
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .contentTransition(.numericText(value: Double(points.balance)))
+                    .animation(reduceMotion ? nil : .default, value: points.balance)
+            }
+            .font(.largeTitle.bold())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Total points: \(points.balance)")
+            .accessibilityIdentifier("points-balance")
+            Button {
+                state.errorMessage = nil
+                state.childrenOpen = true
+            } label: {
+                HStack(spacing: 4) {
+                    Text(verbatim: state.currentChildLabel(locale: locale)).lineLimit(1)
+                    Image(systemName: "chevron.down").font(.caption)
+                }
+                .font(.headline)
+                .frame(minHeight: 44)
+                .fixedSize(horizontal: true, vertical: false)
+            }
+            .buttonStyle(.plain)
+            .disabled(!state.canSwitchChild)
+            .accessibilityLabel(locale.interfaceText("Switch child") + ": " + state.currentChildLabel(locale: locale))
+            .accessibilityIdentifier("child-switcher")
         }
-        .font(.largeTitle.bold())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Total points: \(points.balance)")
-        .accessibilityIdentifier("points-balance")
+    }
+}
+
+struct ChildrenView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
+    @Bindable var state: AppState
+    @State private var removing: ChildProfile?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let error = state.errorMessage {
+                    Text(locale.interfaceText(String.LocalizationValue(error))).foregroundStyle(.red)
+                }
+                Section {
+                    if state.children.isEmpty {
+                        Button { dismiss() } label: {
+                            HStack {
+                                Text(verbatim: state.currentChildLabel(locale: locale)).foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "checkmark").accessibilityLabel("Current child")
+                                Image(systemName: "trash").foregroundStyle(.tertiary)
+                                    .frame(width: 44, height: 44).accessibilityHidden(true)
+                            }
+                            .frame(minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    ForEach(state.sortedChildren) { child in
+                        HStack {
+                            Button {
+                                if state.switchChild(child.id) { dismiss() }
+                            } label: {
+                                HStack {
+                                    Text(verbatim: state.childLabel(child, locale: locale)).foregroundStyle(.primary)
+                                    Spacer()
+                                    if child.id == state.currentChildID {
+                                        Image(systemName: "checkmark").accessibilityLabel("Current child")
+                                    }
+                                }
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("select-child-" + child.id.uuidString)
+
+                            Button(role: .destructive) { removing = child } label: {
+                                Image(systemName: "trash").frame(width: 44, height: 44)
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(state.children.count <= 1 || !state.canSwitchChild)
+                            .accessibilityLabel(locale.interfaceText("Remove child") + " " + state.childLabel(child, locale: locale))
+                            .accessibilityIdentifier("remove-child-" + child.id.uuidString)
+                        }
+                    }
+                }
+                Section {
+                    Button("Add child", systemImage: "plus") {
+                        state.errorMessage = nil
+                        state.addChild()
+                    }
+                    .disabled(state.saving || !state.canAddChild)
+                    .accessibilityIdentifier("add-child")
+                    if !state.canAddChild { Text("Up to 9 children are supported.").foregroundStyle(.secondary) }
+                }
+            }
+            .alert("Remove child?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), presenting: removing) { child in
+                Button("Remove", role: .destructive) { state.removeChild(child.id); removing = nil }
+                Button("Cancel", role: .cancel) { removing = nil }
+            } message: { child in
+                Text(locale.interfaceText("Remove") + " " + state.childLabel(child, locale: locale) + "? " + locale.interfaceText("This permanently deletes this child’s points, history, tasks and rewards. Other children are not affected."))
+            }
+            .navigationTitle("Switch child")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+            }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 }

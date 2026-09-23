@@ -22,6 +22,9 @@ struct AdjustmentView: View {
     private var panel: some View {
         VStack(spacing: 0) {
             HStack {
+                if let child = state.currentChild {
+                    Text(verbatim: state.childLabel(child, locale: locale)).font(.headline).lineLimit(1)
+                }
                 Spacer()
                 Button { state.adjustmentOpen = false } label: {
                     Image(systemName: "xmark")
