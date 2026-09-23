@@ -142,7 +142,6 @@ private fun Header(vm: GemViewModel, state: PointsState, wide: Boolean) {
 @Composable
 private fun BalanceAndChild(vm: GemViewModel, balance: Long, modifier: Modifier = Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        Balance(balance)
         TextButton(onClick = { vm.showChildren(true) }, enabled = vm.canChangeChild,
             colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
             contentPadding = PaddingValues(horizontal = 0.dp),
@@ -150,6 +149,7 @@ private fun BalanceAndChild(vm: GemViewModel, balance: Long, modifier: Modifier 
             Text(stringResource(R.string.child_number, vm.childNumber), maxLines = 1)
             Icon(Icons.Default.ArrowDropDown, null, Modifier.size(18.dp))
         }
+        Balance(balance)
     }
 }
 
@@ -158,8 +158,8 @@ private fun Balance(balance: Long, modifier: Modifier = Modifier) {
     val label = stringResource(R.string.points_balance, balance)
     Row(modifier.testTag("points-balance").clearAndSetSemantics { contentDescription = label },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(Icons.Default.Stars, null, tint = Color(0xFFFFD966), modifier = Modifier.size(if (LocalConfiguration.current.screenWidthDp < 380) 24.dp else 32.dp))
         Text(balance.toString(), fontSize = if (LocalConfiguration.current.screenWidthDp < 380) 28.sp else 34.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Icon(Icons.Default.Star, null, tint = Color(0xFFFFD966), modifier = Modifier.size(if (LocalConfiguration.current.screenWidthDp < 380) 24.dp else 32.dp))
     }
 }
 
