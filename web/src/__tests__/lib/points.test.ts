@@ -28,7 +28,8 @@ describe("default tasks", () => {
     expect(
       Object.fromEntries(DEFAULT_TASKS.map(({ title, defaultPoints }) => [title, defaultPoints])),
     ).toMatchObject({
-      自己穿衣服: 2,
+      自己穿衣服: 1,
+      梳头: 1,
       把早饭吃干净: 2,
       跟妈妈再见: 1,
       跟姥姥再见: 1,
@@ -46,7 +47,11 @@ describe("default tasks", () => {
       上芭蕾课: 10,
     });
 
-    const eveningTaskTitles = DEFAULT_TASKS.slice(17, 25).map(({ title }) => title);
+    const clothesIndex = DEFAULT_TASKS.findIndex(({ id }) => id === "seed-task-clothes");
+    expect(DEFAULT_TASKS[clothesIndex + 1].title).toBe("梳头");
+
+    const flossIndex = DEFAULT_TASKS.findIndex(({ id }) => id === "seed-task-floss");
+    const eveningTaskTitles = DEFAULT_TASKS.slice(flossIndex, flossIndex + 8).map(({ title }) => title);
     expect(eveningTaskTitles).toEqual([
       "用牙线",
       "上厕所",
