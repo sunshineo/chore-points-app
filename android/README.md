@@ -40,6 +40,15 @@ corresponding iOS strings, including editor, empty-state and accessibility text.
 The Compose flow tests also assert the visible header labels in both languages.
 
 
+- Always-visible “Child 1” / “孩子 1” picker next to the balance from first launch.
+  Add, switch and remove children from its bottom sheet; no name, avatar or setup form.
+  New children use the shipped task/reward defaults, zero points and no history.
+  Support up to nine children, sorted by their stable number. Reuse the lowest free
+  number after removal; surviving children keep their numbers and data.
+  Removal requires confirmation, disables the last child's trash button, and
+  switches to the lowest-numbered survivor if the current child is removed.
+  The picker remains visible with one child. Management has no child heading or
+  separate add-child entry; adjustment shows the current child's number.
 - Purple gradient header; balance on the left, date and daily net on the right;
   action row on phones and a single header row on sufficiently wide windows.
 - Tasks / rewards selector above the same multicolored card grid. Two columns
@@ -82,6 +91,14 @@ is independent of iOS data; there is no import or cross-device synchronization.
 - `Catalog.kt`: shipped catalog matching `ios/GemSteps/Models/Catalog.swift`.
 - `Database.kt`: Room entities, transactions, validation, catalog initialization
   and ordering. Schema snapshots are committed in `app/schemas/`.
+- `FamilyStore.kt`: original database owns a JSON family manifest in its existing
+  metadata table. Additional ledgers use `gemsteps.db.child-<UUID>`. No Room schema
+  migration or original ledger copying occurs. First launch only displays Child 1;
+  the manifest is created on first addition. Prepare/read a new ledger before the
+  manifest transaction; failed publication cleans up the unpublished database.
+  Remove profiles transactionally before cleaning their data, retaining cleanup
+  IDs for retry after interruption. Missing child databases fail instead of
+  silently creating empty ledgers. Current selection survives restart.
 - `GemViewModel.kt`: serialized actions, saved navigation state, date refresh and
   celebration/audio lifetime. UI updates only after successful ledger commits.
 - `PointsScreen.kt`, `AdjustmentDialog.kt`, `ManagementScreen.kt`: Compose views.
@@ -128,3 +145,18 @@ undo, recreation, language switching, redemption and drag ordering.
 Build outputs, verification screenshots, test reports and emulator state are not
 source files and must remain outside Git. Physical-device sound/ringer behavior
 and vendor-specific differences require real-device acceptance testing.
+
+
+Multi-child verification (2026-09-22): debug build, 11 JVM tests and all 14 Android
+instrumentation tests passed on the dedicated API 36 emulator. Coverage includes
+original single-child data preservation, default catalogs, isolated points and
+settings, redemption/undo/day rollover, nine-child limit, failed manifest writes,
+missing-database protection, removing the original/current child, retaining the
+last child, reused number sorting, restart selection, and the actual add/switch/
+cancel-remove/confirm-remove UI flow. Lint has no errors.
+
+Visually checked the one-row tablet header and two-row 320dp phone header, English
+and Chinese, the child sheet, and Chinese dark mode at 1.5× font scale. Screenshots
+and build/test logs are under `/tmp/gemsteps-android-children-*` outside Git. The debug APK was subsequently installed on the connected Kindle Fire (KFTUWI)
+with an in-place update preserving app data, and GemSteps was launched. No release
+publishing was performed.

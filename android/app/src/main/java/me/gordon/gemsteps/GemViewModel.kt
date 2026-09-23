@@ -15,8 +15,41 @@ import java.time.Instant
 
 // State survives rotation; only durable ledger changes survive process death.
 class GemViewModel(application: Application, private val saved: SavedStateHandle) : AndroidViewModel(application) {
-    private val database = GemDatabase.open(application)
-    private val store = LocalStore(database)
+    private val family = FamilyStore(application)
+    private val store get() = family.store
+    var children by mutableStateOf(listOf(ChildProfile(FamilyStore.ORIGINAL, 1))); private set
+    var selectedChildID by mutableStateOf(FamilyStore.ORIGINAL); private set
+    val childNumber get() = children.first { it.id == selectedChildID }.number
+    var childrenOpen by mutableStateOf(false); private set
+    val canChangeChild get() = !busy && celebration == null && !management && !adjustmentOpen
+    fun showChildren(value: Boolean) {
+        if (busy || (value && !canChangeChild)) return
+        childrenOpen = value
+        error = null
+    }
+    private fun applyFamily(updated: Snapshot) {
+        snapshot = updated
+        children = family.children
+        selectedChildID = family.selectedID
+    }
+    fun addChild() = changeChild { family.add(Instant.now()) }
+    fun selectChild(id: String) = changeChild { family.select(id, Instant.now()) }
+    fun removeChild(id: String) = changeChild(close = false) { family.remove(id, Instant.now()) }
+    private fun changeChild(close: Boolean = true, operation: suspend () -> Snapshot) {
+        if (!canChangeChild) return
+        busy = true
+        viewModelScope.launch {
+            try {
+                applyFamily(operation())
+                selectRewards(false)
+                selectUndo(false)
+                if (close) childrenOpen = false
+                error = null
+            } catch (e: CancellationException) { throw e }
+            catch (_: Exception) { error = R.string.child_error }
+            finally { busy = false }
+        }
+    }
     var snapshot by mutableStateOf<Snapshot?>(null); private set
     var busy by mutableStateOf(false); private set
     var loadFailed by mutableStateOf(false); private set
@@ -48,8 +81,7 @@ class GemViewModel(application: Application, private val saved: SavedStateHandle
         busy = true
         viewModelScope.launch {
             try {
-                store.initialize()
-                snapshot = store.load(Instant.now())
+                applyFamily(family.load(Instant.now()))
                 loadFailed = false
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) { loadFailed = true }
@@ -128,5 +160,5 @@ class GemViewModel(application: Application, private val saved: SavedStateHandle
         } catch (_: Exception) { player?.release(); player = null }
     }
 
-    override fun onCleared() { player?.release(); database.close() }
+    override fun onCleared() { player?.release(); family.close() }
 }

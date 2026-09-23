@@ -35,7 +35,9 @@ fun AdjustmentDialog(vm: GemViewModel) {
             .testTag("adjustment-panel"), shape = RoundedCornerShape(28.dp)) {
             Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)
                 .padding(top = 8.dp, bottom = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text(stringResource(R.string.child_number, vm.childNumber), Modifier.weight(1f))
                     CloseButton(Modifier.testTag("adjustment-close"), !blocked) { vm.setAdjustment(false) }
                 }
                 val amount = digits.toIntOrNull() ?: 0

@@ -57,6 +57,8 @@ interface GemDao {
     @Upsert suspend fun putItem(item: StoredItem)
     @Upsert suspend fun putMetadata(metadata: Metadata)
     @Insert suspend fun insertEntry(entry: StoredEntry)
+    @Query("DELETE FROM entries") suspend fun clearEntries()
+    @Query("DELETE FROM items") suspend fun clearItems()
     @Query("DELETE FROM items WHERE id = :id") suspend fun deleteItem(id: String)
 }
 

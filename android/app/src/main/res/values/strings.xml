@@ -59,4 +59,13 @@
     <string name="amount_subtract">Points to subtract: %1$d</string>
     <string name="celebration_add">%1$s. Points added: %2$d</string>
     <string name="celebration_subtract">%1$s. Points subtracted: %2$d</string>
+    <string name="child_number">Child %1$d</string>
+    <string name="switch_child">Switch child</string>
+    <string name="current_child">Current child</string>
+    <string name="add_child">Add child</string>
+    <string name="remove_child">Remove</string>
+    <string name="remove_child_number">Remove Child %1$d?</string>
+    <string name="remove_child_detail">This permanently deletes this child’s points, history, tasks and rewards. Other children are not affected.</string>
+    <string name="child_limit">Up to 9 children are supported.</string>
+    <string name="child_error">Could not update children. Please try again.</string>
 </resources>

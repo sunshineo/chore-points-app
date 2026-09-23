@@ -25,6 +25,32 @@ class AppFlowTest {
     }
     private fun tap(tag: String) = compose.onNodeWithTag(tag).performClick()
 
+    @Test fun childMenuAddsSwitchesAndConfirmsRemoval() {
+        ready()
+        val first = compose.onNodeWithTag("points-balance").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription]
+        tap("child-switcher")
+        compose.onNodeWithTag("remove-child-1").assertIsNotEnabled()
+        tap("add-child")
+        compose.waitUntil(10000) { compose.onAllNodesWithTag("children-panel").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("points-balance").assertContentDescriptionEquals(compose.activity.getString(R.string.points_balance, 0))
+        tap("child-switcher")
+        tap("select-child-1")
+        compose.waitUntil(10000) { compose.onAllNodesWithTag("children-panel").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("points-balance").assertContentDescriptionEquals(*first.toTypedArray())
+        tap("child-switcher")
+        tap("remove-child-2")
+        tap("cancel-remove-child")
+        compose.onNodeWithTag("select-child-2").assertExists()
+        tap("remove-child-2")
+        tap("confirm-remove-child")
+        compose.waitUntil(10000) { compose.onAllNodesWithTag("select-child-2").fetchSemanticsNodes().isEmpty() }
+        compose.onNodeWithTag("remove-child-1").assertIsNotEnabled()
+        tap("children-close")
+        compose.activityRule.scenario.recreate()
+        ready()
+        compose.onNodeWithTag("child-switcher").assertIsDisplayed()
+    }
+
     @Test fun manualAdjustmentUsesTaskCelebrationSize() {
         ready()
         tap("seed-task-make-bed")

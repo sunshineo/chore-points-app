@@ -59,4 +59,13 @@
     <string name="amount_subtract">减 %1$d 分</string>
     <string name="celebration_add">%1$s，加 %2$d 分</string>
     <string name="celebration_subtract">%1$s，减 %2$d 分</string>
+    <string name="child_number">孩子 %1$d</string>
+    <string name="switch_child">切换孩子</string>
+    <string name="current_child">当前孩子</string>
+    <string name="add_child">添加孩子</string>
+    <string name="remove_child">移除</string>
+    <string name="remove_child_number">移除孩子 %1$d？</string>
+    <string name="remove_child_detail">这会永久删除这个孩子的积分、记录、任务和奖励，不影响其他孩子。</string>
+    <string name="child_limit">最多支持 9 个孩子。</string>
+    <string name="child_error">无法更新孩子，请重试。</string>
 </resources>

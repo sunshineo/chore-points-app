@@ -64,6 +64,7 @@ fun GemStepsApp(vm: GemViewModel = viewModel()) {
                 else -> PointsScreen(vm)
             }
         }
+        if (vm.childrenOpen) ChildrenDialog(vm)
         if (vm.adjustmentOpen) AdjustmentDialog(vm)
         if (vm.celebration != null && !vm.adjustmentOpen) {
             Dialog(onDismissRequest = {}, properties = DialogProperties(
@@ -88,7 +89,7 @@ private fun PointsScreen(vm: GemViewModel) {
         LazyVerticalGrid(columns = GridCells.Fixed(columns), contentPadding = PaddingValues(bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(horizontal = 16.dp).testTag("points-grid")) {
-            item(span = { GridItemSpan(maxLineSpan) }) { Header(vm, state, maxWidth >= 800.dp) }
+            item(span = { GridItemSpan(maxLineSpan) }) { Header(vm, state, maxWidth >= 900.dp) }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SectionPicker(vm.rewards, Modifier.fillMaxWidth().padding(vertical = 4.dp), vm::selectRewards)
             }
@@ -120,14 +121,14 @@ private fun Header(vm: GemViewModel, state: PointsState, wide: Boolean) {
         .padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         CompositionLocalProvider(LocalContentColor provides Color.White) {
             if (wide && !largeText) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Balance(state.balance)
+                BalanceAndChild(vm, state.balance)
                 Spacer(Modifier.weight(1f))
                 DayLabel(state)
                 HeaderActions(vm, Modifier.width(360.dp))
                 LanguageMenu()
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Balance(state.balance, Modifier.weight(1f))
+                    BalanceAndChild(vm, state.balance, Modifier.weight(1f))
                     if (!largeText) DayLabel(state)
                     LanguageMenu()
                 }
@@ -139,12 +140,26 @@ private fun Header(vm: GemViewModel, state: PointsState, wide: Boolean) {
 }
 
 @Composable
+private fun BalanceAndChild(vm: GemViewModel, balance: Long, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Balance(balance)
+        TextButton(onClick = { vm.showChildren(true) }, enabled = vm.canChangeChild,
+            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+            contentPadding = PaddingValues(horizontal = 0.dp),
+            modifier = Modifier.testTag("child-switcher")) {
+            Text(stringResource(R.string.child_number, vm.childNumber), maxLines = 1)
+            Icon(Icons.Default.ArrowDropDown, null, Modifier.size(18.dp))
+        }
+    }
+}
+
+@Composable
 private fun Balance(balance: Long, modifier: Modifier = Modifier) {
     val label = stringResource(R.string.points_balance, balance)
     Row(modifier.testTag("points-balance").clearAndSetSemantics { contentDescription = label },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Icon(Icons.Default.Stars, null, tint = Color(0xFFFFD966), modifier = Modifier.size(32.dp))
-        Text(balance.toString(), fontSize = 34.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Icon(Icons.Default.Stars, null, tint = Color(0xFFFFD966), modifier = Modifier.size(if (LocalConfiguration.current.screenWidthDp < 380) 24.dp else 32.dp))
+        Text(balance.toString(), fontSize = if (LocalConfiguration.current.screenWidthDp < 380) 28.sp else 34.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 
@@ -154,7 +169,7 @@ private fun DayLabel(state: PointsState) {
     val date = LocalDate.parse(state.day)
     val pattern = if (locale.language == "zh") "M月d日 E" else "MMM d E"
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(date.format(DateTimeFormatter.ofPattern(pattern, locale)), style = MaterialTheme.typography.labelLarge)
+        Text(date.format(DateTimeFormatter.ofPattern(pattern, locale)), style = MaterialTheme.typography.labelLarge, fontSize = if (LocalConfiguration.current.screenWidthDp < 380) 10.sp else 12.sp, maxLines = 1)
         val label = stringResource(R.string.today_points, state.dailyNet)
         Text((if (state.dailyNet > 0) "+" else "") + state.dailyNet,
             Modifier.semantics { contentDescription = label }, fontWeight = FontWeight.Bold)
